@@ -5,12 +5,12 @@
 
 ## 1. Trạng thái hiện tại
 
-- Giai đoạn hiện tại: Phase 2 — Research
+- Giai đoạn hiện tại: Phase 3 — Brainstorm
 - Trạng thái: In progress
-- Bước tiếp theo: Tiến hành nghiên cứu theo `plan/research-plan.md`.
+- Bước tiếp theo: Trình bày các phương án ý tưởng sản phẩm để người dùng chọn ý tưởng chính thức.
 - Blocker hiện tại: Không.
-- Đang chờ phê duyệt từ: Không.
-- Cập nhật lần cuối: 2026-07-22T10:43:00+07:00
+- Đang chờ phê duyệt từ: Người dùng (Chọn ý tưởng).
+- Cập nhật lần cuối: 2026-07-22T10:46:00+07:00
 
 Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for approval`, `Blocked`, `Completed`, `Skipped`.
 
@@ -30,8 +30,8 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 |---|---|---|---|---|---|
 | 0. Workspace handoff | Tài liệu cuộc thi | Lưu nguồn, chuẩn hóa context và khởi tạo plan | Workspace hợp lệ | Người dùng kiểm tra handoff | Completed |
 | 1. Context verification | Năm file trong `docs/` | Giải quyết thông tin chưa rõ có ảnh hưởng lớn | Context đủ để ra quyết định | Người dùng xác nhận | Completed |
-| 2. Research | Context đã xác minh | Nghiên cứu người dùng, sản phẩm tương tự và benchmark theo rubric | Evidence Log, competitor/rubric benchmark và research handoff | Không | In progress |
-| 3. Brainstorm | Research output | Hard gate, rubric scoring và shortlist | Ý tưởng được chọn | Người dùng chọn ý tưởng | Todo |
+| 2. Research | Context đã xác minh | Nghiên cứu người dùng, sản phẩm tương tự và benchmark theo rubric | Evidence Log, competitor/rubric benchmark và research handoff | Không | Completed |
+| 3. Brainstorm | Research output | Hard gate, rubric scoring và shortlist | Ý tưởng được chọn | Người dùng chọn ý tưởng | In progress |
 | 4. Product Plan | Ý tưởng được chọn | Hoàn thiện `plan/product-plan.md` | MVP, non-goals và demo scenario | Người dùng phê duyệt | Todo |
 | 5. Build Plan | Product Plan đã duyệt | Hoàn thiện `plan/build-plan.md` | Stack, kiến trúc, timeline và backlog | Người dùng phê duyệt | Todo |
 | 6. Development | Build Plan đã duyệt | Hoàn thiện core product, vượt Core Product Ready Gate, sau đó xây landing page | Demo-ready application và landing page | Milestone verification | Todo |
@@ -70,7 +70,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 ## 8. Completion Checklist
 
 - [x] Context đã được người dùng kiểm tra.
-- [ ] Research có evidence và nguồn.
+- [x] Research có evidence và nguồn.
 - [ ] Ý tưởng cuối cùng đã được người dùng chọn.
 - [ ] Product Plan đã được phê duyệt.
 - [ ] Build Plan đã được phê duyệt.
