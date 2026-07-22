@@ -7,24 +7,65 @@
     "underlyingWETH": "0x494062C2D4558952A2230b60b95269Cb8Ad5FE07",
     "cUSDC": "0x6932075FBfd847E453992A8A1EEefB6C6cb328fE",
     "cETH": "0x04Dc3bebDc4E1dfcB423bB7C38Ed280144B5D4a4",
-    "noxSwapRouter": "0x3D96c59e1d88183834B7FDcF95b51749Eb7ab0B6",
-    "noxCompute": "0x24Ef36Ec5b626D7DCD09a98F3083c2758F0F77bF"
+    "noxSwapRouter": "0x6e8df82d708196e75Fb735120B4817f5c2551015",
+    "noxCompute": "0x24Ef36Ec5b626D7DCD09a98F3083c2758F0F77bF",
+    "underlyingWBTC": "0x2d23C4617DEDA612166896E7110eaea5ed89C1EE",
+    "underlyingSOL": "0x674020dd2C1fB45E26f6e31AC1a7EeceF3E8595f",
+    "cWBTC": "0x1b8fa85acB318A8599EB2382638020b458028375",
+    "cSOL": "0xa7E60411AB2e8683572b260d545507B22bf28179",
+    "limitOrderBook": "0xab903F78edEAF96faE78c0BF46810122fC9896fb"
   },
   "pool": {
+    "id": "cUSDC/cETH",
     "token0": "0x04Dc3bebDc4E1dfcB423bB7C38Ed280144B5D4a4",
     "token1": "0x6932075FBfd847E453992A8A1EEefB6C6cb328fE",
-    "reserve0Handle": "0x0000aa36a7230160e426ef046983c30e974d1f91e6654f00823bdeb02970020f",
-    "reserve1Handle": "0x0000aa36a72301d7da95dc535023c0d4959504c04934e3e9db2c1068709ba00c",
-    "liquidityTransaction": "0xd89f67ed643bf04c14c7e2e8df552ecd816b7f626b6c0c0bcba5c32a3bed0e24"
+    "reserve0Handle": "0x0000aa36a723017af35c9219890ece5b41afe2e4e33b584dd688c18f9261e555",
+    "reserve1Handle": "0x0000aa36a72301bae04af1e09394294ed8e088722e73cea0c17eb0419f61c4b4",
+    "liquidityTransaction": "0xb50926c8d71c293e5f13b0f79c46d0f4260b5c4a4301c78fbb34eac96f6ae87b"
   },
   "deploymentTransactions": {
     "underlyingUSDC": "0x5f02ba276ca7968e2b4234c1a6c75c9143ac88f7c71ce097c00c069ffb97bf2f",
     "underlyingWETH": "0x4ae5f94708ab29ed28e84d2f91f4edbe215f665410e63e89dcfb6a68bab6588f",
     "cUSDC": "0xe2a95165c6de405b26d6594f41f97bd84a287a2a0c4fbf5797b53ca868e3b5a0",
     "cETH": "0x0fac26086754b022bb8a854e83eb054989738b87d847df0030e4b29931174d2f",
-    "noxSwapRouter": "0x901ed4c19b6526fd5119c6238f00475e43d1cdca1b24a41de428fee40b597adf"
+    "noxSwapRouter": "0xddbc52b783879179aa19bbd369f89ead67ae8e6c14321d9671e6458a26c9b42f",
+    "underlyingWBTC": "0x82482b3063a1c1ef33b443f21c41b69ec05f15cac9aaa3f0b4ba74c632a12a0e",
+    "underlyingSOL": "0x900f0559de6083a2d33fdabba0c64afb7b1231287fccb3669564cb82912f8e61",
+    "cWBTC": "0x3db7247db7d38a736e22e177d5c1721c5cb4ced36c6c0a06a5cb2adb7d5abace",
+    "cSOL": "0x4367f99d3c00eea8e5ca707e1c31d8bf3e16c8e4548535b56320d597cca202d8",
+    "limitOrderBook": "0x2a70c567a2e463a58f64c9bf7ae851cab86777aabfafec6aae7eba350b450447"
   },
   "gatewayUrl": "https://gateway-testnets.noxprotocol.dev",
-  "explorerUrl": "https://sepolia.etherscan.io/address/0x3D96c59e1d88183834B7FDcF95b51749Eb7ab0B6",
-  "deployedAt": "2026-07-22T10:54:42.583Z"
+  "explorerUrl": "https://sepolia.etherscan.io/address/0x6e8df82d708196e75Fb735120B4817f5c2551015",
+  "deployedAt": "2026-07-22T13:37:41.852Z",
+  "feeds": {
+    "ethUsd": "0x694AA1769357215DE4FAC081bf1f309aDC325306"
+  },
+  "pools": {
+    "cUSDC_cETH": {
+      "id": "cUSDC/cETH",
+      "token0": "0x04Dc3bebDc4E1dfcB423bB7C38Ed280144B5D4a4",
+      "token1": "0x6932075FBfd847E453992A8A1EEefB6C6cb328fE",
+      "reserve0Handle": "0x0000aa36a723017af35c9219890ece5b41afe2e4e33b584dd688c18f9261e555",
+      "reserve1Handle": "0x0000aa36a72301bae04af1e09394294ed8e088722e73cea0c17eb0419f61c4b4",
+      "liquidityTransaction": "0xb50926c8d71c293e5f13b0f79c46d0f4260b5c4a4301c78fbb34eac96f6ae87b"
+    },
+    "cWBTC_cUSDC": {
+      "id": "cWBTC/cUSDC",
+      "token0": "0x1b8fa85acB318A8599EB2382638020b458028375",
+      "token1": "0x6932075FBfd847E453992A8A1EEefB6C6cb328fE",
+      "reserve0Handle": "0x0000aa36a72301a5128fa190a680b94831cb0f6046e67c5aad916653a15662de",
+      "reserve1Handle": "0x0000aa36a723018cea77e1494a062efe12922de175b500e70d22bbc529946811",
+      "liquidityTransaction": "0xdd08e2eff23401b32b682090162f84dff01e06b3639c37a2bf137d495c3c3c72"
+    },
+    "cSOL_cUSDC": {
+      "id": "cSOL/cUSDC",
+      "token0": "0x6932075FBfd847E453992A8A1EEefB6C6cb328fE",
+      "token1": "0xa7E60411AB2e8683572b260d545507B22bf28179",
+      "reserve0Handle": "0x0000aa36a723016c6973337f32f3aa57d6371aaf84bd543d18f5df29fdce134d",
+      "reserve1Handle": "0x0000aa36a723010138985b0379ee21d54a3fa912e14535b447a7f20d2c6713c5",
+      "liquidityTransaction": "0xa650ae996f1faa9c5d1449154a0c378d6f089f505ec5f53700f0a4f620351f5e"
+    }
+  },
+  "extendedFromRouter": "0x3D96c59e1d88183834B7FDcF95b51749Eb7ab0B6"
 }

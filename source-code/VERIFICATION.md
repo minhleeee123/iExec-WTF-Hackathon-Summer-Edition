@@ -8,8 +8,10 @@ Date: 2026-07-22
 |---|---|---|
 | Client input encryption | `@iexec-nox/handle.encryptInput` returns a 32-byte handle and 137-byte proof for the Sepolia router | PASS |
 | ERC-7984 balances | Official `ERC20ToERC7984Wrapper` from `@iexec-nox/nox-confidential-contracts` | PASS |
-| Confidential liquidity | Router accepts external handles/proofs and stores Nox reserve handles | PASS, tx `0xd89f67ed643bf04c14c7e2e8df552ecd816b7f626b6c0c0bcba5c32a3bed0e24` |
-| Confidential swap | Input is debited through `confidentialTransferFrom`; output uses the wrapper's actual transferred handle and encrypted pool liquidity | PASS, latest test tx `0x22181e310a90ae69a01cb3f63e1952cab87a7b30c97d4419143ee267e7f163d1` |
+| Confidential liquidity | Router stores Nox reserve handles for cUSDC/cETH, cWBTC/cUSDC, and cSOL/cUSDC | PASS, three initialized live pools |
+| Protected confidential swap | Input/minOut are encrypted; Router V2 settles output or selects a full encrypted refund | PASS, settle tx `0xb3e661...`; forced rejection/refund tx `0x8ca995...` |
+| Additional assets | nWBTC/cWBTC and nSOL/cSOL use deployed faucets, official wrappers, and encrypted liquidity | PASS, live swaps decrypted as `598.140365 cUSDC` and `149.547018 cUSDC` |
+| Confidential limit orders | Amount/minOut escrowed as handles; Chainlink trigger, permissionless execution, cancel, and expiry refund are on-chain | PASS, order #1 executed and order #2 cancelled with exact `2 cUSDC` refund |
 | Authorized decryption | Handle SDK decrypts output and balance handles after EIP-712 authorization | PASS |
 | Faucet and wrap | Faucet mints public test assets; wrapper escrows them and creates encrypted balances | PASS |
 | Unwrap | Encrypted request, public decryption proof, contract finalization, and underlying release | PASS, `0.01 nWETH` verified |
@@ -18,22 +20,21 @@ Date: 2026-07-22
 | Swap history | Frontend reads actual `SwapExecuted` logs from the router deployment block | PASS |
 | Proof inspector | Frontend displays actual tx hash, calldata, input/output handles, proof byte length, and block | PASS by build and source test |
 | Price reference | Sepolia Chainlink ETH/USD `latestRoundData` replaces the simulated AI price | PASS |
-| MCP tools | MCP v2 performs real SDK balance decrypt and exposes real swap/pool/ACL operations over stdio | PASS |
-| Responsive UI | Production build plus headless Chrome at `1440x1000` and `390x844` | PASS |
-| Public source verification | Sourcify API v2 Standard JSON verification | PASS, exact creation/runtime match for all five contracts |
+| MCP tools | MCP v3 exposes seven real protected-swap, decrypt, pool, ACL, and limit-order tools over stdio | PASS |
+| Responsive UI | Production build plus headless Chrome at `1440x1000` and `390x844`; validates landing/app separation, consolidated workflow tabs, desktop sidebar, mobile wallet drawer, and bottom navigation | PASS |
+| Public source verification | Sourcify API v2 Standard JSON verification | PASS, exact creation/runtime match for all ten project contracts |
 
-The final live E2E run decrypted `100 cUSDC` swap output as `0.049835078385310542 cETH`, verified the actual transferred output handle ACL, verified receipt ownership, granted a selective viewer, and released exactly `0.01 nWETH` during unwrap.
+The Router V2 live E2E run verified normal settlement, an intentionally impossible minOut with exact confidential refund, both new pools, order execution/cancellation, ACL sharing, receipt ownership, and release of exactly `0.01 nWETH` during unwrap.
 
-## Removed or Not Implemented
+## Remaining Unsupported Features
 
 | Previous claim | Current status | Reason |
 |---|---|---|
-| Confidential limit orders | Removed from UI and MCP | No on-chain order book, price trigger, keeper, or settlement path existed. Building one is a separate approved product feature, not a repair. |
-| cWBTC and cSOL | Removed from selectors and balances | The old addresses and balances were invalid placeholders. Only cUSDC/cETH have deployed wrappers and liquidity. |
 | AI price guard | Replaced with Chainlink reference price | No AI service, model, endpoint, or verifiable inference existed. |
-| Real-time Intel TDX terminal | Replaced with client transaction evidence log | The app has no official enclave telemetry or attestation API to support those state claims. |
-| Fixed MEV-savings calculator | Removed | The 2.4% number was an unsupported constant and could not be attributed to an observed trade. |
-| Zero-MEV guarantee | Not claimed | Private amounts reduce public information leakage, but the router has no encrypted `minOut`/deadline and cannot guarantee immunity from all price manipulation. |
+| Real-time Intel TDX terminal | Not implemented | The SDK verifies Gateway-signed responses but exposes no authoritative raw hardware telemetry API. |
+| Historical ACL revoke | Not implemented | Installed Nox SDK/contract interface exposes `addViewer` but no `removeViewer`; a new balance handle does not inherit the prior grant. |
+| Fixed MEV-savings calculator | Replaced | UI measures actual execution deviation against Chainlink only for supported ETH/USDC swaps. |
+| Zero-MEV guarantee | Not claimed | Encrypted amount/minOut and deadline reduce leakage and bound settlement, but cannot prove immunity from every MEV strategy. |
 | Permissionless LP lifecycle | Not implemented | Initial liquidity is real but deployer-funded; there are no LP shares or remove-liquidity operations. |
 | Local Nox integration test | Not available in this environment | The Nox Hardhat off-chain services require Docker, which is not installed. Live Sepolia E2E is used instead. |
 
@@ -41,15 +42,15 @@ The final live E2E run decrypted `100 cUSDC` swap output as `0.04983507838531054
 
 | Criterion | Current estimate | Assessment |
 |---|---:|---|
-| Creativity, 3 stars | 2.2-2.6 | Confidential AMM and selective disclosure are differentiated, but economic controls and LP lifecycle remain narrow. |
-| End-to-end accessible, 3 stars | 1.5-2.3 | Real Sepolia E2E is proven by tests; a public frontend URL and production MetaMask smoke test are still missing. |
-| ETH Sepolia deployment, 2 stars | 2.0 | Five live contracts, encrypted pool, transactions and exact Sourcify matches. |
+| Creativity, 3 stars | 2.6-2.9 | Confidential AMM, encrypted slippage protection, limit-order escrow, and selective disclosure are differentiated. |
+| End-to-end accessible, 3 stars | 2.0-2.5 | Real Sepolia E2E is proven; a public frontend URL and production MetaMask smoke test are still missing. |
+| ETH Sepolia deployment, 2 stars | 2.0 | Ten live contracts, three encrypted pools, order book, and exact Sourcify matches. |
 | `feedback.md`, 2 stars | 1.8-2.0 | Specific feedback based on actual ACL, indexing, Docker and version issues. |
 | Demo video, 2 stars | 0.0 | No final video exists yet. |
 | Technical implementation, 1 star | 0.8-1.0 | Nox is in the core arithmetic/transfer path, with SDK encryption/decryption and ACL. |
 | UX, 1 star | 0.7-0.9 | Responsive operational UI passes automated checks; wallet workflow still needs production manual smoke test. |
 
-Strict current estimate: **9.0-10.8 / 14**. After public deployment, manual wallet validation and a strong sub-four-minute video, a realistic target is **12.0-13.4 / 14**. The largest remaining scoring risk is accessibility, not the Nox contract integration.
+Strict current estimate: **9.8-11.3 / 14**. After public deployment, manual wallet validation and a strong sub-four-minute video, a realistic target is **12.4-13.6 / 14**. The largest remaining scoring risk is accessibility, not the Nox contract integration.
 
 ## Repeatable Commands
 

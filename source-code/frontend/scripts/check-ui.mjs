@@ -42,21 +42,68 @@ try {
       page.on('pageerror', (error) => errors.push(error.message));
       page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
       await page.goto(url, { waitUntil: 'networkidle' });
-      await page.locator('.protocol-visual dd').nth(2).waitFor();
+      await page.locator('.landing-terminal').waitFor();
       await page.screenshot({ path: `/tmp/noxswap-${viewport.name}.png`, fullPage: true });
       const layout = await page.evaluate(() => ({
         clientWidth: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth,
         title: document.querySelector('h1')?.textContent,
-        oracle: document.querySelectorAll('.protocol-visual dd')[2]?.textContent,
-        swapPanelVisible: Boolean(document.querySelector('#swap')),
+        oracle: document.querySelector('.landing-terminal div:last-child strong')?.textContent,
+        landingVisible: Boolean(document.querySelector('.landing-page')),
       }));
       assert.equal(errors.length, 0, `${viewport.name} runtime errors: ${errors.join('; ')}`);
       assert(layout.scrollWidth <= layout.clientWidth, `${viewport.name} has horizontal overflow`);
-      assert.equal(layout.title, 'Swap without publishing amounts.');
+      assert.equal(layout.title, 'NoxSwap');
+      assert.equal(await page.title(), 'NoxSwap | Confidential DeFi');
       assert.match(layout.oracle, /^\$[\d,.]+$/);
-      assert(layout.swapPanelVisible);
-      results.push({ viewport: `${viewport.width}x${viewport.height}`, ...layout, screenshot: `/tmp/noxswap-${viewport.name}.png` });
+      assert(layout.landingVisible);
+      assert.equal(await page.locator('.app-sidebar').count(), 0, 'landing must not render the application sidebar');
+      assert.equal(await page.locator('.mobile-bottom-nav').count(), 0, 'landing must not render application navigation');
+      assert.equal(await page.getByRole('button', { name: /connect wallet/i }).count(), 0, 'landing must not request a wallet connection');
+
+      await page.locator('.landing-hero .launch-button').click();
+      await page.waitForURL(`${url}/app/trade`);
+      await page.locator('.page-heading h1').filter({ hasText: 'Trade' }).waitFor();
+      assert.equal(await page.title(), 'Trade | NoxSwap');
+      const primaryNav = page.getByTestId(viewport.width <= 900 ? 'mobile-primary-nav' : 'desktop-primary-nav');
+      assert(await primaryNav.isVisible(), `${viewport.name} primary navigation is not visible`);
+      if (viewport.width > 900) {
+        assert(await page.locator('.app-sidebar .compact-wallet').isVisible(), 'desktop private wallet is not persistent');
+      } else {
+        await page.getByRole('button', { name: 'Open private wallet' }).click();
+        await page.locator('.mobile-wallet-drawer .compact-wallet').waitFor();
+        await page.getByRole('button', { name: 'Close private wallet' }).click();
+      }
+
+      await page.getByRole('tab', { name: 'Limit orders' }).click();
+      await page.waitForURL(`${url}/app/trade?mode=orders`);
+      await page.getByRole('heading', { name: 'Confidential limit order' }).waitFor();
+
+      await primaryNav.locator('a[href="/app/wallet"]').click();
+      await page.waitForURL(`${url}/app/wallet`);
+      await page.locator('.page-heading h1').filter({ hasText: 'Wallet' }).waitFor();
+      assert.equal(await page.title(), 'Wallet | NoxSwap');
+      await page.getByRole('tab', { name: 'Auditor access' }).click();
+      await page.waitForURL(`${url}/app/wallet?tab=access`);
+      await page.getByRole('heading', { name: 'Grant an auditor access' }).waitFor();
+
+      await primaryNav.locator('a[href="/app/activity"]').click();
+      await page.waitForURL(`${url}/app/activity`);
+      await page.locator('.page-heading h1').filter({ hasText: 'Activity' }).waitFor();
+      assert.equal(await page.title(), 'Activity | NoxSwap');
+      const appLayout = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      }));
+      assert(appLayout.scrollWidth <= appLayout.clientWidth, `${viewport.name} app has horizontal overflow`);
+      await page.screenshot({ path: `/tmp/noxswap-app-${viewport.name}.png`, fullPage: true });
+      results.push({
+        viewport: `${viewport.width}x${viewport.height}`,
+        ...layout,
+        appLayout,
+        landingScreenshot: `/tmp/noxswap-${viewport.name}.png`,
+        appScreenshot: `/tmp/noxswap-app-${viewport.name}.png`,
+      });
       await page.close();
     }
 
@@ -91,12 +138,16 @@ try {
         removeListener: (event, handler) => listeners.get(event)?.delete(handler),
       };
     }, { address: testAddress });
-    await walletPage.goto(url, { waitUntil: 'networkidle' });
-    await walletPage.locator('.wallet-button').filter({ hasText: '0xE412' }).waitFor();
+    await walletPage.goto(`${url}/app/wallet`, { waitUntil: 'networkidle' });
+    await walletPage.locator('.sidebar-account').filter({ hasText: '0xE412' }).waitFor();
     await walletPage.locator('.faucet-item .cooldown').first().waitFor();
-    assert.equal(await walletPage.locator('.faucet-item .cooldown').count(), 2, 'live faucet cooldowns are not visible');
-    await walletPage.locator('.faucet-item button').last().click();
-    await walletPage.getByText(/nWETH faucet is cooling down/).waitFor();
+    assert(await walletPage.locator('.faucet-item .cooldown').count() >= 2, 'live faucet cooldowns are not visible');
+    const cooldownRow = walletPage.locator('.faucet-item').filter({ has: walletPage.locator('.cooldown') }).first();
+    const cooldownSymbol = await cooldownRow.locator('span').textContent();
+    const cooldownButton = cooldownRow.getByRole('button');
+    await walletPage.waitForFunction((button) => !button.disabled, await cooldownButton.elementHandle());
+    await cooldownButton.click();
+    await walletPage.getByText(new RegExp(`${cooldownSymbol} faucet is cooling down`)).waitFor();
 
     const assetInput = walletPage.getByLabel('Asset amount');
     await assetInput.fill('999999999999999999999999');

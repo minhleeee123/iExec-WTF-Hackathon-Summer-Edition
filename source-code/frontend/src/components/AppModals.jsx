@@ -31,7 +31,11 @@ export default function AppModals({
               <div><dt>Router</dt><dd>{lastProof.contract}</dd></div>
               <div><dt>Input handle</dt><dd>{lastProof.inputHandle}</dd></div>
               <div><dt>Input proof</dt><dd>{lastProof.inputProofBytes} bytes</dd></div>
+              {lastProof.minOutHandle && <div><dt>MinOut handle</dt><dd>{lastProof.minOutHandle}</dd></div>}
+              {lastProof.minOutProofBytes !== undefined && <div><dt>MinOut proof</dt><dd>{lastProof.minOutProofBytes} bytes</dd></div>}
               <div><dt>Output handle</dt><dd>{lastProof.outputHandle}</dd></div>
+              {lastProof.refundHandle && <div><dt>Refund handle</dt><dd>{lastProof.refundHandle}</dd></div>}
+              {lastProof.deadline && <div><dt>Deadline</dt><dd>{new Date(lastProof.deadline * 1000).toLocaleString()}</dd></div>}
               <div><dt>Block</dt><dd>{lastProof.blockNumber}</dd></div>
               <div><dt>Calldata</dt><dd className="calldata">{lastProof.calldata}</dd></div>
             </dl>

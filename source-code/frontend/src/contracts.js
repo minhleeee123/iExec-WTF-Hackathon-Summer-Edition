@@ -22,12 +22,26 @@ export const CONFIDENTIAL_TOKEN_ABI = [
 ];
 
 export const NOX_SWAP_ABI = [
-  'function confidentialSwap(address tokenIn,address tokenOut,bytes32 encryptedAmountIn,bytes inputProof) returns (bytes32 encryptedAmountOut,uint256 receiptId)',
+  'function confidentialSwap(address tokenIn,address tokenOut,bytes32 encryptedAmountIn,bytes inputProof,bytes32 encryptedMinOut,bytes minOutProof,uint64 deadline) returns (bytes32 encryptedAmountOut,bytes32 encryptedRefund,uint256 receiptId)',
   'function getPoolHandles(address tokenA,address tokenB) view returns (address token0,address token1,bytes32 reserve0,bytes32 reserve1)',
   'function ownerOf(uint256 tokenId) view returns (address)',
   'function tokenURI(uint256 tokenId) view returns (string)',
-  'function swapReceipts(uint256 receiptId) view returns (address trader,address tokenIn,address tokenOut,bytes32 encryptedInput,bytes32 encryptedOutput,uint64 timestamp)',
-  'event SwapExecuted(address indexed trader,address indexed tokenIn,address indexed tokenOut,bytes32 encryptedInput,bytes32 encryptedOutput,uint256 receiptId)',
+  'function swapReceipts(uint256 receiptId) view returns (address trader,address tokenIn,address tokenOut,bytes32 encryptedInput,bytes32 encryptedOutput,bytes32 encryptedRefund,uint64 timestamp,uint64 deadline)',
+  'event SwapExecuted(address indexed trader,address indexed tokenIn,address indexed tokenOut,bytes32 encryptedInput,bytes32 encryptedOutput,bytes32 encryptedRefund,uint256 receiptId,uint64 deadline)',
+];
+
+export const LIMIT_ORDER_ABI = [
+  'function createOrder(address tokenIn,address tokenOut,bytes32 encryptedAmountIn,bytes amountProof,bytes32 encryptedMinOut,bytes minOutProof,uint256 triggerPrice,uint64 expiry) returns (uint256 orderId)',
+  'function executeOrder(uint256 orderId) returns (bytes32 encryptedOutput,bytes32 encryptedRefund,uint256 receiptId)',
+  'function cancelOrder(uint256 orderId) returns (bytes32 encryptedRefund)',
+  'function expireOrder(uint256 orderId) returns (bytes32 encryptedRefund)',
+  'function canExecute(uint256 orderId) view returns (bool executable,uint256 currentPrice)',
+  'function getOrder(uint256 orderId) view returns (address owner,address tokenIn,address tokenOut,bytes32 encryptedAmountIn,bytes32 encryptedMinOut,uint256 triggerPrice,uint64 expiry,uint8 status)',
+  'function priceDecimals() view returns (uint8)',
+  'event OrderCreated(uint256 indexed orderId,address indexed owner,address indexed tokenIn,address tokenOut,bytes32 encryptedAmountIn,bytes32 encryptedMinOut,uint256 triggerPrice,uint64 expiry)',
+  'event OrderExecuted(uint256 indexed orderId,address indexed executor,bytes32 encryptedOutput,bytes32 encryptedRefund,uint256 receiptId)',
+  'event OrderCancelled(uint256 indexed orderId,bytes32 encryptedRefund)',
+  'event OrderExpired(uint256 indexed orderId,bytes32 encryptedRefund)',
 ];
 
 export const CHAINLINK_FEED_ABI = [

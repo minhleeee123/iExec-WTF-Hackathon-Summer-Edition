@@ -20,6 +20,27 @@ export const TOKENS = {
     wrapper: deployment.contracts.cETH,
     underlying: deployment.contracts.underlyingWETH,
   },
+  cWBTC: {
+    symbol: 'cWBTC',
+    publicSymbol: 'nWBTC',
+    decimals: 8,
+    wrapper: deployment.contracts.cWBTC,
+    underlying: deployment.contracts.underlyingWBTC,
+  },
+  cSOL: {
+    symbol: 'cSOL',
+    publicSymbol: 'nSOL',
+    decimals: 9,
+    wrapper: deployment.contracts.cSOL,
+    underlying: deployment.contracts.underlyingSOL,
+  },
+};
+
+export const OUTPUT_TOKENS = {
+  cUSDC: ['cETH', 'cWBTC', 'cSOL'],
+  cETH: ['cUSDC'],
+  cWBTC: ['cUSDC'],
+  cSOL: ['cUSDC'],
 };
 
 export const createInitialBalances = () => Object.fromEntries(

@@ -13,7 +13,12 @@ const targets = [
   ['NoxTestToken', deployment.contracts.underlyingWETH, deployment.deploymentTransactions.underlyingWETH],
   ['NoxConfidentialToken', deployment.contracts.cUSDC, deployment.deploymentTransactions.cUSDC],
   ['NoxConfidentialToken', deployment.contracts.cETH, deployment.deploymentTransactions.cETH],
+  ['NoxTestToken', deployment.contracts.underlyingWBTC, deployment.deploymentTransactions.underlyingWBTC],
+  ['NoxTestToken', deployment.contracts.underlyingSOL, deployment.deploymentTransactions.underlyingSOL],
+  ['NoxConfidentialToken', deployment.contracts.cWBTC, deployment.deploymentTransactions.cWBTC],
+  ['NoxConfidentialToken', deployment.contracts.cSOL, deployment.deploymentTransactions.cSOL],
   ['NoxSwap', deployment.contracts.noxSwapRouter, deployment.deploymentTransactions.noxSwapRouter],
+  ['NoxLimitOrderBook', deployment.contracts.limitOrderBook, deployment.deploymentTransactions.limitOrderBook],
 ];
 
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));

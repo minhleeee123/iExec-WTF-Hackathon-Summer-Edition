@@ -19,3 +19,15 @@ export function validateTokenAmount(value, decimals, available) {
   if (amount > available) return { amount, error: 'Amount exceeds your available balance.' };
   return { amount, error: '' };
 }
+
+export function validateNonNegativeAmount(value, decimals) {
+  const normalized = value.trim();
+  if (!normalized) return { amount: null, error: 'Enter a minimum output.' };
+  try {
+    const amount = ethers.parseUnits(normalized, decimals);
+    if (amount < 0n) return { amount, error: 'Minimum output cannot be negative.' };
+    return { amount, error: '' };
+  } catch {
+    return { amount: null, error: `Enter a valid amount with at most ${decimals} decimal places.` };
+  }
+}

@@ -7,10 +7,10 @@
 
 - Giai đoạn hiện tại: Phase 6 — Development validation and public deployment
 - Trạng thái: In progress
-- Bước tiếp theo: Deploy frontend công khai và smoke-test MetaMask trên URL production trước khi quay video.
+- Bước tiếp theo: Deploy frontend Router V2 công khai và smoke-test MetaMask trên URL production trước khi quay video.
 - Blocker hiện tại: Local Nox off-chain test stack cần Docker nhưng môi trường hiện tại không có Docker; sử dụng compile/unit tests và live Sepolia verification làm acceptance evidence.
 - Đang chờ phê duyệt từ: Không.
-- Cập nhật lần cuối: 2026-07-22T18:01:06+07:00
+- Cập nhật lần cuối: 2026-07-22T22:00:40+07:00
 
 Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for approval`, `Blocked`, `Completed`, `Skipped`.
 
@@ -76,7 +76,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 - [x] Ý tưởng cuối cùng đã được người dùng chọn.
 - [x] Product Plan đã được phê duyệt.
 - [x] Build Plan đã được phê duyệt.
-- [ ] Core Product Ready Gate đã đạt lại sau remediation.
+- [x] Core Product Ready Gate đã đạt lại sau remediation và approved feature extension.
 - [x] Landing page phản ánh đúng sản phẩm thật và CTA hoạt động.
 - [x] Smart Contracts Nox/ERC-7984 thật được redeploy và kiểm thử trên Ethereum Sepolia Testnet.
 - [x] Đã tạo file README.md chính thức và feedback.md ở root repository.

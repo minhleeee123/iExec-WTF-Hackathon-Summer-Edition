@@ -1,6 +1,6 @@
 # NoxSwap Frontend
 
-React/Vite client for the live NoxSwap deployment on Ethereum Sepolia.
+React/Vite client for the live NoxSwap Router V2 and confidential limit-order deployment on Ethereum Sepolia.
 
 ## Commands
 
@@ -17,7 +17,8 @@ npm run build
 
 ## Source layout
 
-- `src/App.jsx`: application state and wallet transaction orchestration.
+- `src/App.jsx`: route-safe application state and wallet transaction orchestration.
+- `src/pages/`: lazy-loaded workflow pages and the public landing page.
 - `src/components/`: UI grouped by product workflow.
 - `src/config.js`: deployed token configuration and initial state factories.
 - `src/contracts.js`: minimal contract ABIs used by the client.
@@ -26,6 +27,32 @@ npm run build
 - `src/lib/format.js`: handle, token, receipt, and duration formatting.
 - `src/lib/validation.js`: shared amount and faucet cooldown validation.
 - `src/deployment.json`: canonical Sepolia addresses synchronized from the backend deployment.
+
+## Routes
+
+- `/`: standalone product landing page and live deployment evidence. The wallet and
+  application navigation are intentionally hidden until the user launches the app.
+- `/app/trade`: protected swaps and confidential limit orders, selected with a
+  URL-backed workflow tab.
+- `/app/wallet`: test faucets, wrap/unwrap, and auditor access grants.
+- `/app/activity`: wallet history, execution logs, proofs, and receipt evidence.
+
+Wallet, network, reveal, and transaction state live above the router, so navigating
+between workflows does not reset the connected session. On desktop, account, gas,
+refresh, and private-balance reveal controls remain in the application sidebar. On
+mobile they are available in the wallet drawer, while the three primary workflows
+use bottom navigation. Legacy URLs redirect to the consolidated routes.
+
+`vercel.json` provides the SPA fallback required when a route is opened directly on
+Vercel.
+
+## Live workflows
+
+- Protected encrypted swaps with encrypted `minOut`, deadline, output, and refund handles.
+- Three live pools: cUSDC/cETH, cWBTC/cUSDC, and cSOL/cUSDC.
+- Chainlink-triggered confidential cUSDC/cETH limit-order create, execute, cancel, and expiry refund.
+- Four faucet/wrap/unwrap asset flows with balance-aware validation.
+- Gateway signature evidence after authorized SDK decryption and measured ETH/USDC execution deviation.
 
 ## Private balances
 

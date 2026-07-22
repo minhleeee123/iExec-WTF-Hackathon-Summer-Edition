@@ -11,6 +11,7 @@ export default function AssetOperations({
   busy,
   chainNow,
   connected,
+  embedded = false,
   faucets,
   onAmountChange,
   onAssetChange,
@@ -31,8 +32,8 @@ export default function AssetOperations({
       : 'Private balance hidden';
 
   return (
-    <section id="assets" className="section-band">
-      <div className="section-title"><div><p className="eyebrow">ASSET OPERATIONS</p><h2>Fund, wrap, and unwrap</h2></div><p>Test faucets enforce a one-hour cooldown. Wrapping is 1:1; unwrapping finalizes with a Nox public decryption proof.</p></div>
+    <section id="assets" className={`section-band${embedded ? ' embedded-workflow' : ''}`}>
+      <div className={embedded ? 'embedded-intro' : 'section-title'}><div><p className="eyebrow">ASSET OPERATIONS</p><h2>Fund, wrap, and unwrap</h2></div><p>Test faucets enforce a one-hour cooldown. Wrapping is 1:1; unwrapping finalizes with a Nox public decryption proof.</p></div>
       <div className="asset-layout">
         <div className="faucet-list">
           {Object.values(tokens).map((item) => {
@@ -70,8 +71,11 @@ export default function AssetOperations({
           <div className="inline-fields">
             <input value={assetAmount} onChange={(event) => onAmountChange(event.target.value)} inputMode="decimal" aria-label="Asset amount" />
             <select value={asset} onChange={(event) => onAssetChange(event.target.value)} aria-label="Asset">
-              <option value="cUSDC">{assetMode === 'wrap' ? 'nUSDC' : 'cUSDC'}</option>
-              <option value="cETH">{assetMode === 'wrap' ? 'nWETH' : 'cETH'}</option>
+              {Object.values(tokens).map((item) => (
+                <option value={item.symbol} key={item.symbol}>
+                  {assetMode === 'wrap' ? item.publicSymbol : item.symbol}
+                </option>
+              ))}
             </select>
           </div>
           {connected && validation.error && <p className="field-error" role="alert">{validation.error}</p>}

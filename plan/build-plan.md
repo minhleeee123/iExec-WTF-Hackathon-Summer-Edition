@@ -1,6 +1,6 @@
 # Build Plan
 
-> Trạng thái: Approved; remediation implementation complete, public frontend deployment pending.
+> Trạng thái: Approved; extended real-feature implementation complete, public frontend deployment pending.
 
 ## 1. Preconditions
 
@@ -11,7 +11,7 @@
 
 ## 2. Product profile
 
-- Client: React 19 + Vite + responsive CSS.
+- Client: React 19 + Vite + React Router + responsive CSS.
 - Wallet/RPC: Ethers v6 `BrowserProvider`, MetaMask và Ethereum Sepolia.
 - Core flow: Connect -> Faucet -> Wrap -> SDK encrypt -> Confidential swap -> SDK decrypt -> Receipt/history.
 - Supporting real flows: Unwrap với public decryption proof, ACL viewer, Chainlink reference price, MCP stdio.
@@ -22,14 +22,14 @@
 
 | Layer | Technology | Vai trò |
 |---|---|---|
-| Web client | React 19, Vite 5, Vanilla CSS | Operational swap UI và responsive layout |
+| Web client | React 19, Vite 8, Vanilla CSS | Operational swap UI và responsive layout |
 | Wallet/contracts | Ethers 6 | EIP-1193 wallet, contract reads/writes và event parsing |
 | Client Nox SDK | `@iexec-nox/handle@0.1.0-beta.13` | `encryptInput`, `decrypt`, `publicDecrypt`, `viewACL` |
 | Confidential contracts | `@iexec-nox/nox-confidential-contracts@0.2.2` | Official ERC-7984 wrapper |
 | Nox Solidity SDK | `@iexec-nox/nox-protocol-contracts@0.2.4` | Encrypted types, ACL và arithmetic primitives |
 | Contract tooling | Hardhat 3, Solidity 0.8.35, Node 24 | Compile và artifacts |
 | Oracle | Chainlink ETH/USD Sepolia feed | UI reference price, không quyết định settlement |
-| Agent integration | MCP SDK stdio server | Real swap/decrypt/pool/ACL tools |
+| Agent integration | MCP SDK stdio server | Real protected swap/decrypt/pool/ACL/limit-order tools |
 
 Không có database hoặc authentication server. MCP là một optional local agent adapter và chỉ ký bằng `PRIVATE_KEY` từ environment.
 
@@ -37,6 +37,8 @@ Không có database hoặc authentication server. MCP là một optional local a
 
 ```text
 [React / MetaMask]
+  |-- standalone landing --> Launch App --> Trade / Wallet / Activity shell
+  |-- shared wallet state --> desktop sidebar / mobile wallet drawer
   |-- read --> Sepolia router, wrappers, events, Chainlink
   |-- encryptInput(value, uint256, target) --> Nox Handle Gateway
   |-- handle + proof --> NoxSwap / ERC-7984 wrapper
@@ -90,6 +92,8 @@ Failure handling:
 - [x] Remove fake limit orders, assets, AI price and TEE telemetry.
 - [x] Replace MCP mock responses with real tools.
 - [x] Build, lint and responsive headless-browser checks.
+- [x] Separate landing from the app shell; consolidate workflows into Trade, Wallet, and Activity.
+- [x] Keep account, gas, refresh, and private-balance reveal globally available across app workflows.
 - [ ] Manual MetaMask smoke test in the final public-hosted URL.
 
 ### Milestone 5: Submission
@@ -100,17 +104,27 @@ Failure handling:
 - [ ] Record/publish demo video no longer than four minutes.
 - [ ] Publish X post and complete final submission review.
 
+### Milestone 6: Approved feature extension
+
+- [x] Add encrypted min-out and deadline settlement with encrypted refund on rejection.
+- [x] Deploy nWBTC/cWBTC and nSOL/cSOL plus real encrypted pools.
+- [x] Add a Chainlink-triggered confidential limit-order contract and client flow.
+- [x] Surface SDK-verified gateway response evidence and measured execution comparison.
+- [x] Keep historical ACL revoke, raw Intel TDX telemetry, and unverifiable AI output out because the installed protocol exposes no authoritative APIs for them.
+
 ## 6. Verification matrix
 
 | Flow | Test | Evidence | Status |
 |---|---|---|---|
-| Compile/ABI/security regression | `npm run compile && npm test` | 5 passing Node tests | Pass |
-| Live confidential swap | `npm run test:sepolia` | Tx `0x2218...63d1`, decrypted output and receipt `#2` | Pass |
+| Compile/ABI/security regression | `npm run compile && npm test` | 6 passing Node tests | Pass |
+| Live Router V2 protections | `npm run test:sepolia` | Normal output plus forced minOut rejection with exact confidential refund | Pass |
+| New pools | Same live E2E | cWBTC and cSOL swaps decrypt to real cUSDC output | Pass |
+| Confidential limit order | Same live E2E | Order execution and exact cancellation refund | Pass |
 | ACL viewer | Same live E2E | ACL subgraph contains granted viewer | Pass |
 | Unwrap | Same live E2E | Exactly `0.01 nWETH` released after proof finalization | Pass |
-| MCP protocol | `npm run test:mcp` | Tool discovery, live pool handles and balance decrypt | Pass |
+| MCP protocol | `npm run test:mcp` | Seven tools, three live pools, order read, balance decrypt | Pass |
 | Frontend static quality | `npm run build && npm run lint` | Production build and zero lint errors | Pass |
-| Responsive layout | Headless Chrome 1440x1000 and 390x844 | No observed horizontal overflow/overlap | Pass |
+| Responsive layout | Headless Chrome 1440x1000 and 390x844 | Landing/app separation, desktop sidebar, mobile drawer/bottom nav, no horizontal overflow | Pass |
 | Public dApp accessibility | Manual external URL test | URL not yet recorded | Pending |
 | MetaMask UI happy path | Manual browser wallet test | Requires extension/user confirmation | Pending |
 
@@ -119,7 +133,6 @@ Failure handling:
 | Risk | Impact | Mitigation |
 |---|---|---|
 | No external smart-contract audit | High for any non-testnet use | Keep testnet-only messaging; do not handle valuable assets |
-| Router chưa có encrypted `minOut`/deadline | High for economic safety | Không tuyên bố zero-MEV; bổ sung slippage constraint trước mọi use ngoài demo |
 | Chưa có LP shares/remove-liquidity | Medium for completeness | Giữ scope là test pool do deployer cấp vốn; không quảng bá permissionless LP product |
 | Public RPC rate limits/timeouts | Medium | Allow configurable RPC and use static network configuration |
 | Nox subgraph indexing delay | Medium | Bounded retries and explicit waiting status |
@@ -128,4 +141,4 @@ Failure handling:
 
 ## 8. Scope decisions
 
-Not implemented in remediation: encrypted `minOut`/deadline, LP shares/removal, limit-order keeper, cWBTC/cSOL pools, AI model, hardware-attestation UI, and fixed MEV-savings claims. These are documented in `source-code/VERIFICATION.md`.
+The user approved a new extension after remediation. Encrypted `minOut`/deadline, limit orders, and cWBTC/cSOL pools are now active build scope. LP shares/removal, a verifiable AI model, raw hardware telemetry, and fixed MEV-savings claims remain outside implementation until their trust and data dependencies are satisfied.

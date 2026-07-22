@@ -22,17 +22,30 @@ try {
   const names = listed.tools.map((tool) => tool.name);
   assert.deepEqual(names.sort(), [
     'nox_confidential_swap',
+    'nox_create_limit_order',
     'nox_decrypt_balance',
+    'nox_get_limit_order',
     'nox_get_pool_handles',
+    'nox_manage_limit_order',
     'nox_view_acl',
   ]);
-  assert(!names.includes('nox_create_limit_order'), 'Fake limit-order tool must not be exposed');
 
-  const poolResponse = await client.callTool({ name: 'nox_get_pool_handles', arguments: {} });
-  assert(!poolResponse.isError, 'Pool tool must succeed');
-  const pool = JSON.parse(poolResponse.content[0].text);
-  assert.match(pool.reserve0Handle, /^0x[0-9a-f]{64}$/i);
-  assert.match(pool.reserve1Handle, /^0x[0-9a-f]{64}$/i);
+  const pools = [];
+  for (const poolName of ['cUSDC/cETH', 'cWBTC/cUSDC', 'cSOL/cUSDC']) {
+    const poolResponse = await client.callTool({ name: 'nox_get_pool_handles', arguments: { pool: poolName } });
+    assert(!poolResponse.isError, `${poolName} pool tool must succeed`);
+    const pool = JSON.parse(poolResponse.content[0].text);
+    assert.match(pool.reserve0Handle, /^0x[0-9a-f]{64}$/i);
+    assert.match(pool.reserve1Handle, /^0x[0-9a-f]{64}$/i);
+    pools.push(pool);
+  }
+
+  const orderResponse = await client.callTool({ name: 'nox_get_limit_order', arguments: { orderId: 1 } });
+  assert(!orderResponse.isError, orderResponse.content[0].text);
+  const order = JSON.parse(orderResponse.content[0].text);
+  assert.equal(order.orderId, 1);
+  assert.match(order.encryptedAmountHandle, /^0x[0-9a-f]{64}$/i);
+  assert(['OPEN', 'EXECUTED', 'CANCELLED', 'EXPIRED'].includes(order.status));
 
   const signerAddress = new Wallet(process.env.PRIVATE_KEY).address;
   const balanceResponse = await client.callTool({
@@ -47,7 +60,8 @@ try {
   console.log(JSON.stringify({
     status: 'PASS',
     tools: names,
-    poolReserveHandles: [pool.reserve0Handle, pool.reserve1Handle],
+    pools: pools.map((pool) => ({ pool: pool.pool, reserveHandles: [pool.reserve0Handle, pool.reserve1Handle] })),
+    limitOrder: { orderId: order.orderId, status: order.status },
     decryptedBalance: `${balance.balance} ${balance.tokenSymbol}`,
   }, null, 2));
 } finally {

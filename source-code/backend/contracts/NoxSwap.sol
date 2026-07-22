@@ -4,6 +4,7 @@ pragma solidity ^0.8.35;
 import {IERC7984} from "@iexec-nox/nox-confidential-contracts/contracts/interfaces/IERC7984.sol";
 import {
     Nox,
+    ebool,
     euint256,
     externalEuint256
 } from "@iexec-nox/nox-protocol-contracts/contracts/sdk/Nox.sol";
@@ -13,7 +14,7 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title NoxSwap
-/// @notice Constant-product AMM whose amounts and reserves are Nox encrypted handles.
+/// @notice Multi-pool AMM with encrypted amounts, reserves, slippage checks, and refunds.
 contract NoxSwap is ERC721, Ownable {
     using Strings for uint256;
 
@@ -34,7 +35,9 @@ contract NoxSwap is ERC721, Ownable {
         address tokenOut;
         bytes32 encryptedInput;
         bytes32 encryptedOutput;
+        bytes32 encryptedRefund;
         uint64 timestamp;
+        uint64 deadline;
     }
 
     mapping(bytes32 poolId => Pool) private _pools;
@@ -55,7 +58,9 @@ contract NoxSwap is ERC721, Ownable {
         address indexed tokenOut,
         euint256 encryptedInput,
         euint256 encryptedOutput,
-        uint256 receiptId
+        euint256 encryptedRefund,
+        uint256 receiptId,
+        uint64 deadline
     );
 
     constructor() ERC721("NoxSwap Confidential Receipt", "NOX-R") Ownable(msg.sender) {}
@@ -94,7 +99,6 @@ contract NoxSwap is ERC721, Ownable {
 
         euint256 requestedA = Nox.fromExternal(encryptedAmountA, proofA);
         euint256 requestedB = Nox.fromExternal(encryptedAmountB, proofB);
-
         Nox.allowTransient(requestedA, tokenA);
         Nox.allowTransient(requestedB, tokenB);
         euint256 receivedA = IERC7984(tokenA).confidentialTransferFrom(
@@ -112,7 +116,6 @@ contract NoxSwap is ERC721, Ownable {
         bool ordered = tokenA < tokenB;
         euint256 amount0 = ordered ? receivedA : receivedB;
         euint256 amount1 = ordered ? receivedB : receivedA;
-
         if (!pool.exists) {
             pool.token0 = IERC7984(ordered ? tokenA : tokenB);
             pool.token1 = IERC7984(ordered ? tokenB : tokenA);
@@ -139,16 +142,74 @@ contract NoxSwap is ERC721, Ownable {
         address tokenIn,
         address tokenOut,
         externalEuint256 encryptedAmountIn,
-        bytes calldata inputProof
-    ) external returns (euint256 encryptedAmountOut, uint256 receiptId) {
-        bytes32 poolId = getPoolId(tokenIn, tokenOut);
-        Pool storage pool = _pools[poolId];
+        bytes calldata inputProof,
+        externalEuint256 encryptedMinOut,
+        bytes calldata minOutProof,
+        uint64 deadline
+    ) external returns (euint256 encryptedAmountOut, euint256 encryptedRefund, uint256 receiptId) {
+        euint256 requestedAmountIn = Nox.fromExternal(encryptedAmountIn, inputProof);
+        euint256 minimumAmountOut = Nox.fromExternal(encryptedMinOut, minOutProof);
+        return _settleSwap(
+            msg.sender,
+            msg.sender,
+            msg.sender,
+            msg.sender,
+            tokenIn,
+            tokenOut,
+            requestedAmountIn,
+            minimumAmountOut,
+            deadline
+        );
+    }
+
+    /// @notice Composable settlement for contracts that own and authorize persistent Nox handles.
+    function confidentialSwapAuthorized(
+        address tokenIn,
+        address tokenOut,
+        euint256 encryptedAmountIn,
+        euint256 encryptedMinOut,
+        address recipient,
+        address refundRecipient,
+        address receiptOwner,
+        uint64 deadline
+    ) external returns (euint256 encryptedAmountOut, euint256 encryptedRefund, uint256 receiptId) {
+        require(Nox.isAllowed(encryptedAmountIn, address(this)), "NoxSwap: input not authorized");
+        require(Nox.isAllowed(encryptedMinOut, address(this)), "NoxSwap: minOut not authorized");
+        return _settleSwap(
+            msg.sender,
+            recipient,
+            refundRecipient,
+            receiptOwner,
+            tokenIn,
+            tokenOut,
+            encryptedAmountIn,
+            encryptedMinOut,
+            deadline
+        );
+    }
+
+    function _settleSwap(
+        address payer,
+        address recipient,
+        address refundRecipient,
+        address receiptOwner,
+        address tokenIn,
+        address tokenOut,
+        euint256 requestedAmountIn,
+        euint256 minimumAmountOut,
+        uint64 deadline
+    ) private returns (euint256 encryptedAmountOut, euint256 encryptedRefund, uint256 receiptId) {
+        require(block.timestamp <= deadline, "NoxSwap: expired");
+        require(
+            recipient != address(0) && refundRecipient != address(0) && receiptOwner != address(0),
+            "NoxSwap: invalid recipient"
+        );
+        Pool storage pool = _pools[getPoolId(tokenIn, tokenOut)];
         require(pool.exists, "NoxSwap: pool not found");
 
-        euint256 requestedAmountIn = Nox.fromExternal(encryptedAmountIn, inputProof);
         Nox.allowTransient(requestedAmountIn, tokenIn);
         euint256 receivedAmountIn = IERC7984(tokenIn).confidentialTransferFrom(
-            msg.sender,
+            payer,
             address(this),
             requestedAmountIn
         );
@@ -156,7 +217,6 @@ contract NoxSwap is ERC721, Ownable {
         bool zeroForOne = tokenIn == address(pool.token0);
         euint256 reserveIn = zeroForOne ? pool.reserve0 : pool.reserve1;
         euint256 reserveOut = zeroForOne ? pool.reserve1 : pool.reserve0;
-
         euint256 feeAdjusted = Nox.div(
             Nox.mul(receivedAmountIn, Nox.toEuint256(FEE_NUMERATOR)),
             Nox.toEuint256(FEE_DENOMINATOR)
@@ -166,41 +226,51 @@ contract NoxSwap is ERC721, Ownable {
             Nox.add(reserveIn, feeAdjusted)
         );
 
-        Nox.allowTransient(quotedAmountOut, tokenOut);
-        encryptedAmountOut = IERC7984(tokenOut).confidentialTransfer(
-            msg.sender,
-            quotedAmountOut
+        ebool meetsMinimum = Nox.ge(quotedAmountOut, minimumAmountOut);
+        euint256 zero = Nox.toEuint256(0);
+        euint256 selectedOutput = Nox.select(meetsMinimum, quotedAmountOut, zero);
+        euint256 selectedRefund = Nox.select(meetsMinimum, zero, receivedAmountIn);
+
+        Nox.allowTransient(selectedOutput, tokenOut);
+        encryptedAmountOut = IERC7984(tokenOut).confidentialTransfer(recipient, selectedOutput);
+        Nox.allowTransient(selectedRefund, tokenIn);
+        encryptedRefund = IERC7984(tokenIn).confidentialTransfer(
+            refundRecipient,
+            selectedRefund
         );
+        euint256 acceptedAmountIn = Nox.sub(receivedAmountIn, encryptedRefund);
 
         if (zeroForOne) {
-            pool.reserve0 = Nox.add(pool.reserve0, receivedAmountIn);
+            pool.reserve0 = Nox.add(pool.reserve0, acceptedAmountIn);
             pool.reserve1 = Nox.sub(pool.reserve1, encryptedAmountOut);
         } else {
-            pool.reserve1 = Nox.add(pool.reserve1, receivedAmountIn);
+            pool.reserve1 = Nox.add(pool.reserve1, acceptedAmountIn);
             pool.reserve0 = Nox.sub(pool.reserve0, encryptedAmountOut);
         }
         _persistPool(pool);
+        Nox.allow(receivedAmountIn, receiptOwner);
 
         receiptId = nextReceiptId++;
-        bytes32 inputHandle = euint256.unwrap(receivedAmountIn);
-        bytes32 outputHandle = euint256.unwrap(encryptedAmountOut);
         swapReceipts[receiptId] = SwapReceipt({
-            trader: msg.sender,
+            trader: receiptOwner,
             tokenIn: tokenIn,
             tokenOut: tokenOut,
-            encryptedInput: inputHandle,
-            encryptedOutput: outputHandle,
-            timestamp: uint64(block.timestamp)
+            encryptedInput: euint256.unwrap(receivedAmountIn),
+            encryptedOutput: euint256.unwrap(encryptedAmountOut),
+            encryptedRefund: euint256.unwrap(encryptedRefund),
+            timestamp: uint64(block.timestamp),
+            deadline: deadline
         });
-        _safeMint(msg.sender, receiptId);
-
+        _safeMint(receiptOwner, receiptId);
         emit SwapExecuted(
-            msg.sender,
+            receiptOwner,
             tokenIn,
             tokenOut,
             receivedAmountIn,
             encryptedAmountOut,
-            receiptId
+            encryptedRefund,
+            receiptId,
+            deadline
         );
     }
 
@@ -212,17 +282,17 @@ contract NoxSwap is ERC721, Ownable {
             '<rect width="640" height="360" fill="#111"/><rect x="24" y="24" width="592" height="312" rx="8" fill="#ffde59" stroke="#fff" stroke-width="3"/>',
             '<text x="52" y="82" font-family="monospace" font-size="30" font-weight="700">NoxSwap Receipt #',
             tokenId.toString(),
-            '</text><text x="52" y="132" font-family="monospace" font-size="18">Ethereum Sepolia</text>',
-            '<text x="52" y="184" font-family="monospace" font-size="15">Input handle: ',
-            Strings.toHexString(uint256(receipt.encryptedInput), 32),
-            '</text><text x="52" y="226" font-family="monospace" font-size="15">Output handle: ',
+            '</text><text x="52" y="132" font-family="monospace" font-size="18">Protected confidential settlement</text>',
+            '<text x="52" y="184" font-family="monospace" font-size="15">Output: ',
             Strings.toHexString(uint256(receipt.encryptedOutput), 32),
+            '</text><text x="52" y="226" font-family="monospace" font-size="15">Refund: ',
+            Strings.toHexString(uint256(receipt.encryptedRefund), 32),
             '</text><text x="52" y="292" font-family="monospace" font-size="16">Powered by iExec Nox</text></svg>'
         );
         string memory json = string.concat(
             '{"name":"NoxSwap Confidential Receipt #',
             tokenId.toString(),
-            '","description":"On-chain receipt for a confidential NoxSwap settlement.","image":"data:image/svg+xml;base64,',
+            '","description":"On-chain receipt for an encrypted minimum-output settlement.","image":"data:image/svg+xml;base64,',
             Base64.encode(bytes(svg)),
             '"}'
         );

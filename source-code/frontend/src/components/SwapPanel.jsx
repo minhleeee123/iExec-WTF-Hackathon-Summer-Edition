@@ -7,29 +7,37 @@ export default function SwapPanel({
   balance,
   busy,
   connected,
+  deadlineMinutes,
+  error,
+  minOut,
   onAmountChange,
   onConnect,
+  onDeadlineChange,
   onMax,
+  onMinOutChange,
   onRefresh,
   onReveal,
   onSwap,
   onTokenChange,
+  onTokenOutChange,
+  outputOptions,
   priceUpdatedAt,
   privateBalancesVisible,
   referenceOutput,
   token,
   tokenIn,
   tokenOut,
-  validation,
+  tokens,
 }) {
   const available = privateBalancesVisible && balance.decrypted !== null
     ? `${formatToken(balance.decrypted, token.decimals)} ${token.symbol}`
     : 'Private balance hidden';
+  const hasOracleReference = referenceOutput !== '--';
 
   return (
     <div className="swap-panel">
       <div className="section-heading">
-        <div><p className="eyebrow">LIVE CONTRACT</p><h2>Confidential swap</h2></div>
+        <div><p className="eyebrow">LIVE ROUTER V2</p><h2>Protected confidential swap</h2></div>
         <button className="icon-button" onClick={onRefresh} disabled={busy === 'refresh'} aria-label="Refresh chain data" title="Refresh chain data">
           <RefreshCw className={busy === 'refresh' ? 'spin' : ''} size={18} />
         </button>
@@ -48,25 +56,44 @@ export default function SwapPanel({
         <div className="amount-row">
           <input value={amountIn} onChange={(event) => onAmountChange(event.target.value)} inputMode="decimal" aria-label="Swap amount" />
           <select value={tokenIn} onChange={(event) => onTokenChange(event.target.value)} aria-label="Input token">
-            <option value="cUSDC">cUSDC</option><option value="cETH">cETH</option>
+            {Object.values(tokens).map((item) => <option value={item.symbol} key={item.symbol}>{item.symbol}</option>)}
           </select>
         </div>
       </div>
       <div className="direction"><ArrowDown size={18} /></div>
       <div className="amount-box output">
-        <div className="amount-meta"><span>Reference output</span><span>Chainlink price, 0.30% fee</span></div>
-        <div className="amount-row"><strong>{referenceOutput}</strong><span className="token-pill">{tokenOut}</span></div>
+        <div className="amount-meta">
+          <span>Oracle reference output</span>
+          <span>{hasOracleReference ? 'Chainlink ETH/USD, 0.30% fee' : 'No public oracle for this test pair'}</span>
+        </div>
+        <div className="amount-row">
+          <strong>{referenceOutput}</strong>
+          <select value={tokenOut} onChange={(event) => onTokenOutChange(event.target.value)} aria-label="Output token">
+            {outputOptions.map((symbol) => <option value={symbol} key={symbol}>{symbol}</option>)}
+          </select>
+        </div>
       </div>
-      <p className="field-note">The reference is public UI guidance. The contract computes the final amount from encrypted pool reserves.</p>
-      {connected && validation.error && <p className="field-error" role="alert">{validation.error}</p>}
 
-      <button className="primary-action" onClick={connected ? onSwap : onConnect} disabled={Boolean(busy) || (connected && Boolean(validation.error))}>
+      <div className="protection-grid">
+        <label>
+          <span>Encrypted minimum received</span>
+          <span className="protected-input"><input value={minOut} onChange={(event) => onMinOutChange(event.target.value)} inputMode="decimal" aria-label="Minimum output" /><strong>{tokenOut}</strong></span>
+        </label>
+        <label>
+          <span>Deadline</span>
+          <span className="protected-input"><input value={deadlineMinutes} onChange={(event) => onDeadlineChange(event.target.value)} inputMode="numeric" aria-label="Deadline minutes" /><strong>min</strong></span>
+        </label>
+      </div>
+      <p className="field-note">If the encrypted quote is below minOut, Router V2 returns the full confidential input instead of settling the swap.</p>
+      {connected && error && <p className="field-error" role="alert">{error}</p>}
+
+      <button className="primary-action" onClick={connected ? onSwap : onConnect} disabled={Boolean(busy) || (connected && Boolean(error))}>
         {busy === 'swap' ? <LoaderCircle className="spin" size={19} /> : <ShieldCheck size={19} />}
-        {connected ? 'Encrypt and swap' : 'Connect wallet to swap'}
+        {connected ? 'Encrypt protected swap' : 'Connect wallet to swap'}
       </button>
       <div className="contract-strip">
         <span>Router {shorten(deployment.contracts.noxSwapRouter, 10, 8)}</span>
-        <span>Fee 0.30%</span>
+        <span>3 encrypted pools</span>
         <span>{priceUpdatedAt ? `Oracle ${new Date(priceUpdatedAt * 1000).toLocaleTimeString()}` : 'Oracle loading'}</span>
       </div>
     </div>

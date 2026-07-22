@@ -1,6 +1,6 @@
 # Product Plan
 
-> Trạng thái: Approved — Updated with implementation evidence on 2026-07-22
+> Trạng thái: Approved — Extended feature scope approved by the user on 2026-07-22
 
 ## 1. Approval input
 
@@ -50,11 +50,12 @@
 
 ## 7. Core user flow
 
-1. **Connect Wallet**: Người dùng kết nối ví MetaMask / WalletConnect trên mạng Ethereum Sepolia testnet.
-2. **Wrap to Confidential (ERC-7984)**: Người dùng chuyển đổi token ERC-20 công khai (như sUSDC) thành token bảo mật `cUSDC` (ERC-7984).
-3. **Configure Encrypted Swap**: Người dùng nhập cặp token và số lượng swap. Client SDK (`@iexec-nox/handle`) mã hóa số liệu thành `einput` handle.
-4. **Execute Nox Swap**: Gửi giao dịch on-chain. Router gọi các Nox encrypted primitives qua deployment NoxCompute chính thức và cập nhật reserve/balance handles trên Sepolia.
-5. **Private Balance Decryption**: Người dùng xem số dư mã hóa trên UI và kích hoạt local decryption (giải mã tại trình duyệt) khi cần kiểm tra số dư thực tế.
+1. **Launch App**: Landing page giới thiệu bằng chứng deployment; người dùng chủ động mở application shell.
+2. **Connect Wallet**: Người dùng kết nối MetaMask trên mạng Ethereum Sepolia testnet từ sidebar hoặc mobile wallet drawer.
+3. **Wrap to Confidential (ERC-7984)**: Trong Wallet, người dùng chuyển token ERC-20 công khai thành token bảo mật `cUSDC` (ERC-7984).
+4. **Configure Encrypted Trade**: Trong Trade, người dùng chọn protected swap hoặc private limit order. Client SDK (`@iexec-nox/handle`) mã hóa dữ liệu nhạy cảm.
+5. **Execute with Nox**: Gửi giao dịch on-chain. Contract gọi Nox encrypted primitives và cập nhật reserve/balance handles trên Sepolia.
+6. **Private Balance Decryption**: Người dùng ký từ private-wallet control dùng chung để hiển thị số dư trong phiên; form vẫn cung cấp reveal action tại chỗ khi cần.
 
 ## 8. MVP
 
@@ -76,13 +77,22 @@
 
 - [ ] Tích hợp đồ thị giá TradingView cho cặp giao dịch.
 
+### Approved extension
+
+- [x] Encrypted minimum output and public deadline protection for every swap.
+- [x] Real confidential limit orders with encrypted amount/minimum output, Chainlink trigger, expiry, cancellation, and permissionless execution.
+- [x] Real Sepolia nWBTC/cWBTC and nSOL/cSOL assets with encrypted liquidity pools.
+- [x] Gateway-response attestation evidence derived from successful Nox SDK verification.
+- [x] Measured execution-versus-oracle comparison; no unsupported counterfactual MEV-savings claim.
+- [x] AI guard assessed and deliberately excluded because no real model, input data, or signed/verifiable inference path exists.
+
 ## 9. Non-goals
 
 Không xây trong phiên bản hackathon:
 
 - [ ] Ứng dụng Mobile Native (iOS/Android) độc lập — chỉ phát triển Web App đáp ứng Responsive/PWA.
 - [ ] Cầu nối Cross-chain sang các blockchain L1 khác ngoài Sepolia.
-- [ ] Sàn khớp lệnh Orderbook Darkpool phức tạp ngoài AMM swap routing.
+- [ ] Cross-chain settlement or native Solana custody; nSOL remains an explicitly labeled Sepolia test asset.
 
 ## 10. Sponsor technology
 
@@ -130,9 +140,11 @@ Không xây trong phiên bản hackathon:
 
 > Landing page triển khai sau khi Core Product hoàn thành.
 
-- Primary experience: Swap app xuất hiện ngay sau status band, không có landing gate riêng.
+- Primary experience: Landing page độc lập, không hiển thị wallet hoặc application navigation trước khi người dùng chọn **Launch App**.
+- App information architecture: Ba khu vực `Trade`, `Wallet`, `Activity`; Swap/Limit Orders và Assets/Auditor Access dùng tab con có URL.
+- Shared controls: Account, network, refresh, gas và private-balance reveal ở sidebar desktop hoặc wallet drawer mobile.
 - Secondary CTA: Sepolia explorer của router.
-- Hero Message: "Swap without publishing amounts."
+- Hero Message: "Confidential execution for swaps, limit orders, and ERC-7984 assets."
 
 ## 16. Liên kết với rubric
 
