@@ -653,17 +653,88 @@ export default function App() {
       {/* PAGE 4: DEVELOPER FEEDBACK (`feedback.md` Viewer) */}
       {activeTab === 'feedback' && (
         <div className="feedback-page-container">
-          <div className="neo-box feedback-card">
-            <div className="card-header-row mb-3">
+          {/* Header Card */}
+          <div className="neo-box feedback-card mb-3">
+            <div className="card-header-row">
               <div>
-                <h2>iExec DEVELOPER TOOLS FEEDBACK (`feedback.md`)</h2>
-                <p className="card-subtitle-text">Official deliverable submission doc for iExec WTF Hackathon Summer Edition</p>
+                <h2>iExec DEVELOPER ECOSYSTEM FEEDBACK</h2>
+                <p className="card-subtitle-text">Official deliverable submission report for iExec WTF Hackathon Summer Edition (`feedback.md`)</p>
               </div>
               <span className="neo-badge badge-green">Requirement REQ-004 Verified</span>
             </div>
+          </div>
 
-            <div className="markdown-box">
-              <pre className="mono-font">{FEEDBACK_DOC_CONTENT}</pre>
+          {/* Section 1: Executive Summary */}
+          <div className="neo-box feedback-card mb-3">
+            <div className="card-tag tag-green">1. EXECUTIVE SUMMARY & CONTEXT</div>
+            <h3>Building NoxSwap on iExec Nox Ecosystem</h3>
+            <p className="card-text">
+              During the <strong>iExec WTF Hackathon Summer Edition</strong>, our team built <strong>NoxSwap</strong>, a confidential DEX router leveraging the <strong>iExec Nox Protocol</strong> (Intel TDX TEE compute + ERC-7984 confidential smart contracts) to execute confidential token swaps on Ethereum Sepolia.
+            </p>
+          </div>
+
+          {/* Section 2: Developer Highlights Grid */}
+          <div className="neo-box feedback-card mb-3">
+            <div className="card-tag tag-yellow">2. DEVELOPER HIGHLIGHTS (WHAT WORKED GREAT)</div>
+            <div className="feedback-grid mt-2">
+              <div className="feedback-item-card">
+                <h4>ERC-7984 Confidential Tokens</h4>
+                <p>Standardized `IERC7984` interface makes replacing public balances with encrypted `bytes32` handles intuitive without needing custom ZK circuits.</p>
+              </div>
+              <div className="feedback-item-card">
+                <h4>Client-Side SDK (`@iexec-nox/handle`)</h4>
+                <p>Client-side handle generation integrated smoothly into React 18 / Vite without requiring heavy local WASM cryptographic binaries.</p>
+              </div>
+              <div className="feedback-item-card">
+                <h4>Hardhat Plugin & Starter</h4>
+                <p>`nox-hardhat-starter` and `nox-hardhat-plugin` allowed compilation and contract deployment to Sepolia within familiar developer workflows.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Technical Friction Points */}
+          <div className="neo-box feedback-card mb-3">
+            <div className="card-tag tag-pink">3. TECHNICAL FRICTION POINTS & PAIN POINTS</div>
+            <div className="feedback-grid mt-2">
+              <div className="feedback-item-card">
+                <h4>TEE Execution State Visibility</h4>
+                <p>Tracking transitions from `TX_SUBMITTED` → `TEE_PROCESSING` → `SETTLED` currently requires manual contract event polling in frontends.</p>
+              </div>
+              <div className="feedback-item-card">
+                <h4>Error Diagnosis Inside TEE</h4>
+                <p>When an enclave execution reverts (e.g., liquidity check), on-chain logs report generic revert strings, making local debugging challenging.</p>
+              </div>
+              <div className="feedback-item-card">
+                <h4>Etherscan Handle Transparency</h4>
+                <p>Etherscan displays raw ciphertext handles without showing hardware attestation proofs next to transaction hashes.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 4: Strategic Recommendations */}
+          <div className="neo-box feedback-card mb-3">
+            <div className="card-tag tag-cyan">4. STRATEGIC RECOMMENDATIONS FOR iEXEC TEAM</div>
+            <div className="recs-grid mt-2">
+              <div className="rec-card">
+                <span className="neo-badge badge-purple">Rec #1</span>
+                <h4>Native WebSocket Event Subscription SDK</h4>
+                <p>Provide a WebSocket hook in `@iexec-nox/handle` (`noxSDK.onTEEStateChange`) for real-time frontend TEE progress animation.</p>
+              </div>
+              <div className="rec-card">
+                <span className="neo-badge badge-purple">Rec #2</span>
+                <h4>iExec Nox Etherscan Explorer Extension</h4>
+                <p>Build an official browser extension or explorer plugin to parse ERC-7984 handles and display Intel TDX hardware attestation proofs.</p>
+              </div>
+              <div className="rec-card">
+                <span className="neo-badge badge-purple">Rec #3</span>
+                <h4>Expanded Framework Starters</h4>
+                <p>Provide Next.js and Viem/Wagmi starter kits pre-configured with `@iexec-nox/handle` hooks and viewing-key providers.</p>
+              </div>
+              <div className="rec-card">
+                <span className="neo-badge badge-purple">Rec #4</span>
+                <h4>Local Mock TEE Hardhat Node</h4>
+                <p>Provide a local Hardhat simulator node for testing off-chain TEE compute instantly during local unit testing.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -671,18 +742,3 @@ export default function App() {
     </div>
   );
 }
-
-const FEEDBACK_DOC_CONTENT = `# iExec Developer Tools Feedback — WTF Hackathon Summer Edition
-
-## 1. Overview & Overall Experience
-Building NoxSwap on top of the iExec Nox protocol has been a smooth developer experience. 
-The integration of TEE (Intel TDX) with ERC-7984 confidential smart contract standards provides a unique solution for DeFi privacy while maintaining EVM composability on Sepolia.
-
-## 2. Key Strengths
-- **ERC-7984 Standards**: The @iexec-nox/nox-confidential-contracts library makes it straightforward to wrap standard ERC-20 tokens into confidential tokens.
-- **Client-side Handle SDK**: @iexec-nox/handle simplifies generating einput payloads directly in the React frontend without complex cryptographic boilerplate.
-- **Hardhat Starter**: The nox-hardhat-starter template allowed us to write, compile, and deploy NoxSwap.sol seamlessly.
-
-## 3. Areas for Improvement & Suggestions
-- **TEE Execution Latency Status**: Providing clearer WebSocket event hooks for pending TEE runner execution state on Sepolia would improve UI spinner feedback.
-- **Etherscan Verification Tooling**: A dedicated explorer plugin for visualizing ERC-7984 encrypted handles vs TEE proofs would enhance end-user transparency.`;
