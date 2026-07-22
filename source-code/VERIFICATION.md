@@ -24,7 +24,7 @@ Production frontend: [https://frontend-dusky-five-56.vercel.app](https://fronten
 | Swap history | Frontend reads actual `SwapExecuted` logs from the router deployment block | PASS |
 | Proof inspector | Frontend displays actual tx hash, calldata, input/output handles, proof byte length, and block | PASS by build and source test |
 | Price reference | Sepolia Chainlink ETH/USD `latestRoundData` replaces the simulated AI price | PASS |
-| Strategy Agent | Groq GPT-OSS strict schema converts natural language and public Chainlink context into a reviewable draft; percentage balance math and Nox encryption stay local | PASS, unit, live provider, and desktop/mobile UI tests |
+| Strategy Agent | Groq GPT-OSS strict schema converts natural language and public Chainlink context into a reviewable draft; percentage balance math and Nox encryption stay local | PASS, unit, live provider, desktop/mobile UI, and public Vercel API smoke tests |
 | Keeper AI observer | Optional Groq explanation receives public outcomes only and cannot alter deterministic keeper decisions | PASS, failure-isolation and no-private-field tests |
 | MCP tools | MCP v4 exposes nine public planning/read and opt-in protected write/decrypt tools over stdio | PASS, live Chainlink and Groq planning |
 | Responsive UI | Production build plus headless Chrome at `1440x1000` and `390x844`; validates Strategy Agent, public orderbook/detail, URL persistence, owner/non-owner controls, landing/app separation, desktop sidebar, mobile wallet drawer, and bottom navigation | PASS |

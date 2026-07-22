@@ -7,7 +7,7 @@
 
 - Giai đoạn hiện tại: Phase 6 — Development validation and public deployment
 - Trạng thái: In progress
-- Bước tiếp theo: Configure the server-side Groq secret on production, smoke-test Strategy Agent and MetaMask write flow, then record the demo.
+- Bước tiếp theo: Smoke-test the final MetaMask write confirmation on production, then record the demo.
 - Blocker hiện tại: Local Nox off-chain test stack cần Docker nhưng môi trường hiện tại không có Docker; sử dụng compile/unit tests và live Sepolia verification làm acceptance evidence.
 - Đang chờ phê duyệt từ: Không.
 - Cập nhật lần cuối: 2026-07-23T02:10:26+07:00
@@ -84,6 +84,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 - [x] Threat model, positive default minOut, arbitrary-wallet E2E, MCP write flow và sanitized evidence artifacts đã được triển khai; live Sepolia verification đã pass.
 - [x] Docker-backed Nox runtime integration suite và nightly/manual workflow đã được thêm; local execution được skip vì workspace không có Docker.
 - [x] Groq Strategy Agent, nine-tool MCP v4 adapter, and fail-open keeper observer have unit, responsive, and live provider evidence without granting AI transaction authority.
+- [x] Server-side Groq secret is configured on Vercel; public planner/observer endpoints and the `/app/trade?mode=agent` route pass production smoke tests.
 - [x] Frontend production đã deploy và public read-only smoke test đã pass tại `https://frontend-dusky-five-56.vercel.app`.
 - [x] Đã tạo file README.md chính thức và feedback.md ở root repository.
 - [ ] Submission checklist canonical đã hoàn thành.
