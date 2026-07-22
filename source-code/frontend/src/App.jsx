@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { ethers } from 'ethers';
-import { LoaderCircle } from 'lucide-react';
+import { Copy, LoaderCircle, Wallet } from 'lucide-react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import deployment from './deployment.json';
 import {
@@ -692,7 +692,7 @@ export default function App() {
     <div className={`app-shell${onLanding ? ' landing-shell' : ' product-shell'}`}>
       {onLanding ? (
         <>
-          <LandingHeader />
+          <LandingHeader account={account} busy={busy} onAccountAction={handleAccountAction} />
           <Suspense fallback={<div className="route-loading"><LoaderCircle className="spin" size={24} /><span>Loading NoxSwap</span></div>}>
             <Routes><Route path="/" element={<LandingPage ethPrice={ethPrice} />} /></Routes>
           </Suspense>
@@ -702,6 +702,28 @@ export default function App() {
         <div className="product-layout">
           <AppSidebar account={account} busy={busy} onAccountAction={handleAccountAction} walletProps={walletProps} />
           <div className="product-main">
+            <header className="product-topbar">
+              <div className="topbar-network-info">
+                <span className="network-dot" />
+                <span>Ethereum Sepolia Testnet</span>
+                {ethPrice && <span className="topbar-price">ETH: ${ethPrice}</span>}
+              </div>
+              <button
+                type="button"
+                className={`topbar-connect-btn ${account ? 'connected' : ''}`}
+                onClick={handleAccountAction}
+                disabled={busy === 'connect'}
+              >
+                {busy === 'connect' ? (
+                  <LoaderCircle className="spin" size={17} />
+                ) : account ? (
+                  <Copy size={17} />
+                ) : (
+                  <Wallet size={17} />
+                )}
+                <span>{account ? shorten(account) : 'Connect wallet'}</span>
+              </button>
+            </header>
             <div className="global-notices">
               <NoticeBanner notice={notice} onDismiss={() => setNotice(null)} />
               {!window.ethereum && <NoticeBanner notice={{ type: 'error', text: 'MetaMask is not installed. Read-only market data remains available.' }} />}

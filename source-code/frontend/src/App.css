@@ -487,6 +487,83 @@ footer a { display: inline-flex; align-items: center; gap: 5px; }
 .sidebar-footer { padding: 14px 3px 0; display: flex; justify-content: space-between; gap: 8px; }
 .sidebar-footer a { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 10px; font-weight: 700; }
 
+/* Product Topbar & High-Visibility Connect Wallet Button */
+.product-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding: 12px 18px;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.topbar-network-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.network-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #00e676;
+  border: 1.5px solid var(--ink);
+  box-shadow: 0 0 8px rgba(0, 230, 118, 0.6);
+}
+
+.topbar-price {
+  margin-left: 8px;
+  padding: 3px 8px;
+  background: var(--soft-purple);
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.topbar-connect-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+  background: #ffde59;
+  border: 2.5px solid var(--ink);
+  border-radius: 9999px;
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+.topbar-connect-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--ink);
+  background: #ffe57f;
+}
+
+.topbar-connect-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.topbar-connect-btn.connected {
+  background: #00e676;
+}
+
+.topbar-connect-btn.connected:hover {
+  background: #33eb91;
+}
+
 .mobile-app-header, .mobile-bottom-nav, .mobile-wallet-overlay { display: none; }
 .product-main .global-notices { position: sticky; z-index: 45; top: 0; padding: 12px 18px 0; display: grid; gap: 8px; background: transparent; }
 .product-main .global-notices:empty { display: none; }
