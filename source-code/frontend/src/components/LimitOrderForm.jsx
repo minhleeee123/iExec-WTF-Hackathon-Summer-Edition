@@ -13,15 +13,19 @@ export default function LimitOrderForm({ actions, busy, connected, onConnect, on
     expiryMinutes,
     formError,
     minOut,
+    minOutAuto,
+    onAllowZeroMinOutChange,
     onAmountChange,
     onExpiryChange,
     onMax,
     onMinOutChange,
     onSideChange,
     onTriggerChange,
+    onUseSuggestedMinOut,
     operatorAuthorized,
     readinessLoading,
     side,
+    suggestedMinOut,
     tokenIn,
     tokenOut,
     trigger,
@@ -47,7 +51,7 @@ export default function LimitOrderForm({ actions, busy, connected, onConnect, on
       </div>
       <div className="order-fields">
         <label><span>Encrypted amount</span><span className="protected-input"><input value={amount} onChange={(event) => onAmountChange(event.target.value)} inputMode="decimal" aria-label="Limit order amount" /><strong>{tokenIn.symbol}</strong></span></label>
-        <label><span>Encrypted minOut</span><span className="protected-input"><input value={minOut} onChange={(event) => onMinOutChange(event.target.value)} inputMode="decimal" aria-label="Limit order minimum output" /><strong>{tokenOut.symbol}</strong></span></label>
+        <label><span>Encrypted minOut {!minOutAuto && suggestedMinOut && <button type="button" className="text-button" onClick={onUseSuggestedMinOut}>Use suggested</button>}</span><span className="protected-input"><input value={minOut} onChange={(event) => onMinOutChange(event.target.value)} inputMode="decimal" aria-label="Limit order minimum output" /><strong>{tokenOut.symbol}</strong></span>{minOut.trim() === '0' && <span className="zero-protection"><input type="checkbox" onChange={(event) => onAllowZeroMinOutChange(event.target.checked)} /> Allow zero minOut</span>}</label>
         <label><span>{side === 'buy' ? 'Execute at or below' : 'Execute at or above'}</span><span className="protected-input"><input value={trigger} onChange={(event) => onTriggerChange(event.target.value)} inputMode="decimal" aria-label="ETH trigger price" /><strong>USD</strong></span></label>
         <label><span>Expiry</span><span className="protected-input"><input value={expiryMinutes} onChange={(event) => onExpiryChange(event.target.value)} inputMode="numeric" aria-label="Limit order expiry minutes" /><strong>min</strong></span></label>
       </div>

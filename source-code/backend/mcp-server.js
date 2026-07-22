@@ -107,10 +107,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           tokenIn: { type: 'string', enum: tokenSymbols },
           tokenOut: { type: 'string', enum: tokenSymbols },
           amount: { type: 'string', description: 'Decimal token amount, for example "100".' },
-          minOut: { type: 'string', description: 'Encrypted minimum output. Defaults to "0".' },
+          minOut: { type: 'string', description: 'Positive encrypted minimum output.' },
           deadlineMinutes: { type: 'integer', minimum: 1, maximum: 1440, default: 20 },
         },
-        required: ['tokenIn', 'tokenOut', 'amount'],
+        required: ['tokenIn', 'tokenOut', 'amount', 'minOut'],
         additionalProperties: false,
       },
     },
@@ -197,9 +197,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       if (input.address === output.address) throw new Error('Input and output tokens must differ.');
       if (!isSupportedSwapPair(args.tokenIn, args.tokenOut)) throw new Error('No encrypted pool exists for this pair.');
       const amount = parseUnits(args.amount, input.decimals);
-      const minimumOutput = parseUnits(args.minOut ?? '0', output.decimals);
+      const minimumOutput = parseUnits(args.minOut, output.decimals);
       const deadlineMinutes = args.deadlineMinutes ?? 20;
-      if (amount <= 0n) throw new Error('Amount must be greater than zero.');
+      if (amount <= 0n || minimumOutput <= 0n) throw new Error('Amount and minOut must be greater than zero.');
       if (!Number.isInteger(deadlineMinutes) || deadlineMinutes < 1 || deadlineMinutes > 1440) {
         throw new Error('deadlineMinutes must be between 1 and 1440.');
       }
@@ -261,7 +261,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const contract = new Contract(token.address, tokenAbi, provider);
       const handle = await contract.confidentialBalanceOf(wallet.address);
       if (handle === `0x${'0'.repeat(64)}`) {
-        return jsonText({ address: wallet.address, tokenSymbol: args.tokenSymbol, handle, balance: '0' });
+        return jsonText({
+          address: wallet.address,
+          tokenSymbol: args.tokenSymbol,
+          encryptedBalanceHandle: handle,
+          balance: '0',
+          network: 'ethereum-sepolia',
+        });
       }
       const decrypted = await (await getHandleClient()).decrypt(handle);
       return jsonText({
@@ -303,7 +309,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const amount = parseUnits(args.amount, input.decimals);
       const minimumOutput = parseUnits(args.minOut, output.decimals);
       const triggerPrice = parseUnits(args.triggerPriceUsd, 8);
-      if (amount <= 0n || triggerPrice <= 0n) throw new Error('Amount and trigger price must be greater than zero.');
+      if (amount <= 0n || minimumOutput <= 0n || triggerPrice <= 0n) {
+        throw new Error('Amount, minOut, and trigger price must be greater than zero.');
+      }
       if (!Number.isInteger(args.expiryMinutes) || args.expiryMinutes < 1 || args.expiryMinutes > 10080) {
         throw new Error('expiryMinutes must be between 1 and 10080.');
       }

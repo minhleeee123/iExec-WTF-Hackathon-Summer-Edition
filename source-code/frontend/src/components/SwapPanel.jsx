@@ -10,20 +10,24 @@ export default function SwapPanel({
   deadlineMinutes,
   error,
   minOut,
+  minOutAuto,
   onAmountChange,
   onConnect,
   onDeadlineChange,
   onMax,
+  onAllowZeroMinOutChange,
   onMinOutChange,
   onRefresh,
   onReveal,
   onSwap,
   onTokenChange,
   onTokenOutChange,
+  onUseSuggestedMinOut,
   outputOptions,
   priceUpdatedAt,
   privateBalancesVisible,
   referenceOutput,
+  suggestedMinOut,
   token,
   tokenIn,
   tokenOut,
@@ -76,15 +80,16 @@ export default function SwapPanel({
 
       <div className="protection-grid">
         <label>
-          <span>Encrypted minimum received</span>
+          <span>Encrypted minimum received {!minOutAuto && suggestedMinOut && <button type="button" className="text-button" onClick={onUseSuggestedMinOut}>Use suggested</button>}</span>
           <span className="protected-input"><input value={minOut} onChange={(event) => onMinOutChange(event.target.value)} inputMode="decimal" aria-label="Minimum output" /><strong>{tokenOut}</strong></span>
+          {minOut.trim() === '0' && <span className="zero-protection"><input type="checkbox" onChange={(event) => onAllowZeroMinOutChange(event.target.checked)} /> Allow zero minOut</span>}
         </label>
         <label>
           <span>Deadline</span>
           <span className="protected-input"><input value={deadlineMinutes} onChange={(event) => onDeadlineChange(event.target.value)} inputMode="numeric" aria-label="Deadline minutes" /><strong>min</strong></span>
         </label>
       </div>
-      <p className="field-note">If the encrypted quote is below minOut, Router V2 returns the full confidential input instead of settling the swap.</p>
+      <p className="field-note">Suggested minOut is 0.50% below the Chainlink-derived reference. Unsupported pairs require a positive manual minimum.</p>
       {connected && error && <p className="field-error" role="alert">{error}</p>}
 
       <button className="primary-action" onClick={connected ? onSwap : onConnect} disabled={Boolean(busy) || (connected && Boolean(error))}>

@@ -31,3 +31,12 @@ export function validateNonNegativeAmount(value, decimals) {
     return { amount: null, error: `Enter a valid amount with at most ${decimals} decimal places.` };
   }
 }
+
+export function validateMinimumOutput(value, decimals, allowZeroProtection = false) {
+  const result = validateNonNegativeAmount(value, decimals);
+  if (result.error) return result;
+  if (result.amount === 0n && !allowZeroProtection) {
+    return { amount: result.amount, error: 'Minimum output must be positive, or explicitly confirm zero protection.' };
+  }
+  return result;
+}

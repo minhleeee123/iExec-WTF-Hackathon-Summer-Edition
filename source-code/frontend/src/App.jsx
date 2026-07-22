@@ -21,6 +21,7 @@ import {
 } from './config';
 import { createHandleClient, retry } from './lib/nox';
 import { queryRecentSwapEvents } from './lib/history';
+import { deriveSwapMinOut } from './lib/min-out';
 import {
   decodeReceiptImage,
   formatDuration,
@@ -29,7 +30,7 @@ import {
   isHandle,
   shorten,
 } from './lib/format';
-import { getCooldownRemaining, validateNonNegativeAmount, validateTokenAmount } from './lib/validation';
+import { getCooldownRemaining, validateMinimumOutput, validateTokenAmount } from './lib/validation';
 import AppSidebar from './components/AppSidebar';
 import AppModals from './components/AppModals';
 import LandingFooter from './components/LandingFooter';
@@ -51,7 +52,9 @@ export default function App() {
   const [tokenIn, setTokenIn] = useState('cUSDC');
   const [tokenOut, setTokenOut] = useState('cETH');
   const [amountIn, setAmountIn] = useState('100');
-  const [minOut, setMinOut] = useState('0');
+  const [minOut, setMinOut] = useState('');
+  const [minOutAuto, setMinOutAuto] = useState(true);
+  const [allowZeroMinOut, setAllowZeroMinOut] = useState(false);
   const [deadlineMinutes, setDeadlineMinutes] = useState('20');
   const [asset, setAsset] = useState('cUSDC');
   const [assetAmount, setAssetAmount] = useState('100');
@@ -93,8 +96,8 @@ export default function App() {
     [amountIn, swapAvailable, tokenIn],
   );
   const minOutValidation = useMemo(
-    () => validateNonNegativeAmount(minOut, TOKENS[tokenOut].decimals),
-    [minOut, tokenOut],
+    () => validateMinimumOutput(minOut, TOKENS[tokenOut].decimals, allowZeroMinOut),
+    [allowZeroMinOut, minOut, tokenOut],
   );
   const deadlineError = useMemo(() => {
     if (!/^\d+$/.test(deadlineMinutes)) return 'Deadline must be a whole number of minutes.';
@@ -114,6 +117,19 @@ export default function App() {
   const referenceOutput = referenceOutputValue === null
     ? '--'
     : referenceOutputValue.toLocaleString(undefined, { maximumFractionDigits: tokenOut === 'cETH' ? 6 : 2 });
+  const suggestedMinOut = useMemo(() => deriveSwapMinOut({
+    amountIn,
+    ethPrice,
+    outputDecimals: TOKENS[tokenOut].decimals,
+    tokenIn,
+    tokenOut,
+  }), [amountIn, ethPrice, tokenIn, tokenOut]);
+
+  useEffect(() => {
+    if (!minOutAuto) return;
+    setMinOut(suggestedMinOut);
+    setAllowZeroMinOut(false);
+  }, [minOutAuto, suggestedMinOut]);
 
   const addLog = (message, transactionHash = '') => {
     setLogs((current) => [{ time: new Date().toLocaleTimeString(), message, transactionHash }, ...current]);
@@ -611,27 +627,37 @@ export default function App() {
     deadlineMinutes,
     error: swapError,
     minOut,
+    minOutAuto,
     onAmountChange: setAmountIn,
     onConnect: connect,
     onDeadlineChange: setDeadlineMinutes,
     onMax: () => setAmountIn(formatInputAmount(balances[tokenIn].decrypted, TOKENS[tokenIn].decimals)),
-    onMinOutChange: setMinOut,
+    onAllowZeroMinOutChange: setAllowZeroMinOut,
+    onMinOutChange: (value) => {
+      setMinOut(value);
+      setMinOutAuto(false);
+      if (value !== '0') setAllowZeroMinOut(false);
+    },
     onRefresh: refresh,
     onReveal: decryptBalances,
     onSwap: swap,
     onTokenChange: (symbol) => {
       setTokenIn(symbol);
       setTokenOut(OUTPUT_TOKENS[symbol][0]);
-      setMinOut('0');
+      setMinOutAuto(true);
+      setAllowZeroMinOut(false);
     },
     onTokenOutChange: (symbol) => {
       setTokenOut(symbol);
-      setMinOut('0');
+      setMinOutAuto(true);
+      setAllowZeroMinOut(false);
     },
+    onUseSuggestedMinOut: () => setMinOutAuto(true),
     outputOptions: OUTPUT_TOKENS[tokenIn],
     priceUpdatedAt,
     privateBalancesVisible,
     referenceOutput,
+    suggestedMinOut,
     token: TOKENS[tokenIn],
     tokenIn,
     tokenOut,

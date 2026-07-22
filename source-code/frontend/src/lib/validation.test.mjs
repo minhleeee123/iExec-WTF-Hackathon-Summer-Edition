@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getCooldownRemaining, validateNonNegativeAmount, validateTokenAmount } from './validation.js';
+import { getCooldownRemaining, validateMinimumOutput, validateNonNegativeAmount, validateTokenAmount } from './validation.js';
 
 test('faucet cooldown reaches zero and never becomes negative', () => {
   assert.equal(getCooldownRemaining(4600, 1000), 3600);
@@ -28,4 +28,10 @@ test('token amount validation rejects zero and excessive precision', () => {
 test('minimum output accepts zero and rejects invalid precision', () => {
   assert.deepEqual(validateNonNegativeAmount('0', 18), { amount: 0n, error: '' });
   assert.match(validateNonNegativeAmount('0.0000001', 6).error, /at most 6/);
+});
+
+test('protected minimum output requires positive value unless zero is explicitly confirmed', () => {
+  assert.match(validateMinimumOutput('0', 18).error, /explicitly confirm/);
+  assert.deepEqual(validateMinimumOutput('0', 18, true), { amount: 0n, error: '' });
+  assert.deepEqual(validateMinimumOutput('0.1', 6), { amount: 100_000n, error: '' });
 });

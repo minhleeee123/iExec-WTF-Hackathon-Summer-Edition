@@ -190,6 +190,8 @@ button:disabled { cursor: not-allowed; opacity: .48; box-shadow: none !important
 .protected-input { min-width: 0; height: 44px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; background: var(--white); border: 1px solid var(--ink); border-radius: 6px; overflow: hidden; }
 .protected-input input { width: 100%; min-width: 0; height: 100%; padding: 0 11px; color: var(--ink); background: transparent; border: 0; font-weight: 700; }
 .protected-input strong { padding: 0 10px; color: var(--ink); font-size: 11px; white-space: nowrap; }
+.zero-protection { min-height: 20px; display: flex; align-items: center; gap: 7px; color: var(--danger); font-size: 11px; }
+.zero-protection input { width: 15px; height: 15px; margin: 0; accent-color: var(--danger); }
 .field-note { margin: 12px 0 18px; color: var(--muted); font: 400 11px/1.5 'Space Mono', monospace; }
 .field-error { margin: -7px 0 14px; color: var(--red); font-size: 12px; font-weight: 700; line-height: 1.4; }
 .primary-action { width: 100%; min-height: 52px; padding: 0 18px; background: var(--pink); box-shadow: 3px 3px 0 var(--ink); }

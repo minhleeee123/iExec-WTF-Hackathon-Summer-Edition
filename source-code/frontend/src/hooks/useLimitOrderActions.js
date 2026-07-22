@@ -5,8 +5,9 @@ import { CONFIDENTIAL_TOKEN_ABI, LIMIT_ORDER_ABI } from '../contracts';
 import { TOKENS } from '../config';
 import { createHandleClient, retry } from '../lib/nox';
 import { formatInputAmount, formatToken, shorten } from '../lib/format';
+import { deriveLimitOrderMinOut } from '../lib/min-out';
 import { CONTRACT_ORDER_STATUS, getOrderPermissions, settlementOutcome, shouldDecryptSettlement } from '../lib/orders.js';
-import { validateNonNegativeAmount, validateTokenAmount } from '../lib/validation';
+import { validateMinimumOutput, validateTokenAmount } from '../lib/validation';
 
 const MIN_GAS_BALANCE = ethers.parseEther('0.0005');
 
@@ -30,7 +31,9 @@ export default function useLimitOrderActions({
 }) {
   const [side, setSide] = useState('buy');
   const [amount, setAmount] = useState('5');
-  const [minOut, setMinOut] = useState('0');
+  const [minOut, setMinOut] = useState('');
+  const [minOutAuto, setMinOutAuto] = useState(true);
+  const [allowZeroMinOut, setAllowZeroMinOut] = useState(false);
   const [trigger, setTrigger] = useState('');
   const [expiryMinutes, setExpiryMinutes] = useState('30');
   const [operatorAuthorized, setOperatorAuthorized] = useState(false);
@@ -41,13 +44,19 @@ export default function useLimitOrderActions({
   const tokenIn = side === 'buy' ? TOKENS.cUSDC : TOKENS.cETH;
   const tokenOut = side === 'buy' ? TOKENS.cETH : TOKENS.cUSDC;
   const available = privateBalancesVisible ? balances[tokenIn.symbol].decrypted : null;
+  const suggestedMinOut = useMemo(() => deriveLimitOrderMinOut({
+    amount,
+    outputDecimals: tokenOut.decimals,
+    side,
+    triggerPrice: trigger,
+  }), [amount, side, tokenOut.decimals, trigger]);
   const amountValidation = useMemo(
     () => validateTokenAmount(amount, tokenIn.decimals, available),
     [amount, available, tokenIn.decimals],
   );
   const minOutValidation = useMemo(
-    () => validateNonNegativeAmount(minOut, tokenOut.decimals),
-    [minOut, tokenOut.decimals],
+    () => validateMinimumOutput(minOut, tokenOut.decimals, allowZeroMinOut),
+    [allowZeroMinOut, minOut, tokenOut.decimals],
   );
   const formError = useMemo(() => {
     if (amountValidation.error) return amountValidation.error;
@@ -62,6 +71,12 @@ export default function useLimitOrderActions({
   useEffect(() => {
     if (oracle.price && !trigger) setTrigger(String(Math.round(oracle.price)));
   }, [oracle.price, trigger]);
+
+  useEffect(() => {
+    if (!minOutAuto) return;
+    setMinOut(suggestedMinOut);
+    setAllowZeroMinOut(false);
+  }, [minOutAuto, suggestedMinOut]);
 
   useEffect(() => {
     setRevealedTerms({});
@@ -310,20 +325,29 @@ export default function useLimitOrderActions({
     expiryMinutes,
     formError,
     minOut,
+    minOutAuto,
     onAmountChange: setAmount,
     onExpiryChange: setExpiryMinutes,
     onMax: () => setAmount(formatInputAmount(available, tokenIn.decimals)),
-    onMinOutChange: setMinOut,
+    onAllowZeroMinOutChange: setAllowZeroMinOut,
+    onMinOutChange: (value) => {
+      setMinOut(value);
+      setMinOutAuto(false);
+      if (value !== '0') setAllowZeroMinOut(false);
+    },
     onSideChange: (nextSide) => {
       setSide(nextSide);
       setAmount(nextSide === 'buy' ? '5' : '0.001');
-      setMinOut('0');
+      setMinOutAuto(true);
+      setAllowZeroMinOut(false);
     },
     onTriggerChange: setTrigger,
     operatorAuthorized,
     readinessLoading,
     revealOrderTerms,
     revealedTerms,
+    suggestedMinOut,
+    onUseSuggestedMinOut: () => setMinOutAuto(true),
     settleOrder,
     side,
     tokenIn,
