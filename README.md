@@ -4,6 +4,9 @@ NoxSwap is a confidential constant-product swap prototype built with the officia
 
 The working deployment is on Ethereum Sepolia. It supports faucet, wrap/unwrap, protected encrypted swaps across three pools, authorized balance decryption, selective ACL disclosure, Chainlink-triggered confidential limit orders, event history, and ERC-721 receipts.
 
+The current confidentiality boundaries, privileged roles, public metadata, and
+compromise impact are documented in [`docs/threat-model.md`](docs/threat-model.md).
+
 ## Live Deployment
 
 Web application: [https://frontend-dusky-five-56.vercel.app](https://frontend-dusky-five-56.vercel.app)
@@ -152,6 +155,7 @@ cd source-code/backend
 npm install
 npm run compile
 npm test
+npm run test:nox # requires Docker
 npm run keeper:dry
 ```
 
@@ -160,10 +164,15 @@ Live tests require a funded Sepolia test wallet. Never commit its private key.
 ```bash
 PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:sepolia
 PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:mcp
+PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:mcp:write
 npm run verify:sourcify
 ```
 
-The local Nox off-chain Hardhat stack requires Docker. When Docker is unavailable, the acceptance path is compile plus unit tests plus the live Sepolia E2E test.
+The live E2E signer can be any funded Sepolia wallet; it does not need to be the
+deployment owner. Each run writes sanitized JSON evidence under
+`source-code/backend/artifacts/evidence/`. The local Nox off-chain Hardhat stack
+requires Docker. When Docker is unavailable, the acceptance path is compile plus
+unit tests plus the live Sepolia E2E test.
 
 ## Stateless Order Keeper
 

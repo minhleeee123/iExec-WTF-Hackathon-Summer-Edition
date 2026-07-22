@@ -52,6 +52,7 @@ Vercel.
 ## Live workflows
 
 - Protected encrypted swaps with encrypted `minOut`, deadline, output, and refund handles.
+- Chainlink-derived positive `minOut` suggestions with an explicit opt-in before zero-protection settlement.
 - Three live pools: cUSDC/cETH, cWBTC/cUSDC, and cSOL/cUSDC.
 - Chainlink-triggered confidential cUSDC/cETH limit-order create, execute, cancel, and expiry refund.
 - Wallet-free public orderbook with isolated RPC failures, owner-only reveal, permissionless manual settlement, and optional keeper health.

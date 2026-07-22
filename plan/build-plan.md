@@ -120,15 +120,16 @@ Failure handling:
 
 | Flow | Test | Evidence | Status |
 |---|---|---|---|
-| Compile/ABI/security regression | `npm run compile && npm test` | 20 passing Node tests, including 2,000 deterministic swap invariants | Pass |
+| Compile/ABI/security regression | `npm run compile && npm test` | 23 passing Node tests plus one Docker-gated Nox runtime suite, including 2,000 deterministic swap invariants | Pass |
+| Local Nox runtime | `npm run test:nox` | Official Docker stack suite covers wrap, reserves/collateral, protected swap/refund, order execute/cancel/expire, double settlement, and unwrap proof | Added; nightly/manual CI, local run blocked by missing Docker |
 | Keeper decisions, indexing, and lifecycle | `npm test`, `npm run keeper:dry`, and live cycles | Unit coverage, incremental active-order checkpoint, order #3 permissionless execution, and an order #5-only dry scan | Pass |
-| Live Router V2 protections | `npm run test:sepolia` | Normal output plus forced minOut rejection with exact confidential refund | Pass |
+| Live Router V2 protections | `npm run test:sepolia` | Any funded signer; positive minOut settlement plus forced rejection with exact confidential refund and sanitized evidence artifact | Pass |
 | New pools | Same live E2E | cWBTC and cSOL swaps decrypt to real cUSDC output | Pass |
 | Confidential limit order | Same live E2E | Permissionless execution/expiry, exact cancel/expiry refunds, owner permissions, and double-settlement rejection | Pass |
 | ACL viewer | Same live E2E | ACL subgraph contains granted viewer | Pass |
 | Unwrap | Same live E2E | Exactly `0.01 nWETH` released after proof finalization | Pass |
-| MCP protocol | `npm run test:mcp` | Seven tools, three live pools, order read, balance decrypt | Pass |
-| Frontend static quality | `npm run test:unit && npm run build && npm run lint` | 17 unit tests including incremental event index/cache, production build, and zero lint errors | Pass |
+| MCP protocol | `npm run test:mcp` and `npm run test:mcp:write` | Seven tools, live reads, real small swap, order create/cancel, receipt/event/status assertions, and sanitized evidence | Pass |
+| Frontend static quality | `npm run test:unit && npm run build && npm run lint` | 21 unit tests including positive minOut derivation/validation, incremental event index/cache, production build, and zero lint errors | Pass |
 | Continuous integration | `.github/workflows/ci.yml` | Push/PR compile, tests, lint, build, deployment consistency, and Gitleaks; YAML validated locally | Pass |
 | Responsive layout | Headless Chrome 1440x1000 and 390x844 | Wallet-free live orderbook, responsive detail, URL reload, owner/non-owner controls, landing/app separation, and no horizontal overflow | Pass |
 | Public dApp accessibility | Headless external URL test | Production route loads the live public orderbook at `https://frontend-dusky-five-56.vercel.app` | Pass |
@@ -144,6 +145,7 @@ Failure handling:
 | Nox subgraph indexing delay | Medium | Bounded retries and explicit waiting status |
 | Faucet cooldown blocks repeated demo | Medium | Pre-fund demo wallet and show remaining public balance |
 | Production wallet write flow not manually confirmed | Medium | Run MetaMask happy path on the public URL before recording the demo |
+| Docker-backed Nox workflow has not yet completed on GitHub | Low | Run the manual workflow, inspect service logs on failure, then decide whether it is stable enough for required PR CI |
 
 ## 8. Scope decisions
 

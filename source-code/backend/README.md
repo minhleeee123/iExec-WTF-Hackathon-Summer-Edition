@@ -48,5 +48,25 @@ npm run compile
 npm run keeper:dry
 ```
 
+The Docker-backed Nox runtime suite uses the official Hardhat plugin to start
+NoxCompute, KMS, Handle Gateway, runner, ingestor, NATS, and S3 before exercising
+real confidential bytecode:
+
+```bash
+npm run test:nox
+```
+
+It runs nightly and on demand in `.github/workflows/nox-integration.yml`; it is
+kept separate from push/PR CI while the external container stack is monitored for
+stability.
+
+Live write verification supports any funded Sepolia signer and produces
+sanitized, secret-free evidence in `artifacts/evidence/`:
+
+```bash
+npm run test:sepolia
+npm run test:mcp:write
+```
+
 Live E2E, MCP, deployment, and Sourcify commands are documented in the repository
 root README. Never pass a valuable mainnet key to this testnet project.

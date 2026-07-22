@@ -10,7 +10,7 @@
 - Bước tiếp theo: Smoke-test MetaMask write flow trên URL production trước khi quay video.
 - Blocker hiện tại: Local Nox off-chain test stack cần Docker nhưng môi trường hiện tại không có Docker; sử dụng compile/unit tests và live Sepolia verification làm acceptance evidence.
 - Đang chờ phê duyệt từ: Không.
-- Cập nhật lần cuối: 2026-07-23T00:30:00+07:00
+- Cập nhật lần cuối: 2026-07-23T02:10:26+07:00
 
 Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for approval`, `Blocked`, `Completed`, `Skipped`.
 
@@ -81,6 +81,8 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 - [x] Public confidential orderbook và stateless keeper đã được triển khai, kiểm thử với order Sepolia thật.
 - [x] Orderbook/keeper đã chuyển sang incremental lifecycle-event index với checkpoint có thể rebuild; linear historical ID scans đã được loại bỏ.
 - [x] Push/PR CI và manual secret-protected Sepolia E2E workflows đã được thêm và kiểm tra cú pháp.
+- [x] Threat model, positive default minOut, arbitrary-wallet E2E, MCP write flow và sanitized evidence artifacts đã được triển khai; live Sepolia verification đã pass.
+- [x] Docker-backed Nox runtime integration suite và nightly/manual workflow đã được thêm; local execution được skip vì workspace không có Docker.
 - [x] Frontend production đã deploy và public read-only smoke test đã pass tại `https://frontend-dusky-five-56.vercel.app`.
 - [x] Đã tạo file README.md chính thức và feedback.md ở root repository.
 - [ ] Submission checklist canonical đã hoàn thành.
