@@ -566,10 +566,6 @@ export default function App() {
 
         {/* Right Badges & Real Wallet Connect */}
         <div className="nav-actions">
-          <button className="neo-btn btn-sm btn-cyan" onClick={() => setIsProofModalOpen(true)}>
-            <Maximize2 size={12} /> Privacy Proof Inspector
-          </button>
-
           <span className="neo-badge badge-purple">
             <span className="live-dot"></span>
             Sepolia
