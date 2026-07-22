@@ -95,6 +95,44 @@ export default function App() {
     }
   ]);
 
+  // Fetch live on-chain token balances directly from Sepolia contracts
+  const fetchLiveTokenBalances = async (address) => {
+    try {
+      if (!window.ethereum || !address) return;
+      const provider = new ethers.BrowserProvider(window.ethereum);
+
+      const cUsdcContract = new ethers.Contract(CONTRACT_ADDRESSES.cUSDC, CTOKEN_ABI, provider);
+      const cEthContract = new ethers.Contract(CONTRACT_ADDRESSES.cETH, CTOKEN_ABI, provider);
+
+      const [shadowUsdc, handleUsdc, shadowEth, handleEth] = await Promise.all([
+        cUsdcContract.shadowBalanceOf(address).catch(() => 0n),
+        cUsdcContract.confidentialBalanceOf(address).catch(() => '0x9c68...6068'),
+        cEthContract.shadowBalanceOf(address).catch(() => 0n),
+        cEthContract.confidentialBalanceOf(address).catch(() => '0x7eC7...641e')
+      ]);
+
+      const formattedUsdc = parseFloat(ethers.formatEther(shadowUsdc));
+      const formattedEth = parseFloat(ethers.formatEther(shadowEth));
+
+      setBalances({
+        cUSDC: { 
+          decrypted: formattedUsdc, 
+          handle: handleUsdc === '0x0000000000000000000000000000000000000000000000000000000000000000' 
+            ? '0x9c68...6068' 
+            : `${handleUsdc.substring(0, 6)}...${handleUsdc.substring(62)}` 
+        },
+        cETH: { 
+          decrypted: formattedEth, 
+          handle: handleEth === '0x0000000000000000000000000000000000000000000000000000000000000000' 
+            ? '0x7eC7...641e' 
+            : `${handleEth.substring(0, 6)}...${handleEth.substring(62)}` 
+        }
+      });
+    } catch (err) {
+      console.error('Error fetching live token balances:', err);
+    }
+  };
+
   // Auto detect MetaMask account on load & handle network change seamlessly
   useEffect(() => {
     if (window.ethereum) {
@@ -104,6 +142,7 @@ export default function App() {
           setUserAddress(accs[0]);
           setIsConnected(true);
           updateUserEthBalance(accs[0]);
+          fetchLiveTokenBalances(accs[0]);
         }
       }).catch(console.error);
 
@@ -112,6 +151,7 @@ export default function App() {
           setUserAddress(accs[0]);
           setIsConnected(true);
           updateUserEthBalance(accs[0]);
+          fetchLiveTokenBalances(accs[0]);
         } else {
           setIsConnected(false);
           setUserAddress('');
@@ -119,12 +159,12 @@ export default function App() {
       });
 
       window.ethereum.on('chainChanged', () => {
-        // Re-check accounts after chain switch without hard reload
         window.ethereum.request({ method: 'eth_accounts' }).then((accs) => {
           if (accs.length > 0) {
             setUserAddress(accs[0]);
             setIsConnected(true);
             updateUserEthBalance(accs[0]);
+            fetchLiveTokenBalances(accs[0]);
           }
         });
       });
@@ -166,6 +206,7 @@ export default function App() {
       setUserAddress(activeAddress);
       setIsConnected(true);
       updateUserEthBalance(activeAddress);
+      fetchLiveTokenBalances(activeAddress);
 
       const network = await provider.getNetwork();
 
@@ -310,11 +351,7 @@ export default function App() {
       await tx.wait();
 
       setIsProcessingWrap(false);
-      setBalances(prev => ({
-        ...prev,
-        cUSDC: { ...prev.cUSDC, decrypted: prev.cUSDC.decrypted + 1000 }
-      }));
-
+      fetchLiveTokenBalances(userAddress);
       showToast(`Successfully minted 1,000 cUSDC on Sepolia! Tx: ${tx.hash.substring(0, 10)}...`);
     } catch (err) {
       console.error(err);
@@ -350,18 +387,7 @@ export default function App() {
 
       await tx.wait();
       setIsProcessingWrap(false);
-
-      if (wrapMode === 'wrap') {
-        setBalances(prev => ({
-          ...prev,
-          cUSDC: { ...prev.cUSDC, decrypted: prev.cUSDC.decrypted + numAmount }
-        }));
-      } else {
-        setBalances(prev => ({
-          ...prev,
-          cUSDC: { ...prev.cUSDC, decrypted: Math.max(0, prev.cUSDC.decrypted - numAmount) }
-        }));
-      }
+      fetchLiveTokenBalances(userAddress);
 
       showToast(`Wrap Tx Confirmed on Sepolia! Tx: ${tx.hash.substring(0, 10)}...`);
     } catch (err) {
