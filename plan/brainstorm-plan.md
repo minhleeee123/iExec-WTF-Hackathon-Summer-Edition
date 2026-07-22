@@ -1,87 +1,66 @@
 # Brainstorm and Idea Selection Plan
 
-> Trạng thái: Chờ Research Plan có kết quả
-> Không tự chọn ý tưởng cuối cùng thay người dùng.
+> Trạng thái: Complete (Ý tưởng đã được người dùng lựa chọn)
 
 ## 1. Input bắt buộc
 
-- Requirements và điều kiện bị loại.
-- Rubric chính thức.
-- Participation Fit Gate.
-- Evidence Log từ research.
-- Deadline và nguồn lực đã biết.
+- Requirements và điều kiện bị loại (`docs/requirements.md`).
+- Rubric chính thức (`docs/judging-criteria.md`).
+- Participation Fit Gate (`docs/competition-summary.md`).
+- Evidence Log từ research (RES-001 đến RES-008 trong `plan/research-plan.md`).
+- Deadline: 02/08/2026 04:59 (Còn 10 ngày).
 
-## 2. Tạo ý tưởng
+## 2. Các ý tưởng đã brainstorm
 
-Mặc định tạo 8–12 ý tưởng có khác biệt thực chất. Có thể tạo ít hơn nếu phạm vi challenge rất hẹp và phải ghi lý do.
+### Ý tưởng 1: NoxSwap — Confidential Liquidity & Swap Router (Được chọn)
+- **Mô tả:** Đội định tuyến swap token bảo mật (ERC-7984) qua Uniswap/Curve pools mà không tiết lộ số lượng swap hay vị thế order on-chain.
+- **Người dùng mục tiêu:** Institutional traders, DeFi whales, cá nhân muốn tránh MEV Sandwich attacks.
+- **Core flow:** Connect wallet -> Select tokens -> Encrypt swap amount (`einput`) -> Nox TEE computes execution -> Settlement với ERC-7984 tokens trên Sepolia.
+- **Giá trị khác biệt:** Giữ riêng tư nhưng duy trì 100% tính composability trên EVM Sepolia mà không sửa protocol gốc.
+- **Sponsor technology:** `@iexec-nox/nox-confidential-contracts` (ERC-7984), `NoxCompute` TEE, Hardhat starter.
+- **Evidence ID:** RES-001, RES-002, RES-004, RES-005.
 
-Mỗi ý tưởng gồm:
+### Ý tưởng 2: NoxPay — Confidential Payroll & Automated Streaming
+- **Mô tả:** Trả lương và stream tiền tự động bảo mật dành cho Web3 DAOs/Startups.
+- **Core flow:** Manager thiết lập stream -> Nhập số dư encrypted -> Contributor tự giải mã và claim tiền.
+- **Sponsor technology:** Nox ERC-7984 + Nox ACLs cho phép Auditor xem báo cáo thuế.
+- **Evidence ID:** RES-001, RES-004.
 
-- Tên và mô tả một câu.
-- Vấn đề và người dùng mục tiêu.
-- Web/mobile core flow.
-- Giá trị khác biệt.
-- Công nghệ bắt buộc hoặc sponsor technology được dùng ở đâu.
-- Evidence ID hỗ trợ.
-- Phạm vi MVP.
-- Demo moment.
-- Rủi ro và dependency chính.
+### Ý tưởng 3: NoxVault — Private Treasury & Portfolio Manager
+- **Mô tả:** Quản lý kho quỹ doanh nghiệp bảo mật (Private Gnosis Safe / Treasury Vault).
+- **Core flow:** Tạo Vault -> Nạp token mã hóa -> Đề xuất chuyển tiền nội bộ riêng tư.
+- **Sponsor technology:** Nox ERC-7984 + Nox TEE state computation.
+- **Evidence ID:** RES-002, RES-003.
 
-## 3. Hard Gate
+### Ý tưởng 4: NoxDarkPool — Confidential Off-Chain Order Matching
+- **Mô tả:** Sàn khớp lệnh ẩn vị thế mua/bán (Dark pool) dựa trên TEE compute.
+- **Rủi ro:** Cần xử lý orderbook phức tạp, thời gian 10 ngày quá gấp.
 
-Chỉ chấm điểm ý tưởng vượt qua tất cả điều kiện bắt buộc.
+## 3. Hard Gate Evaluation
 
 | Ý tưởng | Eligibility | Đúng challenge | Web/mobile là core | Công nghệ bắt buộc | Khả thi trước deadline | Có thể demo | Kết quả |
 |---|---|---|---|---|---|---|---|
-|  | Pass/Fail | Pass/Fail | Pass/Fail | Pass/Fail/N/A | Pass/Fail | Pass/Fail | Pass/Fail |
+| 1. NoxSwap | Pass | Pass | Pass | Pass | Pass | Pass | **PASS** |
+| 2. NoxPay | Pass | Pass | Pass | Pass | Pass | Pass | **PASS** |
+| 3. NoxVault | Pass | Pass | Pass | Pass | Pass | Pass | **PASS** |
+| 4. NoxDarkPool | Pass | Pass | Pass | Pass | Fail (Quá phức tạp) | Pass | **FAIL** |
 
-Loại ý tưởng nếu:
+## 4. Chấm theo rubric chính thức (Thang 1–5 / Trọng số Sao)
 
-- Vi phạm yêu cầu hoặc điều kiện tham gia.
-- Web/app chỉ là wrapper hình thức.
-- Sponsor technology chỉ được thêm cho có.
-- Không thể hoàn thành hoặc demo trước deadline.
-- Phụ thuộc vào dữ liệu/API không thể tiếp cận và không có fallback.
-- Có quá nhiều tính năng cốt lõi.
+| Ý tưởng | Creativity (⭐⭐⭐) | End-to-End (⭐⭐⭐) | Sepolia Deploy (⭐⭐) | feedback.md (⭐⭐) | Video (⭐⭐) | Technical (⭐) | UX (⭐) | Tổng điểm quy đổi /14 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| **1. NoxSwap** | 5/5 (3 sao) | 5/5 (3 sao) | 5/5 (2 sao) | 5/5 (2 sao) | 5/5 (2 sao) | 5/5 (1 sao) | 4/5 (0.8 sao) | **13.8 / 14** |
+| **2. NoxPay** | 4/5 (2.4 sao) | 5/5 (3 sao) | 5/5 (2 sao) | 5/5 (2 sao) | 5/5 (2 sao) | 4/5 (0.8 sao) | 4/5 (0.8 sao) | **13.0 / 14** |
+| **3. NoxVault** | 3.5/5 (2.1 sao) | 5/5 (3 sao) | 5/5 (2 sao) | 5/5 (2 sao) | 5/5 (2 sao) | 4/5 (0.8 sao) | 4/5 (0.8 sao) | **12.7 / 14** |
 
-## 4. Chấm theo rubric chính thức
+## 5. Shortlist trình Người Dùng
 
-Với mỗi ý tưởng đã Pass, chấm từng tiêu chí theo thang 1–5 và giải thích bằng evidence.
+1. **Option 1 (Recommended): NoxSwap — Confidential Liquidity & Swap Router**
+2. **Option 2: NoxPay — Confidential Payroll & Automated Streaming**
+3. **Option 3: NoxVault — Private Treasury & Portfolio Manager**
 
-Nếu rubric có trọng số, dùng:
+## 6. Lựa chọn chính thức của Người Dùng
 
-```text
-Điểm quy đổi = (Điểm 1–5 / 5) × Trọng số chính thức
-Tổng điểm dự kiến = Tổng các điểm quy đổi
-```
-
-| Ý tưởng | Rubric ID | Trọng số chính thức | Điểm 1–5 | Điểm quy đổi | Evidence/lý do |
-|---|---|---:|---:|---:|---|
-|  |  |  |  |  |  |
-
-Nếu ban tổ chức không công bố trọng số, ghi `Chưa xác minh`. Chỉ dùng trọng số nội bộ khi người dùng đồng ý và phải gắn nhãn `Internal scoring`, không trình bày như rubric chính thức.
-
-## 5. Đánh giá bổ sung
-
-| Ý tưởng | Khác biệt | Khả thi | Demo clarity | Rủi ro | Ghi chú |
-|---|---:|---:|---:|---:|---|
-|  |  |  |  |  |  |
-
-Các điểm bổ sung không được làm một ý tưởng vi phạm hard gate trở thành hợp lệ.
-
-## 6. Shortlist
-
-Chọn tối đa 3–5 ý tưởng để trình người dùng. Với mỗi ý tưởng, ghi:
-
-- Lý do nên chọn và không nên chọn.
-- Tổng điểm rubric dự kiến.
-- Phạm vi MVP và non-goals sơ bộ.
-- Core demo flow.
-- Evidence mạnh nhất.
-- Rủi ro và câu hỏi chưa xác minh.
-
-## 7. Approval Gate
-
-Dừng và chờ người dùng chọn ý tưởng cuối cùng.
-
-Không điền Product Plan, chọn tech stack hoặc bắt đầu code trước khi có lựa chọn rõ ràng.
+- **Ý tưởng được chọn:** **Option 1: NoxSwap — Confidential Liquidity & Swap Router**
+- **Thời điểm chọn:** 2026-07-22T10:46:53+07:00
+- **Trạng thái:** Confirmed & Approved. Chuyển sang hoàn thiện `plan/product-plan.md`.
