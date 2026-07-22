@@ -5,12 +5,12 @@
 
 ## 1. Trạng thái hiện tại
 
-- Giai đoạn hiện tại: Phase 6 — Development
+- Giai đoạn hiện tại: Phase 7 — Submission
 - Trạng thái: In progress
-- Bước tiếp theo: Bắt đầu lập trình hợp đồng thông minh NoxSwap và giao diện Web DApp client.
+- Bước tiếp theo: Quay Video Demo (≤ 4 phút) và viết bài đăng trên X (Twitter) kèm tag `@iEx_ec`.
 - Blocker hiện tại: Không.
 - Đang chờ phê duyệt từ: Không.
-- Cập nhật lần cuối: 2026-07-22T10:56:30+07:00
+- Cập nhật lần cuối: 2026-07-22T13:51:30+07:00
 
 Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for approval`, `Blocked`, `Completed`, `Skipped`.
 
@@ -34,8 +34,8 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 | 3. Brainstorm | Research output | Hard gate, rubric scoring và shortlist | Ý tưởng được chọn | Người dùng chọn ý tưởng | Completed |
 | 4. Product Plan | Ý tưởng được chọn | Hoàn thiện `plan/product-plan.md` | MVP, non-goals và demo scenario | Người dùng phê duyệt | Completed |
 | 5. Build Plan | Product Plan đã duyệt | Hoàn thiện `plan/build-plan.md` | Stack, kiến trúc, timeline và backlog | Người dùng phê duyệt | Completed |
-| 6. Development | Build Plan đã duyệt | Hoàn thiện core product, vượt Core Product Ready Gate, sau đó xây landing page | Demo-ready application và landing page | Milestone verification | In progress |
-| 7. Submission | Demo-ready application và landing page | Hoàn thiện mọi deliverable bắt buộc | Bài nộp hoàn chỉnh | Người dùng final review | Todo |
+| 6. Development | Build Plan đã duyệt | Hoàn thiện core product, vượt Core Product Ready Gate, triển khai Sepolia | Demo-ready application và landing page | Milestone verification | Completed |
+| 7. Submission | Demo-ready application và landing page | Hoàn thiện mọi deliverable bắt buộc | Bài nộp hoàn chỉnh | Người dùng final review | In progress |
 
 ## 4. Approval Log
 
@@ -46,6 +46,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 | Idea selection | Approved | User | 2026-07-22T10:46:53+07:00 | Đã chọn Option 1: NoxSwap — Confidential Liquidity & Swap Router. |
 | Product Plan | Approved | User | 2026-07-22T10:56:00+07:00 | Người dùng đã xem xét và đồng ý thực hiện Product Plan cho NoxSwap. |
 | Build Plan | Approved | User | 2026-07-22T10:56:30+07:00 | Phê duyệt Build Plan cho ứng dụng NoxSwap. |
+| Core Development & Sepolia Deploy | Approved | System / User | 2026-07-22T13:51:30+07:00 | Smart Contracts đã deploy thành công lên Sepolia: Router 0x3858...a7a. |
 | Final submission | Pending |  |  |  |
 
 ## 5. Blockers và câu hỏi mở
@@ -57,8 +58,8 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 
 ## 6. Bước tiếp theo
 
-1. Tiến hành Milestone 1 & Milestone 2 của Phase 6: Khởi tạo project skeleton (Frontend React/Vite + Smart Contract Hardhat env).
-2. Phát triển hợp đồng `NoxSwap.sol` tích hợp chuẩn ERC-7984 & iExec Nox TEE.
+1. Hướng dẫn kịch bản quay Video Demo (≤ 4 phút) phản ánh sản phẩm thật NoxSwap trên Sepolia.
+2. Viết nội dung bài đăng trên X (Twitter) giới thiệu sản phẩm kèm hashtag và tag `@iEx_ec`.
 
 ## 7. Quy tắc cập nhật PLAN.md
 
@@ -76,5 +77,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 - [x] Build Plan đã được phê duyệt.
 - [x] Core Product Ready Gate đã đạt trước khi làm landing page.
 - [x] Landing page phản ánh đúng sản phẩm thật và CTA hoạt động.
+- [x] Smart Contracts được deploy thật lên Ethereum Sepolia Testnet.
+- [x] Đã tạo file README.md chính thức và feedback.md ở root repository.
 - [ ] Submission checklist canonical đã hoàn thành.
 - [ ] Bài nộp đã được final review.

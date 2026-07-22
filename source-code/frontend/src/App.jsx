@@ -529,8 +529,10 @@ export default function App() {
 
               <div className="inspector-mini-box">
                 <div className="insp-row">
-                  <span>Sepolia Inspector:</span>
-                  <span className="neo-badge badge-green">NoxCompute Verified</span>
+                  <span>Sepolia Contract:</span>
+                  <a href="https://sepolia.etherscan.io/address/0x38585F5fbB2587bDc085995A0E3bC2B36B7CaA7a" target="_blank" rel="noreferrer" className="insp-link">
+                    0x3858...a7a <ExternalLink size={12} />
+                  </a>
                 </div>
                 <div className="insp-row mt-1">
                   <span>On-Chain Amount:</span>
