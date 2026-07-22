@@ -137,6 +137,12 @@ drawer after reload. Set `VITE_SEPOLIA_ARCHIVE_RPC_URL` when the default archive
 RPC is unsuitable, and optionally set `VITE_KEEPER_HEALTH_URL` to expose keeper
 health in the UI. Neither variable contains a signing key.
 
+The orderbook builds a public index incrementally from lifecycle events and
+persists only finalized public metadata. It no longer enumerates every historical
+order on each refresh. The keeper uses the same chain-canonical model with a
+rebuildable active-order checkpoint; every write still re-reads status and runs
+gas simulation immediately before submission.
+
 ## Compile and Test
 
 Hardhat 3 and its native EDR dependency require a newer Node runtime than the machine default, so backend scripts invoke Node 24 through `npx`.

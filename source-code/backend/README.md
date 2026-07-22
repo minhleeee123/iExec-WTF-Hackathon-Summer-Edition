@@ -5,10 +5,11 @@ permissionless limit-order keeper.
 
 ## Keeper
 
-The keeper treats the deployed `NoxLimitOrderBook` as its only state. It scans
-open orders sequentially, executes trigger-ready orders, and calls the public
-expiry refund after block time passes the expiry. It never cancels orders or
-decrypts confidential handles.
+The keeper treats the deployed `NoxLimitOrderBook` as its canonical state. It
+builds an active-order set incrementally from lifecycle events, checks those
+orders sequentially, executes trigger-ready orders, and calls the public expiry
+refund after block time passes the expiry. It never cancels orders or decrypts
+confidential handles.
 
 ```bash
 npm run keeper:dry   # one read-only Sepolia scan
@@ -21,6 +22,17 @@ requires `KEEPER_PRIVATE_KEY`; dry-run mode deliberately does not. The configure
 wallet needs Sepolia ETH and the process refuses writes below `KEEPER_MIN_ETH`.
 Transactions are submitted sequentially and order status is read again immediately
 before simulation/submission to tolerate competing keepers.
+
+The default `.keeper-checkpoint.json` contains only chain ID, contract address,
+the finalized block checkpoint, and public order IDs. It is an optional,
+rebuildable cache rather than a database or source of truth. Set
+`KEEPER_CHECKPOINT_FILE` to move it, or delete it at any time to rebuild the
+index from contract events. Recent events remain an unpersisted overlay until
+they pass `KEEPER_FINALITY_BLOCKS` confirmations.
+`KEEPER_HISTORY_RPC_URL` must support archive `eth_getLogs`; it is intentionally
+separate from the low-latency RPC used for current state and transactions.
+`KEEPER_HISTORY_HEAD_LAG_BLOCKS` keeps log queries a few blocks behind provider
+head to tolerate load-balanced archive nodes that briefly disagree on height.
 
 `GET /health` defaults to port `8787` and returns only the chain, public keeper
 address, ETH balance, cycle timestamps, last action, and error count. Set a public
