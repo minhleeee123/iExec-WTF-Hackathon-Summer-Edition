@@ -566,9 +566,9 @@ export default function App() {
 
         {/* Right Badges & Real Wallet Connect */}
         <div className="nav-actions">
-          <span className="neo-badge badge-purple">
+          <span className="neo-badge badge-purple badge-compact">
             <span className="live-dot"></span>
-            Sepolia ({userEthBalance} ETH)
+            Sepolia · {userEthBalance} ETH
           </span>
 
           <button className="neo-btn btn-yellow wallet-connect-btn" onClick={handleConnectWallet}>

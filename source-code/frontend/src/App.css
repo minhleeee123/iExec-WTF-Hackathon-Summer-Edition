@@ -537,6 +537,11 @@
   border-radius: 4px;
 }
 
+.badge-compact {
+  padding: 0.2rem 0.5rem !important;
+  font-size: 0.78rem !important;
+}
+
 .tx-history-container {
   grid-column: 1 / -1;
   padding: 1.75rem;
