@@ -95,9 +95,18 @@ export default function App() {
     }
   ]);
 
-  // Auto detect MetaMask account on load
+  // Auto detect MetaMask account on load & handle network change seamlessly
   useEffect(() => {
     if (window.ethereum) {
+      // Check if already authorized
+      window.ethereum.request({ method: 'eth_accounts' }).then((accs) => {
+        if (accs.length > 0) {
+          setUserAddress(accs[0]);
+          setIsConnected(true);
+          updateUserEthBalance(accs[0]);
+        }
+      }).catch(console.error);
+
       window.ethereum.on('accountsChanged', (accs) => {
         if (accs.length > 0) {
           setUserAddress(accs[0]);
@@ -110,7 +119,14 @@ export default function App() {
       });
 
       window.ethereum.on('chainChanged', () => {
-        window.location.reload();
+        // Re-check accounts after chain switch without hard reload
+        window.ethereum.request({ method: 'eth_accounts' }).then((accs) => {
+          if (accs.length > 0) {
+            setUserAddress(accs[0]);
+            setIsConnected(true);
+            updateUserEthBalance(accs[0]);
+          }
+        });
       });
     }
   }, []);
@@ -127,8 +143,15 @@ export default function App() {
     }
   };
 
-  // REAL METAMASK WALLET CONNECTION
+  // REAL METAMASK WALLET CONNECTION (1-CLICK TOGGLE & AUTO SWITCH)
   const handleConnectWallet = async () => {
+    if (isConnected) {
+      setIsConnected(false);
+      setUserAddress('');
+      showToast('Wallet disconnected');
+      return;
+    }
+
     if (!window.ethereum) {
       alert('MetaMask browser extension is not installed. Please install MetaMask!');
       return;
@@ -138,6 +161,12 @@ export default function App() {
       setNetworkError('');
       const provider = new ethers.BrowserProvider(window.ethereum);
       const accounts = await provider.send('eth_requestAccounts', []);
+
+      const activeAddress = accounts[0];
+      setUserAddress(activeAddress);
+      setIsConnected(true);
+      updateUserEthBalance(activeAddress);
+
       const network = await provider.getNetwork();
 
       // Check if on Sepolia (Chain ID 11155111 / 0xaa36a7)
@@ -148,7 +177,6 @@ export default function App() {
             params: [{ chainId: '0xaa36a7' }],
           });
         } catch (switchError) {
-          // If Sepolia chain is not added, add it
           if (switchError.code === 4902) {
             await window.ethereum.request({
               method: 'wallet_addEthereumChain',
@@ -163,11 +191,6 @@ export default function App() {
           }
         }
       }
-
-      const activeAddress = accounts[0];
-      setUserAddress(activeAddress);
-      setIsConnected(true);
-      updateUserEthBalance(activeAddress);
 
       showToast(`Connected to MetaMask on Sepolia: ${activeAddress.substring(0, 6)}...${activeAddress.substring(38)}`);
     } catch (error) {
