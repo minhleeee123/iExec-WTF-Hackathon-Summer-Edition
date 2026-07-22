@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { ethers } from 'ethers';
-import { ExternalLink, LoaderCircle } from 'lucide-react';
+import { LoaderCircle } from 'lucide-react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import deployment from './deployment.json';
 import {
@@ -32,6 +32,7 @@ import {
 import { getCooldownRemaining, validateNonNegativeAmount, validateTokenAmount } from './lib/validation';
 import AppSidebar from './components/AppSidebar';
 import AppModals from './components/AppModals';
+import LandingFooter from './components/LandingFooter';
 import LandingHeader from './components/LandingHeader';
 import NoticeBanner from './components/NoticeBanner';
 import './App.css';
@@ -695,7 +696,7 @@ export default function App() {
           <Suspense fallback={<div className="route-loading"><LoaderCircle className="spin" size={24} /><span>Loading NoxSwap</span></div>}>
             <Routes><Route path="/" element={<LandingPage ethPrice={ethPrice} />} /></Routes>
           </Suspense>
-          <footer><span>NoxSwap</span><span>Ethereum Sepolia / iExec Nox</span><a href={deployment.explorerUrl} target="_blank" rel="noreferrer">Contract <ExternalLink size={13} /></a></footer>
+          <LandingFooter />
         </>
       ) : (
         <div className="product-layout">

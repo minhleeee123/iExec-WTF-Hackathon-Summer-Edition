@@ -9,9 +9,12 @@ export default function LandingHeader() {
         <span>Nox<span className="brand-accent">Swap</span></span>
         <span className="network-chip">Sepolia</span>
       </Link>
-      <Link className="landing-header-launch" to="/app/trade">
-        Launch app <ArrowRight size={17} />
-      </Link>
+      <nav className="landing-header-nav" aria-label="Landing page navigation">
+        <a href="#how-it-works">How it works</a>
+        <a href="#privacy">Privacy</a>
+        <a href="#faq">FAQ</a>
+        <Link className="landing-header-launch" to="/app/trade">Launch app <ArrowRight size={17} /></Link>
+      </nav>
     </header>
   );
 }

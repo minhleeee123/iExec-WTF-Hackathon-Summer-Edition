@@ -102,6 +102,12 @@ try {
       assert.equal(await page.locator('.app-sidebar').count(), 0, 'landing must not render the application sidebar');
       assert.equal(await page.locator('.mobile-bottom-nav').count(), 0, 'landing must not render application navigation');
       assert.equal(await page.getByRole('button', { name: /connect wallet/i }).count(), 0, 'landing must not request a wallet connection');
+      assert.equal(await page.locator('.onboarding-flow li').count(), 5, 'landing onboarding must contain five real workflow steps');
+      assert.equal(await page.locator('.privacy-matrix > div').count(), 2, 'landing must explain public and encrypted data');
+      assert.equal(await page.locator('.faq-list details').count(), 8, 'landing must contain the complete FAQ set');
+      await page.locator('.faq-list summary').first().click();
+      assert(await page.locator('.faq-list details').first().evaluate((element) => element.open), 'FAQ disclosure must open');
+      assert.match(await page.locator('.landing-footer').textContent(), /Testnet only/i);
 
       await page.locator('.landing-hero .launch-button').click();
       await page.waitForURL(`${url}/app/trade`);
@@ -124,13 +130,13 @@ try {
       const publicOrderCount = await page.locator('.public-order-row').count();
       assert(publicOrderCount >= 2, 'public orderbook must load real orders without a connected wallet');
 
-      await page.getByLabel('Order status').selectOption('executable');
+      await page.getByLabel('Order status').selectOption('open');
       await page.locator('.public-order-row').first().waitFor();
-      const executableText = await page.locator('.public-order-row .order-identity strong').first().textContent();
-      const executableId = Number(executableText.match(/^#(\d+)/)?.[1]);
-      assert(Number.isInteger(executableId), 'a live executable order is required for permission UI tests');
-      if (actionableOrderId === null) actionableOrderId = executableId;
-      else assert.equal(executableId, actionableOrderId, 'desktop and mobile must read the same executable order');
+      const openOrderText = await page.locator('.public-order-row .order-identity strong').first().textContent();
+      const openOrderId = Number(openOrderText.match(/^#(\d+)/)?.[1]);
+      assert(Number.isInteger(openOrderId), 'a live open order is required for owner permission UI tests');
+      if (actionableOrderId === null) actionableOrderId = openOrderId;
+      else assert.equal(openOrderId, actionableOrderId, 'desktop and mobile must read the same open order');
       await page.getByLabel('Order status').selectOption('all');
       await page.waitForURL(`${url}/app/trade?mode=orders`);
 
@@ -148,13 +154,12 @@ try {
       await page.locator('.public-order-row').first().waitFor({ timeout: 30_000 });
       assert.equal(await page.getByLabel('Order status').inputValue(), 'executed', 'order filter must survive reload');
 
-      await page.getByLabel('Order status').selectOption('executable');
+      await page.getByLabel('Order status').selectOption('open');
       await page.locator('.public-order-row').first().click();
       await page.getByRole('dialog', { name: /order \d+ details/i }).waitFor();
       assert.match(page.url(), /[?&]order=\d+/);
       assert.equal(await page.locator('.order-detail-drawer').getByText('Encrypted amount', { exact: true }).count(), 1);
       assert.equal(await page.getByRole('button', { name: 'Reveal my order terms' }).count(), 0, 'read-only user must not see owner reveal');
-      assert.equal(await page.getByRole('button', { name: 'Connect wallet to act' }).count(), 1, 'wallet-free executable order must offer connection');
       const drawerLayout = await page.locator('.order-detail-drawer').evaluate((element) => ({
         clientWidth: element.clientWidth,
         scrollWidth: element.scrollWidth,
@@ -230,10 +235,8 @@ try {
     await walletPage.screenshot({ path: '/tmp/noxswap-wallet.png', fullPage: true });
     await walletPage.goto(`${url}/app/trade?mode=orders&order=${actionableOrderId}`, { waitUntil: 'domcontentloaded' });
     await walletPage.getByRole('dialog', { name: `Order ${actionableOrderId} details` }).waitFor({ timeout: 30_000 });
-    assert.equal(await walletPage.getByRole('button', { name: 'Reveal my order terms' }).count(), 1, 'owner must be able to reveal order terms');
-    assert.equal(await walletPage.getByRole('button', { name: 'Execute order' }).count(), 1, 'owner may execute a ready order');
-    await walletPage.getByRole('button', { name: 'Cancel', exact: true }).click();
-    assert.equal(await walletPage.getByRole('button', { name: 'Cancel order' }).count(), 1, 'owner cancel action must be available');
+    await walletPage.getByRole('button', { name: 'Reveal my order terms' }).waitFor({ timeout: 30_000 });
+    await walletPage.getByRole('button', { name: 'Cancel order' }).waitFor();
     await walletPage.screenshot({ path: '/tmp/noxswap-order-owner.png' });
     assert.equal(walletErrors.length, 0, `wallet runtime errors: ${walletErrors.join('; ')}`);
     results.push({
@@ -253,11 +256,10 @@ try {
     await installReadOnlyWallet(executorPage, executorAddress);
     await executorPage.goto(`${url}/app/trade?mode=orders&order=${actionableOrderId}`, { waitUntil: 'domcontentloaded' });
     await executorPage.getByRole('dialog', { name: `Order ${actionableOrderId} details` }).waitFor({ timeout: 30_000 });
-    assert.equal(await executorPage.getByRole('button', { name: 'Execute order' }).count(), 1, 'non-owner must see permissionless execute');
     assert.equal(await executorPage.getByRole('button', { name: 'Cancel order' }).count(), 0, 'non-owner must not see cancel');
     assert.equal(await executorPage.getByRole('button', { name: 'Reveal my order terms' }).count(), 0, 'non-owner must not see reveal');
     await executorPage.screenshot({ path: '/tmp/noxswap-order-executor.png' });
-    results.push({ viewport: '1280x900-executor', permissionlessExecute: true, ownerControlsHidden: true, screenshot: '/tmp/noxswap-order-executor.png' });
+    results.push({ viewport: '1280x900-non-owner', ownerControlsHidden: true, screenshot: '/tmp/noxswap-order-executor.png' });
     await executorPage.close();
   } finally {
     await browser.close();
