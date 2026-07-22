@@ -8,6 +8,7 @@ import {
   ArrowDown, 
   ExternalLink, 
   CheckCircle2, 
+  XCircle,
   Zap, 
   Cpu, 
   Eye, 
@@ -29,7 +30,13 @@ import {
   TrendingUp,
   Sliders,
   DollarSign,
-  Maximize2
+  Maximize2,
+  Wand2,
+  Droplets,
+  Unplug,
+  Key,
+  History,
+  Activity
 } from 'lucide-react';
 import './App.css';
 
@@ -96,8 +103,8 @@ export default function App() {
 
   // Feature 5: Real-time TEE Execution Terminal Logs State
   const [teeLogs, setTeeLogs] = useState([
-    `[00:00.00] 🛡️ iExec Nox Protocol initialized on Ethereum Sepolia Testnet`,
-    `[00:00.01] ⚡ Intel TDX TEE Enclave ready to compute ERC-7984 confidential swaps`
+    `[00:00.00] iExec Nox Protocol initialized on Ethereum Sepolia Testnet`,
+    `[00:00.01] Intel TDX TEE Enclave ready to compute ERC-7984 confidential swaps`
   ]);
   const terminalEndRef = useRef(null);
 
@@ -115,7 +122,7 @@ export default function App() {
 
   // Multi-Asset Balances
   const [balances, setBalances] = useState({
-    cUSDC: { decrypted: 1100, handle: '0xfbfe...deb1f7' },
+    cUSDC: { decrypted: 4300, handle: '0xba29...82c1' },
     cETH: { decrypted: 4.85, handle: '0x7eC7...641e' },
     cWBTC: { decrypted: 0.15, handle: '0xB012...123456' },
     cSOL: { decrypted: 12.4, handle: '0xS0L1...123456' }
@@ -133,7 +140,7 @@ export default function App() {
   const [transactions, setTransactions] = useState([
     {
       id: 'tx-sepolia-1',
-      hash: '0x2881fcc27fc1e50d1843d87b2c94370a205cc44aff92ef6f1582d65fbf608a38',
+      hash: '0x8ed95967e9edb1f3864b044d4961035c9b2b71bf57afbb7dbacbc9b007ca5498',
       tokenIn: 'cUSDC',
       tokenOut: 'cETH',
       encryptedHandle: '0xeinput_7984_92f81a',
@@ -164,7 +171,7 @@ export default function App() {
 
       const [shadowUsdc, handleUsdc, shadowEth, handleEth] = await Promise.all([
         cUsdcContract.shadowBalanceOf(address).catch(() => 0n),
-        cUsdcContract.confidentialBalanceOf(address).catch(() => '0xfbfe...deb1f7'),
+        cUsdcContract.confidentialBalanceOf(address).catch(() => '0xba29...82c1'),
         cEthContract.shadowBalanceOf(address).catch(() => 0n),
         cEthContract.confidentialBalanceOf(address).catch(() => '0x7eC7...641e')
       ]);
@@ -177,7 +184,7 @@ export default function App() {
         cUSDC: { 
           decrypted: formattedUsdc > 0 ? formattedUsdc : prev.cUSDC.decrypted, 
           handle: handleUsdc === '0x0000000000000000000000000000000000000000000000000000000000000000' 
-            ? '0xfbfe...deb1f7' 
+            ? '0xba29...82c1' 
             : `${handleUsdc.substring(0, 6)}...${handleUsdc.substring(58)}` 
         },
         cETH: { 
@@ -247,7 +254,7 @@ export default function App() {
       setIsConnected(false);
       setUserAddress('');
       showToast('Wallet disconnected');
-      addTeeLog('🔌 Wallet disconnected by user');
+      addTeeLog('Wallet disconnected by user');
       return;
     }
 
@@ -292,7 +299,7 @@ export default function App() {
       }
 
       showToast(`Connected to MetaMask on Sepolia: ${activeAddress.substring(0, 6)}...${activeAddress.substring(38)}`);
-      addTeeLog(`🔑 Wallet Connected: ${activeAddress} (ChainId: 11155111 Sepolia)`);
+      addTeeLog(`Wallet Connected: ${activeAddress} (ChainId: 11155111 Sepolia)`);
     } catch (error) {
       console.error('Wallet connection failed:', error);
       setNetworkError(error.message || 'Failed to connect wallet');
@@ -330,7 +337,7 @@ export default function App() {
         timestamp: 'Just now'
       };
       setLimitOrders(prev => [newOrder, ...prev]);
-      addTeeLog(`🔮 Confidential Limit Order Created: ${numAmount} ${tokenIn} when target price reaches ${limitPrice} USD. Encrypted inside Intel TDX TEE.`);
+      addTeeLog(`Confidential Limit Order Created: ${numAmount} ${tokenIn} when target price reaches ${limitPrice} USD. Encrypted inside Intel TDX TEE.`);
       showToast(`Confidential Limit Order Created! Guarded inside iExec Nox TEE.`);
       return;
     }
@@ -340,7 +347,7 @@ export default function App() {
       setIsSwapping(true);
       setSwapStep(1);
       setTxMessage('Encrypting swap payload client-side via @iexec-nox/handle...');
-      addTeeLog(`🔒 Client Payload Encrypted via @iexec-nox/handle: einput_7984_${Date.now().toString(16)}`);
+      addTeeLog(`Client Payload Encrypted via @iexec-nox/handle: einput_7984_${Date.now().toString(16)}`);
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
@@ -354,7 +361,7 @@ export default function App() {
         try {
           setSwapStep(2);
           setTxMessage('Sending transaction to Sepolia & triggering Intel TDX TEE Enclave...');
-          addTeeLog(`⚡ Broadcasted Tx to Sepolia. NoxCompute event emitted -> Intel TDX Enclave triggered.`);
+          addTeeLog(`Broadcasted Tx to Sepolia. NoxCompute event emitted -> Intel TDX Enclave triggered.`);
 
           const estimatedAmount = ethers.parseEther((numAmount * (tokenRates[tokenIn] / tokenRates[tokenOut])).toFixed(4));
           const encryptedPayloadBytes = ethers.keccak256(
@@ -370,7 +377,7 @@ export default function App() {
 
           setSwapStep(3);
           setTxMessage(`Tx Broadcasted! Waiting for Sepolia block confirmation (${tx.hash.substring(0, 10)}...)...`);
-          addTeeLog(`🛡️ TEE Enclave RAM: Decrypted input handles & computed AMM constant product ratio x * y = k.`);
+          addTeeLog(`TEE Enclave RAM: Decrypted input handles & computed AMM constant product ratio x * y = k.`);
 
           const receipt = await tx.wait();
           const realTxHash = receipt.hash;
@@ -378,7 +385,7 @@ export default function App() {
           setIsSwapping(false);
           setSwapStep(0);
           setTxMessage('');
-          addTeeLog(`✅ Settled Encrypted Result Handle to Sepolia Contract 0x3858...a7a! Tx: ${realTxHash}`);
+          addTeeLog(`Settled Encrypted Result Handle to Sepolia Contract 0x3858...a7a! Tx: ${realTxHash}`);
 
           // Update balances
           const receiveAmount = numAmount * (tokenRates[tokenIn] / tokenRates[tokenOut]);
@@ -407,7 +414,7 @@ export default function App() {
           console.error('Contract Tx Error:', err);
           setIsSwapping(false);
           setSwapStep(0);
-          addTeeLog(`❌ Transaction Error: ${err.reason || err.message}`);
+          addTeeLog(`Transaction Error: ${err.reason || err.message}`);
           alert(`Transaction failed: ${err.reason || err.message}`);
         }
       }, 1200);
@@ -428,7 +435,7 @@ export default function App() {
     try {
       setIsProcessingWrap(true);
       showToast('Requesting 1,000 cUSDC test tokens on Sepolia...');
-      addTeeLog(`💧 Minting 1,000 cUSDC Testnet Tokens on Sepolia...`);
+      addTeeLog(`Minting 1,000 cUSDC Testnet Tokens on Sepolia...`);
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
@@ -441,7 +448,7 @@ export default function App() {
 
       setIsProcessingWrap(false);
       fetchLiveTokenBalances(userAddress);
-      addTeeLog(`✅ Minted 1,000 cUSDC to ${userAddress}! Tx: ${tx.hash}`);
+      addTeeLog(`Minted 1,000 cUSDC to ${userAddress}! Tx: ${tx.hash}`);
       showToast(`Successfully minted 1,000 cUSDC on Sepolia! Tx: ${tx.hash.substring(0, 10)}...`);
     } catch (err) {
       console.error(err);
@@ -484,18 +491,18 @@ export default function App() {
       let tx;
       if (wrapMode === 'wrap') {
         showToast(`Wrapping ${numAmount} Sepolia USDC into cUSDC (ERC-7984)...`);
-        addTeeLog(`🔐 Wrapping ${numAmount} USDC into ERC-7984 encrypted ciphertext...`);
+        addTeeLog(`Wrapping ${numAmount} USDC into ERC-7984 encrypted ciphertext...`);
         tx = await cUsdcContract.wrap(parseAmt);
       } else {
         showToast(`Unwrapping ${numAmount} cUSDC back to public USDC...`);
-        addTeeLog(`🔓 Unwrapping ${numAmount} cUSDC back to public ERC-20...`);
+        addTeeLog(`Unwrapping ${numAmount} cUSDC back to public ERC-20...`);
         tx = await cUsdcContract.unwrap(parseAmt);
       }
 
       await tx.wait();
       setIsProcessingWrap(false);
       fetchLiveTokenBalances(userAddress);
-      addTeeLog(`✅ Wrap Tx Confirmed on Sepolia! Tx: ${tx.hash}`);
+      addTeeLog(`Wrap Tx Confirmed on Sepolia! Tx: ${tx.hash}`);
 
       showToast(`Wrap Tx Confirmed on Sepolia! Tx: ${tx.hash.substring(0, 10)}...`);
     } catch (err) {
@@ -613,7 +620,9 @@ export default function App() {
 
             <div className="modal-comparison-grid">
               <div className="comp-card public-comp">
-                <h3 className="text-pink">❌ Public DEX (Uniswap v3)</h3>
+                <h3 className="text-pink">
+                  <XCircle size={18} color="#ff5757" className="inline-icon" /> Public DEX (Uniswap v3)
+                </h3>
                 <p>On-Chain Etherscan Log displays plaintext values:</p>
                 <div className="code-box">
                   <div><strong>Trader Address:</strong> <code>0xE412...B64E</code></div>
@@ -624,7 +633,9 @@ export default function App() {
               </div>
 
               <div className="comp-card private-comp">
-                <h3 className="text-green">✅ NoxSwap (iExec Nox TEE)</h3>
+                <h3 className="text-green">
+                  <CheckCircle2 size={18} color="#00e676" className="inline-icon" /> NoxSwap (iExec Nox TEE)
+                </h3>
                 <p>Sepolia Etherscan Log displays 100% encrypted ciphertext:</p>
                 <div className="code-box">
                   <div><strong>Trader Address:</strong> <code>0xE412...B64E</code></div>
@@ -737,7 +748,9 @@ export default function App() {
 
             <div className="modal-comparison-grid">
               <div className="comp-card public-comp">
-                <h3 className="text-pink">❌ Public DEX (Uniswap v3)</h3>
+                <h3 className="text-pink">
+                  <XCircle size={18} color="#ff5757" className="inline-icon" /> Public DEX (Uniswap v3)
+                </h3>
                 <p>On-Chain Etherscan Log displays plaintext values:</p>
                 <div className="code-box">
                   <div><strong>Trader Address:</strong> <code>0xE412...B64E</code></div>
@@ -748,7 +761,9 @@ export default function App() {
               </div>
 
               <div className="comp-card private-comp">
-                <h3 className="text-green">✅ NoxSwap (iExec Nox TEE)</h3>
+                <h3 className="text-green">
+                  <CheckCircle2 size={18} color="#00e676" className="inline-icon" /> NoxSwap (iExec Nox TEE)
+                </h3>
                 <p>Sepolia Etherscan Log displays 100% encrypted ciphertext:</p>
                 <div className="code-box">
                   <div><strong>Trader Address:</strong> <code>0xE412...B64E</code></div>
@@ -888,7 +903,7 @@ export default function App() {
                   className={`neo-btn btn-sm ${limitMode === 'limit' ? 'btn-purple' : 'btn-white'}`}
                   onClick={() => setLimitMode('limit')}
                 >
-                  🔮 LIMIT ORDER
+                  <Wand2 size={14} /> LIMIT ORDER
                 </button>
               </div>
             </div>
@@ -1090,7 +1105,7 @@ export default function App() {
             {/* FEATURE 1: CONFIDENTIAL LIMIT ORDERS LIST */}
             {limitOrders.length > 0 && (
               <div className="neo-box sidebar-card card-purple">
-                <h3 className="card-title-text mb-2">🔮 ACTIVE CONFIDENTIAL LIMIT ORDERS</h3>
+                <h3 className="card-title-text mb-2"><Wand2 size={14} className="inline-icon" /> ACTIVE CONFIDENTIAL LIMIT ORDERS</h3>
                 <div className="limit-orders-list">
                   {limitOrders.map(ord => (
                     <div key={ord.id} className="limit-order-item">
