@@ -543,10 +543,15 @@
   margin-top: 1rem;
 }
 
-/* PAGE 3: WRAP & FAUCET */
 .wrap-page-container {
-  max-width: 620px;
+  max-width: 650px;
   margin: 2rem auto;
+}
+
+.flex-col-gap {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
 .wrap-card {

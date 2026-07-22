@@ -828,9 +828,34 @@ export default function App() {
         </div>
       )}
 
-      {/* PAGE 3: WRAP & FAUCET */}
+      {/* PAGE 3: WRAP & FAUCET (SPLIT INTO 2 DISTINCT CARDS) */}
       {activeTab === 'wrap' && (
-        <div className="wrap-page-container">
+        <div className="wrap-page-container flex-col-gap">
+          {/* KHUNG 1: FAUCET CARD */}
+          <div className="neo-box wrap-card">
+            <div className="card-header-row mb-2">
+              <div>
+                <h2>1-CLICK TESTNET FAUCET</h2>
+                <p className="card-subtitle-text">Mint 1,000 cUSDC test tokens directly to your MetaMask wallet on Sepolia</p>
+              </div>
+              <span className="neo-badge badge-green">Free Testnet Tokens</span>
+            </div>
+
+            <div className="insp-row mb-3 mt-2">
+              <span>Your Live On-Chain cUSDC Balance:</span>
+              <span className="mono-font bal-num font-bold">{balances.cUSDC?.decrypted} cUSDC</span>
+            </div>
+
+            <button 
+              className="neo-btn btn-cyan btn-execute" 
+              onClick={handleFaucet}
+              disabled={isProcessingWrap}
+            >
+              <Coins size={18} /> FAUCET (MINT 1,000 cUSDC ON SEPOLIA)
+            </button>
+          </div>
+
+          {/* KHUNG 2: WRAP / UNWRAP CARD */}
           <div className="neo-box wrap-card">
             <div className="card-header-row mb-3">
               <div>
@@ -853,18 +878,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Live On-Chain Balance Banner */}
-            <div className="neo-box sidebar-card card-cyan mb-3">
-              <div className="insp-row">
-                <span>Your Live On-Chain cUSDC Balance:</span>
-                <span className="mono-font bal-num font-bold">{balances.cUSDC?.decrypted} cUSDC</span>
-              </div>
-              <div className="insp-row mt-1">
-                <span>Encrypted Handle (ERC-7984):</span>
-                <code className="text-enc">{balances.cUSDC?.handle}</code>
-              </div>
-            </div>
-
             <div className="neo-input-box mb-3">
               <div className="input-header">
                 <span>{wrapMode === 'wrap' ? 'Public Sepolia USDC' : 'Confidential cUSDC (ERC-7984)'}</span>
@@ -881,23 +894,13 @@ export default function App() {
               </div>
             </div>
 
-            <div className="action-row">
-              <button 
-                className="neo-btn btn-green btn-flex" 
-                onClick={handleWrapAction}
-                disabled={isProcessingWrap}
-              >
-                {isProcessingWrap ? 'PROCESSING ON SEPOLIA...' : wrapMode === 'wrap' ? 'WRAP TO CONFIDENTIAL cUSDC' : 'UNWRAP TO PUBLIC USDC'}
-              </button>
-
-              <button 
-                className="neo-btn btn-cyan btn-flex" 
-                onClick={handleFaucet}
-                disabled={isProcessingWrap}
-              >
-                <Coins size={16} /> FAUCET (MINT 1,000 cUSDC ON SEPOLIA)
-              </button>
-            </div>
+            <button 
+              className="neo-btn btn-green btn-execute" 
+              onClick={handleWrapAction}
+              disabled={isProcessingWrap}
+            >
+              {isProcessingWrap ? 'PROCESSING ON SEPOLIA...' : wrapMode === 'wrap' ? 'WRAP TO CONFIDENTIAL cUSDC' : 'UNWRAP TO PUBLIC USDC'}
+            </button>
           </div>
         </div>
       )}
