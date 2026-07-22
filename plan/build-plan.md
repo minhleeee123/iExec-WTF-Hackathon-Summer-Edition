@@ -15,7 +15,7 @@
 - Wallet/RPC: Ethers v6 `BrowserProvider`, MetaMask và Ethereum Sepolia.
 - Core flow: Connect -> Faucet -> Wrap -> SDK encrypt -> Confidential swap -> SDK decrypt -> Receipt/history.
 - Supporting real flows: Unwrap với public decryption proof, ACL viewer, Chainlink reference price, MCP stdio.
-- Public frontend deployment: `https://frontend-dusky-five-56.vercel.app`; external mobile smoke test and four-order public read passed.
+- Public frontend deployment: `https://frontend-dusky-five-56.vercel.app`; external mobile smoke test and eight-order public read passed locally against live Sepolia data.
 - Contract deployment: Live on Ethereum Sepolia, addresses canonical trong `source-code/backend/deployment-sepolia.json`.
 
 ## 3. Tech stack
@@ -96,6 +96,8 @@ Failure handling:
 - [x] Keep account, gas, refresh, and private-balance reveal globally available across app workflows.
 - [x] Replace wallet-scoped order cards with a real public orderbook, URL filters, detail drawer, permission-aware actions, and session-only owner reveal.
 - [x] Add the stateless permissionless keeper with dry-run, health, structured logs, optional webhook, and competing-keeper protection.
+- [x] Replace linear `1..nextOrderId` polling with lifecycle-event indexes, finalized checkpoints, bounded log ranges, and active-order reads.
+- [x] Add push/PR CI for contracts, keeper, frontend, deployment consistency, and secret scanning; keep signer-backed Sepolia E2E manual.
 - [ ] Manual MetaMask smoke test in the final public-hosted URL.
 
 ### Milestone 5: Submission
@@ -118,17 +120,18 @@ Failure handling:
 
 | Flow | Test | Evidence | Status |
 |---|---|---|---|
-| Compile/ABI/security regression | `npm run compile && npm test` | 13 passing Node tests | Pass |
-| Keeper decisions and lifecycle | `npm test`, `npm run keeper:dry`, and one authorized live cycle | Unit coverage plus order #3 permissionlessly executed by the stateless keeper | Pass |
+| Compile/ABI/security regression | `npm run compile && npm test` | 20 passing Node tests, including 2,000 deterministic swap invariants | Pass |
+| Keeper decisions, indexing, and lifecycle | `npm test`, `npm run keeper:dry`, and live cycles | Unit coverage, incremental active-order checkpoint, order #3 permissionless execution, and an order #5-only dry scan | Pass |
 | Live Router V2 protections | `npm run test:sepolia` | Normal output plus forced minOut rejection with exact confidential refund | Pass |
 | New pools | Same live E2E | cWBTC and cSOL swaps decrypt to real cUSDC output | Pass |
-| Confidential limit order | Same live E2E | Order execution and exact cancellation refund | Pass |
+| Confidential limit order | Same live E2E | Permissionless execution/expiry, exact cancel/expiry refunds, owner permissions, and double-settlement rejection | Pass |
 | ACL viewer | Same live E2E | ACL subgraph contains granted viewer | Pass |
 | Unwrap | Same live E2E | Exactly `0.01 nWETH` released after proof finalization | Pass |
 | MCP protocol | `npm run test:mcp` | Seven tools, three live pools, order read, balance decrypt | Pass |
-| Frontend static quality | `npm run test:unit && npm run build && npm run lint` | Order state/filter/URL/permission coverage, production build, and zero lint errors | Pass |
+| Frontend static quality | `npm run test:unit && npm run build && npm run lint` | 17 unit tests including incremental event index/cache, production build, and zero lint errors | Pass |
+| Continuous integration | `.github/workflows/ci.yml` | Push/PR compile, tests, lint, build, deployment consistency, and Gitleaks; YAML validated locally | Pass |
 | Responsive layout | Headless Chrome 1440x1000 and 390x844 | Wallet-free live orderbook, responsive detail, URL reload, owner/non-owner controls, landing/app separation, and no horizontal overflow | Pass |
-| Public dApp accessibility | Headless external URL test | Production route loads four real orders at `https://frontend-dusky-five-56.vercel.app` | Pass |
+| Public dApp accessibility | Headless external URL test | Production route loads the live public orderbook at `https://frontend-dusky-five-56.vercel.app` | Pass |
 | MetaMask UI happy path | Manual browser wallet test | Requires extension/user confirmation | Pending |
 
 ## 7. Remaining risks

@@ -1,6 +1,6 @@
 # NoxSwap Remediation and Verification
 
-Date: 2026-07-22
+Date: 2026-07-23
 
 Production frontend: [https://frontend-dusky-five-56.vercel.app](https://frontend-dusky-five-56.vercel.app)
 
@@ -13,9 +13,9 @@ Production frontend: [https://frontend-dusky-five-56.vercel.app](https://fronten
 | Confidential liquidity | Router stores Nox reserve handles for cUSDC/cETH, cWBTC/cUSDC, and cSOL/cUSDC | PASS, three initialized live pools |
 | Protected confidential swap | Input/minOut are encrypted; Router V2 settles output or selects a full encrypted refund | PASS, settle tx `0xb3e661...`; forced rejection/refund tx `0x8ca995...` |
 | Additional assets | nWBTC/cWBTC and nSOL/cSOL use deployed faucets, official wrappers, and encrypted liquidity | PASS, live swaps decrypted as `598.140365 cUSDC` and `149.547018 cUSDC` |
-| Confidential limit orders | Amount/minOut escrowed as handles; Chainlink trigger, permissionless execution, cancel, and expiry refund are on-chain | PASS, order #1 executed and order #2 cancelled with exact `2 cUSDC` refund |
-| Public confidential orderbook | `nextOrderId`, `getOrder`, lifecycle events, `canExecute`, block timestamp, and Chainlink feed drive wallet-free status/filter/detail views | PASS, four real orders including executable order #4 ([creation tx](https://sepolia.etherscan.io/tx/0x2c44ff3e96c2598bd2e764553aff88ff93e3272245b13875f5fcfe0920784114)); URL reload/back/forward and isolated RPC failure paths tested |
-| Stateless order keeper | Pure decision engine plus sequential Sepolia scanner, dry-run, health endpoint, structured logs, optional webhook, and stale-race handling | PASS, keeper executed order #3 permissionlessly ([settlement tx](https://sepolia.etherscan.io/tx/0x58f5918517ac0e0a821511379f2605a25a9931ed1db7579a0a1c09c324f1f3f5)); no decrypt path was invoked |
+| Confidential limit orders | Amount/minOut escrowed as handles; Chainlink trigger, permissionless execution, owner cancel, expiry refund, and terminal-state guards are on-chain | PASS, order #6 executed, order #7 cancelled with exact `2 cUSDC` refund, and order #8 expired with exact `1 cUSDC` refund; repeated settlement and unauthorized cancellation reverted |
+| Public confidential orderbook | Incremental lifecycle-event index, finalized checkpoint, active-order `canExecute`, block timestamp, and Chainlink feed drive wallet-free status/filter/detail views | PASS, eight real orders including open order #5 ([creation tx](https://sepolia.etherscan.io/tx/0x3c34dc608c80d39ebc62f4a3fc4652bd4ea6bfbb78161c1f114f08ead2a17228)); URL reload/back/forward, cache rebuild, bounded RPC ranges, and isolated RPC failure paths tested |
+| Stateless order keeper | Pure decision engine plus incremental active-order event index, rebuildable checkpoint, sequential writes, dry-run, health, structured logs, webhook, and stale-race handling | PASS, keeper executed order #3 permissionlessly ([settlement tx](https://sepolia.etherscan.io/tx/0x58f5918517ac0e0a821511379f2605a25a9931ed1db7579a0a1c09c324f1f3f5)); latest dry-run scanned only open order #5 and invoked no decrypt path |
 | Authorized decryption | Handle SDK decrypts output and balance handles after EIP-712 authorization | PASS |
 | Faucet and wrap | Faucet mints public test assets; wrapper escrows them and creates encrypted balances | PASS |
 | Unwrap | Encrypted request, public decryption proof, contract finalization, and underlying release | PASS, `0.01 nWETH` verified |
@@ -28,7 +28,7 @@ Production frontend: [https://frontend-dusky-five-56.vercel.app](https://fronten
 | Responsive UI | Production build plus headless Chrome at `1440x1000` and `390x844`; validates public orderbook/detail, URL persistence, owner/non-owner controls, landing/app separation, desktop sidebar, mobile wallet drawer, and bottom navigation | PASS |
 | Public source verification | Sourcify API v2 Standard JSON verification | PASS, exact creation/runtime match for all ten project contracts |
 
-The Router V2 live E2E run verified normal settlement, an intentionally impossible minOut with exact confidential refund, both new pools, order execution/cancellation, ACL sharing, receipt ownership, and release of exactly `0.01 nWETH` during unwrap.
+The latest Router V2 live E2E run verified normal settlement, an intentionally impossible minOut with exact confidential refund, both additional pools, permissionless order execution/expiry, owner-only cancellation, double-settlement rejection, ACL sharing, receipt ownership, and release of exactly `0.01 nWETH` during unwrap.
 
 ## Remaining Unsupported Features
 
@@ -76,6 +76,7 @@ npm run test:ui
 ## Security Notes
 
 - Runtime files contain no embedded private key or fallback signing key.
+- GitHub Actions runs contract compilation/tests, frontend unit/lint/build, deployment consistency, and Gitleaks on pushes and pull requests; live Sepolia E2E is manual and environment-secret protected.
 - Keeper logs, webhook payloads, and health responses exclude private keys, plaintext order terms, decryption output, and encrypted handles.
 - `.env` files are ignored by git.
 - This remains hackathon/testnet software and has not received an external smart-contract security audit.
