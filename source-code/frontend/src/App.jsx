@@ -568,7 +568,7 @@ export default function App() {
         <div className="nav-actions">
           <span className="neo-badge badge-purple">
             <span className="live-dot"></span>
-            Sepolia
+            Sepolia ({userEthBalance} ETH)
           </span>
 
           <button className="neo-btn btn-yellow wallet-connect-btn" onClick={handleConnectWallet}>
