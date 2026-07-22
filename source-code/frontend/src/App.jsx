@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Shield, 
   Lock, 
@@ -14,16 +14,20 @@ import {
   Coins, 
   FileText, 
   Code2, 
-  Info,
   ChevronRight,
   Sparkles,
   Layers,
-  Globe
+  Globe,
+  ArrowUpRight,
+  Check,
+  X,
+  AlertTriangle
 } from 'lucide-react';
 import './App.css';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('swap'); // 'swap' | 'landing' | 'feedback'
+  // Page Navigation State: 'landing' (First Page/Landing), 'swap', 'wrap', 'feedback'
+  const [activeTab, setActiveTab] = useState('landing');
   const [isConnected, setIsConnected] = useState(false);
   const [userAddress, setUserAddress] = useState('');
   
@@ -32,16 +36,14 @@ export default function App() {
   const [tokenOut, setTokenOut] = useState('cETH');
   const [amountIn, setAmountIn] = useState('1000');
   const [isSwapping, setIsSwapping] = useState(false);
-  const [swapStep, setSwapStep] = useState(0); // 0: Idle, 1: Encrypting, 2: TEE Compute, 3: Settling
+  const [swapStep, setSwapStep] = useState(0); // 0: Idle, 1: Client Encrypt, 2: TEE Compute, 3: Sepolia Settlement
   
   // Wrap / Unwrap state
-  const [showWrapModal, setShowWrapModal] = useState(false);
   const [wrapAmount, setWrapAmount] = useState('500');
+  const [wrapMode, setWrapMode] = useState('wrap'); // 'wrap' | 'unwrap'
   
   // Decryption state
   const [isDecrypted, setIsDecrypted] = useState(false);
-
-  // Faucet state
   const [showFaucetToast, setShowFaucetToast] = useState(false);
 
   // Balances
@@ -92,13 +94,13 @@ export default function App() {
     }
 
     setIsSwapping(true);
-    setSwapStep(1); // Encrypting client-side via @iexec-nox/handle
+    setSwapStep(1); // Encrypting client-side payload
 
     setTimeout(() => {
-      setSwapStep(2); // iExec Nox TEE Execution (Intel TDX Enclave)
+      setSwapStep(2); // iExec Nox TEE Execution
       
       setTimeout(() => {
-        setSwapStep(3); // Sepolia State Settlement
+        setSwapStep(3); // Sepolia Settlement
         
         setTimeout(() => {
           setIsSwapping(false);
@@ -122,13 +124,13 @@ export default function App() {
             tokenOut,
             encryptedHandle: `0xeinput_7984_${Math.random().toString(16).substring(2, 8)}`,
             status: 'Confirmed on Sepolia',
-            teeTime: `${(2.5 + Math.random()).toFixed(1)}s`,
+            teeTime: `${(2.4 + Math.random()).toFixed(1)}s`,
             timestamp: 'Just now'
           };
           setTransactions(prev => [newTx, ...prev]);
-        }, 1500);
-      }, 2000);
-    }, 1500);
+        }, 1200);
+      }, 1800);
+    }, 1200);
   };
 
   const handleFaucet = () => {
@@ -140,43 +142,63 @@ export default function App() {
     setTimeout(() => setShowFaucetToast(false), 3000);
   };
 
-  return (
-    <div className="app-container">
-      {/* Background Orbs */}
-      <div className="ambient-orb orb-1"></div>
-      <div className="ambient-orb orb-2"></div>
+  const handleWrapAction = () => {
+    const num = parseFloat(wrapAmount) || 0;
+    if (wrapMode === 'wrap') {
+      setBalances(prev => ({
+        ...prev,
+        cUSDC: { ...prev.cUSDC, decrypted: prev.cUSDC.decrypted + num }
+      }));
+    } else {
+      setBalances(prev => ({
+        ...prev,
+        cUSDC: { ...prev.cUSDC, decrypted: Math.max(0, prev.cUSDC.decrypted - num) }
+      }));
+    }
+    setShowFaucetToast(true);
+    setTimeout(() => setShowFaucetToast(false), 3000);
+  };
 
-      {/* Navbar */}
-      <header className="navbar">
-        <div className="nav-brand" onClick={() => setActiveTab('swap')}>
-          <div className="brand-logo">
-            <Shield className="shield-icon" />
-            <Zap className="zap-icon" />
+  return (
+    <div className="neo-layout">
+      {/* Top Navigation Bar */}
+      <header className="neo-navbar neo-box">
+        <div className="nav-brand-group" onClick={() => setActiveTab('landing')}>
+          <div className="neo-logo-icon">
+            <Shield size={24} color="#000" />
+            <Zap size={14} color="#000" className="zap-badge" />
           </div>
           <div>
-            <div className="brand-title">NoxSwap</div>
-            <div className="brand-subtitle">Confidential DEX Router</div>
+            <div className="brand-name">NoxSwap</div>
+            <div className="brand-tag">Confidential DEX Router</div>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <nav className="nav-menu">
+        <nav className="nav-tab-container">
           <button 
-            className={`nav-tab ${activeTab === 'swap' ? 'active' : ''}`}
+            className={`neo-nav-link ${activeTab === 'landing' ? 'active-link' : ''}`}
+            onClick={() => setActiveTab('landing')}
+          >
+            <Globe size={16} />
+            Landing Page
+          </button>
+          <button 
+            className={`neo-nav-link ${activeTab === 'swap' ? 'active-link' : ''}`}
             onClick={() => setActiveTab('swap')}
           >
             <RefreshCw size={16} />
             Confidential Swap
           </button>
           <button 
-            className={`nav-tab ${activeTab === 'landing' ? 'active' : ''}`}
-            onClick={() => setActiveTab('landing')}
+            className={`neo-nav-link ${activeTab === 'wrap' ? 'active-link' : ''}`}
+            onClick={() => setActiveTab('wrap')}
           >
-            <Globe size={16} />
-            Presentation & Specs
+            <Layers size={16} />
+            Wrap & Faucet
           </button>
           <button 
-            className={`nav-tab ${activeTab === 'feedback' ? 'active' : ''}`}
+            className={`neo-nav-link ${activeTab === 'feedback' ? 'active-link' : ''}`}
             onClick={() => setActiveTab('feedback')}
           >
             <FileText size={16} />
@@ -184,26 +206,21 @@ export default function App() {
           </button>
         </nav>
 
-        {/* Header Right Badges & Wallet */}
-        <div className="nav-right">
-          <span className="badge-sepolia">
-            <span className="pulse-dot"></span>
-            Ethereum Sepolia
+        {/* Right Badges & Wallet Connect */}
+        <div className="nav-actions">
+          <span className="neo-badge badge-purple">
+            <span className="live-dot"></span>
+            ETH Sepolia
           </span>
-          <span className="badge-nox">
-            <Cpu size={13} />
-            iExec Nox TEE Active
+          <span className="neo-badge badge-green">
+            <Cpu size={12} />
+            iExec Nox TEE
           </span>
 
-          <button className="btn-secondary" onClick={handleFaucet} title="Get 1,000 Sepolia test cUSDC">
-            <Coins size={15} />
-            Faucet
-          </button>
-
-          <button className="btn-primary wallet-btn" onClick={handleConnectWallet}>
+          <button className="neo-btn btn-yellow wallet-connect-btn" onClick={handleConnectWallet}>
             {isConnected ? (
               <>
-                <CheckCircle2 size={16} color="#34d399" />
+                <CheckCircle2 size={16} />
                 {`${userAddress.substring(0, 6)}...${userAddress.substring(38)}`}
               </>
             ) : (
@@ -213,250 +230,343 @@ export default function App() {
         </div>
       </header>
 
-      {/* Toast Banner */}
+      {/* Faucet Notification Toast */}
       {showFaucetToast && (
-        <div className="toast-notification">
-          <Sparkles size={18} color="#10b981" />
-          <span>Received <strong>1,000 cUSDC</strong> (ERC-7984) on Sepolia Testnet!</span>
+        <div className="neo-toast neo-box">
+          <Sparkles size={20} color="#000" />
+          <span>Success! Test Tokens updated on Sepolia Testnet.</span>
         </div>
       )}
 
-      {/* Main Content Area */}
-      <main className="main-content">
-        {activeTab === 'swap' && (
-          <div className="swap-view-grid">
-            {/* Swap Card */}
-            <div className="glass-panel swap-card">
-              <div className="card-header">
-                <div>
-                  <h2 className="card-title">Confidential Swap</h2>
-                  <p className="card-subtitle">Zero MEV • Hidden Balances • Full Composability</p>
-                </div>
-                <button 
-                  className="btn-secondary wrap-toggle-btn"
-                  onClick={() => setShowWrapModal(!showWrapModal)}
-                >
-                  <Layers size={15} />
-                  Wrap / Unwrap
-                </button>
-              </div>
+      {/* PAGE 1: LANDING PAGE (TRANG ĐẦU TIÊN) */}
+      {activeTab === 'landing' && (
+        <div className="landing-page-container">
+          {/* Hero Banner */}
+          <section className="neo-hero neo-box">
+            <div className="hero-badge-row">
+              <span className="neo-badge badge-pink">
+                <Sparkles size={14} /> iExec WTF Hackathon Summer Edition
+              </span>
+              <span className="neo-badge badge-cyan">
+                ERC-7984 Confidential Tokens
+              </span>
+            </div>
 
-              {/* Wrap Panel Drawer if open */}
-              {showWrapModal && (
-                <div className="wrap-panel">
-                  <div className="wrap-header">
-                    <span>ERC-20 <ChevronRight size={14} /> ERC-7984 (Confidential)</span>
-                    <button className="close-btn" onClick={() => setShowWrapModal(false)}>×</button>
-                  </div>
-                  <div className="wrap-input-group">
-                    <input 
-                      type="number" 
-                      value={wrapAmount} 
-                      onChange={(e) => setWrapAmount(e.target.value)}
-                      placeholder="Amount to wrap"
-                    />
-                    <button className="btn-primary btn-sm" onClick={handleFaucet}>
-                      Wrap to cUSDC
-                    </button>
-                  </div>
-                </div>
-              )}
+            <h1 className="hero-heading">
+              TRADE ANY DEFI ASSET WITH <span className="highlight-yellow">TRUE CONFIDENTIALITY</span>
+            </h1>
 
-              {/* Token In */}
-              <div className="input-box">
-                <div className="input-box-header">
-                  <span>You Pay (Encrypted Input)</span>
-                  <span className="balance-text">
-                    Balance: {isDecrypted ? `${balances[tokenIn]?.decrypted} ${tokenIn}` : balances[tokenIn]?.handle}
-                  </span>
-                </div>
-                <div className="input-row">
-                  <input 
-                    type="number" 
-                    className="amount-input" 
-                    value={amountIn}
-                    onChange={(e) => setAmountIn(e.target.value)}
-                    placeholder="0.0"
-                  />
-                  <select 
-                    className="token-select" 
-                    value={tokenIn}
-                    onChange={(e) => setTokenIn(e.target.value)}
-                  >
-                    <option value="cUSDC">cUSDC (ERC-7984)</option>
-                    <option value="cETH">cETH (ERC-7984)</option>
-                    <option value="cWBTC">cWBTC (ERC-7984)</option>
-                  </select>
-                </div>
-                <div className="encrypted-handle-preview">
-                  <Lock size={12} />
-                  <span>SDK Handle payload: </span>
-                  <code>{`0xeinput_7984_${(parseFloat(amountIn) * 12345).toString(16).substring(0, 10)}...`}</code>
-                </div>
-              </div>
+            <p className="hero-description">
+              NoxSwap integrates the <strong>iExec Nox Protocol</strong> (Intel TDX TEE compute + ERC-7984 confidential smart contracts) to eliminate MEV sandwich attacks, front-running, and copy-trading without breaking EVM composability on Ethereum Sepolia.
+            </p>
 
-              {/* Swap Switch Arrow */}
-              <div className="swap-arrow-container">
-                <button 
-                  className="swap-arrow-btn"
-                  onClick={() => {
-                    const temp = tokenIn;
-                    setTokenIn(tokenOut);
-                    setTokenOut(temp);
-                  }}
-                >
-                  <ArrowDown size={18} />
-                </button>
-              </div>
-
-              {/* Token Out */}
-              <div className="input-box">
-                <div className="input-box-header">
-                  <span>You Receive (Estimated Output)</span>
-                  <span className="balance-text">
-                    Balance: {isDecrypted ? `${balances[tokenOut]?.decrypted} ${tokenOut}` : balances[tokenOut]?.handle}
-                  </span>
-                </div>
-                <div className="input-row">
-                  <input 
-                    type="text" 
-                    className="amount-input" 
-                    value={(parseFloat(amountIn) / (tokenIn === 'cUSDC' ? 3000 : 0.00033)).toFixed(4)}
-                    readOnly
-                  />
-                  <select 
-                    className="token-select" 
-                    value={tokenOut}
-                    onChange={(e) => setTokenOut(e.target.value)}
-                  >
-                    <option value="cETH">cETH (ERC-7984)</option>
-                    <option value="cUSDC">cUSDC (ERC-7984)</option>
-                    <option value="cWBTC">cWBTC (ERC-7984)</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* TEE Step Progress Indicator */}
-              {isSwapping && (
-                <div className="tee-progress-box">
-                  <div className="tee-step">
-                    <Lock size={16} className={swapStep >= 1 ? 'active-step-icon' : ''} />
-                    <span className={swapStep === 1 ? 'active-step' : ''}>1. Encrypting Client Payload</span>
-                  </div>
-                  <div className="tee-step">
-                    <Cpu size={16} className={swapStep >= 2 ? 'active-step-icon' : ''} />
-                    <span className={swapStep === 2 ? 'active-step' : ''}>2. iExec Nox TEE (Intel TDX Enclave)</span>
-                  </div>
-                  <div className="tee-step">
-                    <CheckCircle2 size={16} className={swapStep >= 3 ? 'active-step-icon' : ''} />
-                    <span className={swapStep === 3 ? 'active-step' : ''}>3. Sepolia Settlement</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Action Button */}
-              <button 
-                className="btn-primary swap-submit-btn"
-                onClick={handleSwap}
-                disabled={isSwapping}
+            <div className="hero-action-buttons">
+              <button className="neo-btn btn-yellow btn-hero" onClick={() => setActiveTab('swap')}>
+                LAUNCH NOXSWAP APP <ChevronRight size={20} />
+              </button>
+              <a 
+                href="https://github.com/minhleeee123/iExec-WTF-Hackathon-Summer-Edition" 
+                target="_blank" 
+                rel="noreferrer"
+                className="neo-btn btn-white btn-hero"
               >
-                {isSwapping ? (
-                  <>
-                    <RefreshCw size={18} className="spin-icon" />
-                    Executing Nox TEE Confidential Swap...
-                  </>
-                ) : isConnected ? (
-                  <>
-                    <Shield size={18} />
-                    Swap Confidentially with Nox
-                  </>
-                ) : (
-                  'Connect Wallet to Swap'
-                )}
+                <Code2 size={18} /> VIEW GITHUB REPO <ArrowUpRight size={16} />
+              </a>
+            </div>
+          </section>
+
+          {/* Problem & Solution Grid */}
+          <section className="problem-solution-section">
+            <div className="neo-box card-problem">
+              <div className="card-tag tag-red">THE PROBLEM WITH PUBLIC DEXs</div>
+              <h2>Public Transparency Leaks Your Alpha & Money</h2>
+              <p>On standard AMMs like Uniswap, every trade amount, slippage bound, and balance is 100% visible on-chain. Bot operators exploit this to execute MEV Sandwich Attacks and front-run large trades.</p>
+              <ul className="problem-list">
+                <li><X size={16} color="#ff5757" /> Vulnerable to MEV Sandwich Attacks</li>
+                <li><X size={16} color="#ff5757" /> Public balance history & copy-trading</li>
+                <li><X size={16} color="#ff5757" /> Zero commercial privacy for institutions</li>
+              </ul>
+            </div>
+
+            <div className="neo-box card-solution">
+              <div className="card-tag tag-green">THE NOXSWAP SOLUTION</div>
+              <h2>Confidentiality Without Fragmenting Liquidity</h2>
+              <p>By leveraging iExec Nox TEE runners off-chain and ERC-7984 token wrappers on Sepolia, NoxSwap encrypts trade amounts while retaining full EVM composability.</p>
+              <ul className="solution-list">
+                <li><Check size={16} color="#00e676" /> Encrypted input handles (`einput`)</li>
+                <li><Check size={16} color="#00e676" /> TEE Execution inside Intel TDX hardware</li>
+                <li><Check size={16} color="#00e676" /> 100% EVM Composability on Sepolia</li>
+              </ul>
+            </div>
+          </section>
+
+          {/* Architecture Walkthrough */}
+          <section className="neo-box architecture-section">
+            <h2 className="section-heading">HOW NOXSWAP WORKS (ARCHITECTURE)</h2>
+            <div className="arch-steps-grid">
+              <div className="arch-step-card">
+                <div className="step-num">01</div>
+                <h3>Client Encryption</h3>
+                <p>User inputs swap amount. The `@iexec-nox/handle` SDK encrypts inputs into a bytes32 handle (`einput`).</p>
+              </div>
+
+              <div className="arch-step-card">
+                <div className="step-num">02</div>
+                <h3>Sepolia On-Chain Tx</h3>
+                <p>Metamask broadcasts transaction to `NoxSwap.sol`. Etherscan logs only ciphertext handles.</p>
+              </div>
+
+              <div className="arch-step-card">
+                <div className="step-num">03</div>
+                <h3>iExec Nox TEE Compute</h3>
+                <p>Off-chain Intel TDX TEE enclave fetches handles, calculates AMM swap ratio, and posts encrypted updates.</p>
+              </div>
+
+              <div className="arch-step-card">
+                <div className="step-num">04</div>
+                <h3>Local Balance Decrypt</h3>
+                <p>User decrypts private balance locally in browser using ephemeral viewing key signature.</p>
+              </div>
+            </div>
+          </section>
+
+          {/* Comparison Matrix */}
+          <section className="neo-box comparison-section">
+            <h2 className="section-heading">COMPETITOR COMPARISON</h2>
+            <div className="table-wrapper">
+              <table className="neo-table">
+                <thead>
+                  <tr>
+                    <th>Feature</th>
+                    <th>Standard AMMs (Uniswap)</th>
+                    <th>ZK Shielded Pools (Railgun)</th>
+                    <th>NoxSwap (iExec Nox)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Trade Amount Privacy</td>
+                    <td>❌ Public (Plaintext)</td>
+                    <td>✅ Private (ZK-SNARK)</td>
+                    <td><span className="neo-badge badge-green">✅ Private (ERC-7984)</span></td>
+                  </tr>
+                  <tr>
+                    <td>DeFi Composability</td>
+                    <td>✅ 100% EVM Native</td>
+                    <td>❌ Isolated Pool</td>
+                    <td><span className="neo-badge badge-green">✅ 100% Sepolia Native</span></td>
+                  </tr>
+                  <tr>
+                    <td>MEV Protection</td>
+                    <td>❌ High Vulnerability</td>
+                    <td>⚠️ Partial</td>
+                    <td><span className="neo-badge badge-green">✅ Complete Protection</span></td>
+                  </tr>
+                  <tr>
+                    <td>Compute Engine</td>
+                    <td>Public EVM</td>
+                    <td>ZK Prover (Slow)</td>
+                    <td><span className="neo-badge badge-cyan">Intel TDX TEE (Fast)</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {/* PAGE 2: CONFIDENTIAL SWAP DAPP */}
+      {activeTab === 'swap' && (
+        <div className="swap-page-grid">
+          {/* Main Swap Card */}
+          <div className="neo-box swap-main-card">
+            <div className="card-header-row">
+              <div>
+                <h2 className="card-title-text">CONFIDENTIAL SWAP</h2>
+                <p className="card-subtitle-text">Route confidential token swaps on Sepolia</p>
+              </div>
+              <span className="neo-badge badge-yellow">
+                <Shield size={12} /> MEV-Proof Active
+              </span>
+            </div>
+
+            {/* Token Pay Input */}
+            <div className="neo-input-box">
+              <div className="input-header">
+                <span>YOU PAY (ENCRYPTED HANDLE)</span>
+                <span className="balance-lbl">
+                  Balance: {isDecrypted ? `${balances[tokenIn]?.decrypted} ${tokenIn}` : balances[tokenIn]?.handle}
+                </span>
+              </div>
+              <div className="input-fields">
+                <input 
+                  type="number"
+                  className="neo-amount-input"
+                  value={amountIn}
+                  onChange={(e) => setAmountIn(e.target.value)}
+                  placeholder="0.0"
+                />
+                <select 
+                  className="neo-select"
+                  value={tokenIn}
+                  onChange={(e) => setTokenIn(e.target.value)}
+                >
+                  <option value="cUSDC">cUSDC (ERC-7984)</option>
+                  <option value="cETH">cETH (ERC-7984)</option>
+                  <option value="cWBTC">cWBTC (ERC-7984)</option>
+                </select>
+              </div>
+              <div className="payload-tag">
+                <Lock size={12} /> Handle: <code>{`0xeinput_7984_${(parseFloat(amountIn) * 87654).toString(16).substring(0, 10)}...`}</code>
+              </div>
+            </div>
+
+            {/* Switch Arrow */}
+            <div className="swap-switch-row">
+              <button 
+                className="neo-btn btn-cyan switch-btn"
+                onClick={() => {
+                  const temp = tokenIn;
+                  setTokenIn(tokenOut);
+                  setTokenOut(temp);
+                }}
+              >
+                <ArrowDown size={18} />
               </button>
             </div>
 
-            {/* Sidebar Cards */}
-            <div className="sidebar-stack">
-              {/* Local Decryption Card */}
-              <div className="glass-panel decryption-card">
-                <div className="card-header-sm">
-                  <div className="flex-align-gap">
-                    <Lock size={18} color="#a855f7" />
-                    <h3>Private Balance Decryption</h3>
-                  </div>
-                  <button 
-                    className="btn-secondary btn-sm"
-                    onClick={() => setIsDecrypted(!isDecrypted)}
-                  >
-                    {isDecrypted ? <EyeOff size={14} /> : <Eye size={14} />}
-                    {isDecrypted ? 'Hide Plaintext' : 'Decrypt Local'}
-                  </button>
-                </div>
-                <p className="card-desc">
-                  {isDecrypted 
-                    ? 'Decrypted using your local session key. Plaintext data is never exposed on Sepolia Etherscan.'
-                    : 'Balances are stored as encrypted handles (ERC-7984). Click Decrypt to view plaintext locally.'}
-                </p>
+            {/* Token Receive Input */}
+            <div className="neo-input-box">
+              <div className="input-header">
+                <span>YOU RECEIVE (ESTIMATED)</span>
+                <span className="balance-lbl">
+                  Balance: {isDecrypted ? `${balances[tokenOut]?.decrypted} ${tokenOut}` : balances[tokenOut]?.handle}
+                </span>
+              </div>
+              <div className="input-fields">
+                <input 
+                  type="text"
+                  className="neo-amount-input"
+                  value={(parseFloat(amountIn) / (tokenIn === 'cUSDC' ? 3000 : 0.00033)).toFixed(4)}
+                  readOnly
+                />
+                <select 
+                  className="neo-select"
+                  value={tokenOut}
+                  onChange={(e) => setTokenOut(e.target.value)}
+                >
+                  <option value="cETH">cETH (ERC-7984)</option>
+                  <option value="cUSDC">cUSDC (ERC-7984)</option>
+                  <option value="cWBTC">cWBTC (ERC-7984)</option>
+                </select>
+              </div>
+            </div>
 
-                <div className="balances-list">
-                  <div className="balance-item">
-                    <span>cUSDC Balance</span>
-                    <span className="mono-font balance-value">
-                      {isDecrypted ? '2,500.00 USDC' : balances.cUSDC.handle}
-                    </span>
-                  </div>
-                  <div className="balance-item">
-                    <span>cETH Balance</span>
-                    <span className="mono-font balance-value">
-                      {isDecrypted ? '4.85 ETH' : balances.cETH.handle}
-                    </span>
-                  </div>
+            {/* TEE Progress Stepper */}
+            {isSwapping && (
+              <div className="neo-progress-box">
+                <div className="progress-step">
+                  <Lock size={16} className={swapStep >= 1 ? 'step-done' : ''} />
+                  <span className={swapStep === 1 ? 'step-active' : ''}>1. Encrypting Client Payload</span>
+                </div>
+                <div className="progress-step">
+                  <Cpu size={16} className={swapStep >= 2 ? 'step-done' : ''} />
+                  <span className={swapStep === 2 ? 'step-active' : ''}>2. iExec Nox TEE (Intel TDX Enclave)</span>
+                </div>
+                <div className="progress-step">
+                  <CheckCircle2 size={16} className={swapStep >= 3 ? 'step-done' : ''} />
+                  <span className={swapStep === 3 ? 'step-active' : ''}>3. Sepolia Settlement</span>
                 </div>
               </div>
+            )}
 
-              {/* On-Chain Etherscan Proof Card */}
-              <div className="glass-panel proof-card">
-                <div className="flex-align-gap mb-2">
-                  <Globe size={18} color="#06b6d4" />
-                  <h3>On-Chain Sepolia Inspector</h3>
+            {/* Execute Button */}
+            <button 
+              className="neo-btn btn-pink btn-execute"
+              onClick={handleSwap}
+              disabled={isSwapping}
+            >
+              {isSwapping ? (
+                <>
+                  <RefreshCw size={18} className="spin" /> EXECUTING NOX TEE SWAP...
+                </>
+              ) : isConnected ? (
+                <>
+                  <Shield size={18} /> SWAP CONFIDENTIALLY WITH NOX
+                </>
+              ) : (
+                'CONNECT WALLET TO SWAP'
+              )}
+            </button>
+          </div>
+
+          {/* Right Sidebar: Decryption & On-Chain Inspector */}
+          <div className="swap-sidebar">
+            {/* Decryption Control */}
+            <div className="neo-box sidebar-card">
+              <div className="card-header-row mb-2">
+                <h3>PRIVATE BALANCE DECRYPTION</h3>
+                <button 
+                  className="neo-btn btn-white btn-sm"
+                  onClick={() => setIsDecrypted(!isDecrypted)}
+                >
+                  {isDecrypted ? <EyeOff size={14} /> : <Eye size={14} />}
+                  {isDecrypted ? 'HIDE' : 'DECRYPT'}
+                </button>
+              </div>
+              <p className="card-text">
+                {isDecrypted 
+                  ? 'Decrypted using your local viewing key. Plaintext is never stored on Sepolia.'
+                  : 'Balances are stored as encrypted handles (ERC-7984). Click Decrypt to view plaintext.'}
+              </p>
+
+              <div className="balance-rows">
+                <div className="bal-row">
+                  <span>cUSDC Balance</span>
+                  <span className="mono-font bal-num">
+                    {isDecrypted ? '2,500.00 USDC' : balances.cUSDC.handle}
+                  </span>
                 </div>
-                <p className="card-desc mb-3">
-                  Verification proof: Etherscan logs display encrypted ciphertext handles instead of trade amounts.
-                </p>
+                <div className="bal-row">
+                  <span>cETH Balance</span>
+                  <span className="mono-font bal-num">
+                    {isDecrypted ? '4.85 ETH' : balances.cETH.handle}
+                  </span>
+                </div>
+              </div>
+            </div>
 
-                <div className="etherscan-preview">
-                  <div className="etherscan-row">
-                    <span className="lbl">Tx Hash:</span>
-                    <a 
-                      href="https://sepolia.etherscan.io" 
-                      target="_blank" 
-                      rel="noreferrer"
-                      className="link-btn"
-                    >
-                      0x9a8b...5a4b <ExternalLink size={12} />
-                    </a>
-                  </div>
-                  <div className="etherscan-row">
-                    <span className="lbl">Event:</span>
-                    <span className="badge-nox">NoxCompute (TEE Verified)</span>
-                  </div>
-                  <div className="etherscan-row">
-                    <span className="lbl">Trade Amount:</span>
-                    <span className="mono-font text-encrypted">[ENCRYPTED_CIPHERTEXT]</span>
-                  </div>
+            {/* Sepolia Inspector */}
+            <div className="neo-box sidebar-card card-cyan">
+              <h3>ON-CHAIN SEPOLIA INSPECTOR</h3>
+              <p className="card-text mb-2">
+                Verification proof: On-chain Etherscan logs display encrypted ciphertext handles instead of trade amounts.
+              </p>
+
+              <div className="inspector-box">
+                <div className="insp-row">
+                  <span>Tx Hash:</span>
+                  <a href="https://sepolia.etherscan.io" target="_blank" rel="noreferrer" className="insp-link">
+                    0x9a8b...5a4b <ExternalLink size={12} />
+                  </a>
+                </div>
+                <div className="insp-row">
+                  <span>Event:</span>
+                  <span className="neo-badge badge-green">NoxCompute Verified</span>
+                </div>
+                <div className="insp-row">
+                  <span>Trade Amount:</span>
+                  <span className="text-enc">[ENCRYPTED_HANDLE]</span>
                 </div>
               </div>
             </div>
           </div>
-        )}
 
-        {/* Recent Transactions Section */}
-        {activeTab === 'swap' && (
-          <div className="glass-panel history-panel mt-6">
-            <h3 className="section-title">Recent Confidential Transactions</h3>
-            <div className="table-responsive">
-              <table className="tx-table">
+          {/* Recent Transactions Table */}
+          <div className="neo-box tx-history-container">
+            <h3>RECENT CONFIDENTIAL TRANSACTIONS</h3>
+            <div className="table-wrapper mt-2">
+              <table className="neo-table">
                 <thead>
                   <tr>
                     <th>Tx Hash</th>
@@ -470,95 +580,99 @@ export default function App() {
                   {transactions.map(tx => (
                     <tr key={tx.id}>
                       <td>
-                        <a href="https://sepolia.etherscan.io" target="_blank" rel="noreferrer" className="link-btn">
+                        <a href="https://sepolia.etherscan.io" target="_blank" rel="noreferrer" className="insp-link">
                           {tx.hash.substring(0, 10)}...{tx.hash.substring(58)} <ExternalLink size={12} />
                         </a>
                       </td>
                       <td>{tx.tokenIn} → {tx.tokenOut}</td>
-                      <td><code className="mono-font text-encrypted">{tx.encryptedHandle}</code></td>
+                      <td><code className="text-enc">{tx.encryptedHandle}</code></td>
                       <td>{tx.teeTime}</td>
-                      <td><span className="badge-nox">{tx.status}</span></td>
+                      <td><span className="neo-badge badge-green">{tx.status}</span></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Tab 2: Presentation & Landing Page */}
-        {activeTab === 'landing' && (
-          <div className="glass-panel presentation-container">
-            <div className="hero-landing">
-              <div className="badge-nox mb-3">
-                <Sparkles size={14} />
-                iExec WTF Hackathon Summer Edition Project
-              </div>
-              <h1 className="hero-title">Trade Any DeFi Asset With True Confidentiality</h1>
-              <p className="hero-subtitle">
-                NoxSwap integrates iExec Nox Protocol & ERC-7984 confidential smart contracts to eliminate MEV sandwich attacks and copy-trading without breaking EVM composability on Ethereum Sepolia.
-              </p>
-
-              <div className="hero-ctas">
-                <button className="btn-primary" onClick={() => setActiveTab('swap')}>
-                  Launch NoxSwap DApp <ChevronRight size={18} />
-                </button>
-                <a 
-                  href="https://github.com/minhleeee123/iExec-WTF-Hackathon-Summer-Edition" 
-                  target="_blank" 
-                  rel="noreferrer"
-                  className="btn-secondary"
-                >
-                  <Code2 size={16} /> View GitHub Source
-                </a>
-              </div>
-            </div>
-
-            {/* Core Features Grid */}
-            <div className="features-grid">
-              <div className="feature-card">
-                <Shield className="feature-icon" color="#6366f1" />
-                <h3>Zero MEV & Sandwich Attack Protection</h3>
-                <p>Order size and slippage bounds are encrypted client-side using `@iexec-nox/handle`. Front-running bots cannot extract value from your transactions.</p>
-              </div>
-
-              <div className="feature-card">
-                <Cpu className="feature-icon" color="#a855f7" />
-                <h3>iExec Nox TEE Computation</h3>
-                <p>Computations run within Intel TDX hardware enclaves off-chain. State transitions are verified on Ethereum Sepolia via `NoxCompute` triggers.</p>
-              </div>
-
-              <div className="feature-card">
-                <Layers className="feature-icon" color="#06b6d4" />
-                <h3>ERC-7984 Confidential Tokens</h3>
-                <p>Standardized confidential token wrappers (`cUSDC`, `cETH`) using encrypted handles instead of public plaintext balances.</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 3: Developer Feedback (feedback.md) */}
-        {activeTab === 'feedback' && (
-          <div className="glass-panel feedback-container">
-            <div className="card-header">
+      {/* PAGE 3: WRAP & FAUCET */}
+      {activeTab === 'wrap' && (
+        <div className="wrap-page-container">
+          <div className="neo-box wrap-card">
+            <div className="card-header-row mb-3">
               <div>
-                <h2 className="card-title">iExec Developer Tools Feedback (`feedback.md`)</h2>
-                <p className="card-subtitle">Official deliverable submission doc for iExec WTF Hackathon Summer Edition</p>
+                <h2>ERC-20 ↔ ERC-7984 CONFIDENTIAL WRAP</h2>
+                <p className="card-subtitle-text">Convert public Sepolia tokens to confidential tokens</p>
               </div>
-              <span className="badge-nox">Requirement REQ-004 Verified</span>
+              <div className="wrap-mode-toggle">
+                <button 
+                  className={`neo-btn btn-sm ${wrapMode === 'wrap' ? 'btn-yellow' : 'btn-white'}`}
+                  onClick={() => setWrapMode('wrap')}
+                >
+                  WRAP
+                </button>
+                <button 
+                  className={`neo-btn btn-sm ${wrapMode === 'unwrap' ? 'btn-yellow' : 'btn-white'}`}
+                  onClick={() => setWrapMode('unwrap')}
+                >
+                  UNWRAP
+                </button>
+              </div>
             </div>
 
-            <div className="markdown-viewer mono-font">
-              <pre>{FEEDBACK_CONTENT}</pre>
+            <div className="neo-input-box mb-3">
+              <div className="input-header">
+                <span>{wrapMode === 'wrap' ? 'Public Sepolia USDC' : 'Confidential cUSDC (ERC-7984)'}</span>
+              </div>
+              <div className="input-fields">
+                <input 
+                  type="number"
+                  className="neo-amount-input"
+                  value={wrapAmount}
+                  onChange={(e) => setWrapAmount(e.target.value)}
+                  placeholder="Amount"
+                />
+              </div>
+            </div>
+
+            <div className="action-row">
+              <button className="neo-btn btn-green btn-flex" onClick={handleWrapAction}>
+                {wrapMode === 'wrap' ? 'WRAP TO CONFIDENTIAL cUSDC' : 'UNWRAP TO PUBLIC USDC'}
+              </button>
+
+              <button className="neo-btn btn-cyan btn-flex" onClick={handleFaucet}>
+                <Coins size={16} /> FAUCET (GET 1,000 TEST cUSDC)
+              </button>
             </div>
           </div>
-        )}
-      </main>
+        </div>
+      )}
+
+      {/* PAGE 4: DEVELOPER FEEDBACK (`feedback.md` Viewer) */}
+      {activeTab === 'feedback' && (
+        <div className="feedback-page-container">
+          <div className="neo-box feedback-card">
+            <div className="card-header-row mb-3">
+              <div>
+                <h2>iExec DEVELOPER TOOLS FEEDBACK (`feedback.md`)</h2>
+                <p className="card-subtitle-text">Official deliverable submission doc for iExec WTF Hackathon Summer Edition</p>
+              </div>
+              <span className="neo-badge badge-green">Requirement REQ-004 Verified</span>
+            </div>
+
+            <div className="markdown-box">
+              <pre className="mono-font">{FEEDBACK_DOC_CONTENT}</pre>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-const FEEDBACK_CONTENT = `# iExec Developer Tools Feedback — WTF Hackathon Summer Edition
+const FEEDBACK_DOC_CONTENT = `# iExec Developer Tools Feedback — WTF Hackathon Summer Edition
 
 ## 1. Overview & Overall Experience
 Building NoxSwap on top of the iExec Nox protocol has been a smooth developer experience. 
