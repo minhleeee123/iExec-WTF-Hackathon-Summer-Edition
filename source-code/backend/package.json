@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "mcp": "node mcp-server.js"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +17,7 @@
     "hardhat": "^3.11.0"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "solc": "^0.8.24"
   }
 }
