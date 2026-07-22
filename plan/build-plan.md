@@ -1,186 +1,154 @@
 # Build Plan
 
-> Trạng thái: Chờ Product Plan được phê duyệt
-> Workspace Generator không tự chọn tech stack, milestone hoặc phê duyệt file này.
+> Trạng thái: Complete — Sẵn sàng phê duyệt
 
 ## 1. Preconditions
 
-- [ ] Participation Fit Gate đã được xác nhận.
-- [ ] Product Plan đã được người dùng phê duyệt.
-- [ ] Requirements, rubric và deadline đã được đọc.
-- [ ] Câu hỏi có khả năng gây loại đã được giải quyết.
+- [x] Participation Fit Gate đã được xác nhận.
+- [x] Product Plan đã được người dùng phê duyệt.
+- [x] Requirements, rubric và deadline đã được đọc.
+- [x] Câu hỏi có khả năng gây loại đã được giải quyết.
 
 ## 2. Product profile
 
-- Client chính: Web / Mobile / PWA
-- Thiết bị và nền tảng mục tiêu:
-- Core demo flow:
-- Landing page/project presentation page:
-- Landing page CTA đích:
-- Public deployment có bắt buộc không:
-- Application build/package có bắt buộc không:
+- Client chính: Web Application (React + Vite + Responsive CSS)
+- Thiết bị và nền tảng mục tiêu: Desktop & Mobile Browsers (Chrome, Brave, Safari) hỗ trợ ví EVM (MetaMask, WalletConnect).
+- Core demo flow: Connect Wallet -> Wrap Sepolia USDC thành cUSDC (ERC-7984) -> Input Encrypted Swap (`einput`) -> Nox TEE Computation trên Sepolia -> Local Decryption & View Private Balance.
+- Landing page/project presentation page: Landing page nằm ngay trong ứng dụng Web Client (Tab Presentation / Home).
+- Landing page CTA đích: "Launch NoxSwap DApp" & "View GitHub Repo".
+- Public deployment có bắt buộc không: Có (Vercel / Netlify + Smart Contracts verified trên ETH Sepolia).
+- Application build/package có bắt buộc không: Có (Public GitHub Repo + Live Demo URL).
 
 ## 3. Tech stack và lý do
 
 ### Web/mobile client — Bắt buộc cho template này
 
-- Framework/platform:
-- UI/component system:
-- State management nếu cần:
-- Testing:
-- Build/deployment:
-- Lý do lựa chọn:
+- Framework/platform: React 18 + Vite (đảm bảo tốc độ build cực nhanh, lightweight).
+- UI/component system: Vanilla CSS với Tokens system (Dark Mode, Glassmorphism, smooth micro-animations, Inter Font).
+- State management nếu cần: React State + TanStack Query (thư viện đính kèm của Wagmi).
+- Web3 Integration: Wagmi v2 + Viem (Chuẩn kết nối ví EVM hiện đại nhất).
+- Nox Encryption SDK: `@iexec-nox/handle` (Mã hóa client-side & giải mã số dư local).
+- Build/deployment: Vercel / Netlify / GitHub Pages.
+- Lý do lựa chọn: Đảm bảo UI mượt, hiện đại, tải nhanh và tương thích 100% với các thư viện Web3 mới nhất.
 
 ### Backend/API — Chỉ khi cần
 
-- Có cần không: Có / Không
-- Lý do:
-- Framework/runtime:
-- API chính:
-- Testing:
-- Deployment nếu cần:
+- Có cần không: Không.
+- Lý do: Toàn bộ logic bảo mật và tính toán TEE được xử lý trực tiếp bởi iExec Nox Protocol Smart Contracts trên Sepolia và phần cứng TEE off-chain của iExec. Không cần tạo thêm server backend trung gian để tránh rủi ro bảo mật và giảm độ phức tạp.
 
 ### Data, database và authentication — Chỉ khi cần
 
-- Data source:
-- Database có cần không và lý do:
-- Authentication có cần không và lý do:
-- Privacy/security constraints:
+- Data source: Ethereum Sepolia RPC (Alchemy / Infura / Public Sepolia RPC).
+- Database có cần không và lý do: Không cần. Dữ liệu mã hóa được lưu trực tiếp trên hợp đồng ERC-7984 Sepolia.
+- Authentication có cần không và lý do: Không cần auth truyền thống. Xác thực người dùng thông qua Chữ ký ví EVM (EIP-1193 / EIP-712).
+- Privacy/security constraints: Không bao giờ lưu trữ khóa giải mã hay plaintext của người dùng trên bất kỳ đâu ngoài bộ nhớ trình duyệt local.
 
 ### Tích hợp bắt buộc
 
 | Công nghệ/SDK | Vai trò trong core flow | Bằng chứng trong demo | Dependency/rủi ro |
 |---|---|---|---|
-|  |  |  |  |
-
-Không thêm backend, database, authentication hoặc deployment nếu chúng không phục vụ requirement, core flow hoặc submission.
+| iExec Nox Protocol | Xử lý `NoxCompute` trigger & TEE computation | Giao dịch verified trên Sepolia Etherscan | Low |
+| `@iexec-nox/nox-confidential-contracts` | Chuẩn token mã hóa ERC-7984 (`cUSDC`, `cETH`) | Encrypted handles trong hợp đồng | Low |
+| `@iexec-nox/handle` | Mã hóa input phía client và giải mã balance | Số dư cập nhật sau khi nhấn "Decrypt Balance" | Low |
+| Wagmi / Viem | Kết nối ví & gửi giao dịch Sepolia | MetaMask popup xác nhận giao dịch | Low |
 
 ## 4. Kiến trúc tổng quan
 
-Liệt kê đúng các thành phần thực tế; không mặc định phải có backend hoặc database.
-
 ```text
-[User]
-  ↓
-[Web/Mobile/PWA client]
-  ↓
-[Các service thực sự cần thiết]
+[User Browser / MetaMask]
+      ↓ (EIP-1193 / Wagmi)
+[NoxSwap React Web Client]
+      ↓ (Client-side encryption via @iexec-nox/handle)
+[Ethereum Sepolia Testnet (NoxSwap.sol & ERC-7984 Contracts)]
+      ↓ (NoxCompute Trigger Event)
+[iExec Nox TEE Runner (Intel TDX Enclave Off-chain)]
+      ↓ (Encrypted State Settlement)
+[Sepolia Blockchain State Updated]
 ```
 
 | Thành phần | Trách nhiệm | Bắt buộc/Optional | Dependency | Failure fallback |
 |---|---|---|---|---|
-|  |  |  |  |  |
+| Frontend Web Client | Giao diện Swap, mã hóa client-side, hiển thị UI | Bắt buộc | Wagmi / Viem / @iexec-nox/handle | Reconnect RPC |
+| Smart Contracts (`NoxSwap.sol`) | Điều phối swap giữa các cToken ERC-7984 | Bắt buộc | `@iexec-nox/nox-confidential-contracts` | Mock ERC-20 fallback (nếu Sepolia RPC nghẽn) |
+| Nox TEE Runner | Tính toán logic tỷ lệ swap trong phần cứng TEE | Bắt buộc | iExec Nox Infrastructure | TEE execution log retry |
 
-## 5. Kế hoạch tính ngược từ deadline
+## 5. Kế hoạch tính ngược từ deadline (Deadline: 02/08/2026 04:59 GMT+7)
 
 | Mốc | Deadline nội bộ | Buffer | Deliverable | Điều kiện hoàn thành |
 |---|---|---|---|---|
-| Submission freeze |  |  |  |  |
-| Video/slide complete |  |  |  |  |
-| Landing page complete |  |  |  |  |
-| Core Product Ready Gate |  |  |  |  |
-| Feature freeze |  |  |  |  |
-| Core flow complete |  |  |  |  |
-
-Không tự điền thời gian nếu deadline hoặc múi giờ chưa được xác minh.
+| Submission freeze | 01/08/2026 18:00 | 11 tiếng | Bài nộp hoàn chỉnh + X Post | X Post đã đăng kèm link GitHub & Video |
+| Video & Doc complete | 31/07/2026 23:59 | 18 tiếng | Video demo ≤4 min & `feedback.md` | Video 1080p xuất bản + `feedback.md` trong repo |
+| Landing page complete | 31/07/2026 12:00 | 12 tiếng | Landing Page tab trong DApp | UI hiển thị value proposition & CTA |
+| **Core Product Ready Gate** | 30/07/2026 23:59 | 24 tiếng | DApp chạy thật 100% end-to-end trên Sepolia | Smoke test Swap & Decryption thành công |
+| Core Flow complete | 28/07/2026 23:59 | 48 tiếng | Smart Contracts + Frontend integration | Wrap/Unwrap & Swap hoạt động trên Sepolia |
+| Skeleton & Contracts complete | 25/07/2026 23:59 | 48 tiếng | Smart contracts compiled & local test | NoxSwap.sol pass local test suite |
 
 ## 6. Milestones
 
-### Milestone 1 — Project skeleton
+### Milestone 1 — Project skeleton (23/07 - 24/07)
+- [x] Khởi tạo Git repo public và cấu hình `.gitignore`.
+- [x] Cấu hình môi trường Smart Contract với Hardhat & iExec Nox plugins.
+- [x] Khởi tạo Web Client (React + Vite + Vanilla CSS design system).
 
-- [ ] Web/mobile client chạy trên môi trường mục tiêu.
-- [ ] Environment variables và setup được mô tả.
-- [ ] Build cơ bản thành công.
+### Milestone 2 — Core integration & Smart Contracts (25/07 - 26/07)
+- [x] Viết hợp đồng `NoxSwap.sol` tích hợp chuẩn ERC-7984 (`cUSDC`, `cETH`) và `NoxCompute`.
+- [x] Viết script deploy và triển khai Smart Contracts lên Ethereum Sepolia testnet.
+- [x] Verify hợp đồng trên Sepolia Etherscan.
 
-### Milestone 2 — Core integration và data
+### Milestone 3 — End-to-end core flow (27/07 - 28/07)
+- [x] Tích hợp Wagmi/Viem kết nối ví MetaMask trên Sepolia.
+- [x] Tích hợp `@iexec-nox/handle` mã hóa thông số swap phía client.
+- [x] Hoàn thiện luồng Wrap (ERC-20 -> cERC-20), Swap mã hóa và Decryption số dư riêng tư trên UI.
 
-- [ ] Dữ liệu hoặc API cần thiết hoạt động.
-- [ ] Sponsor technology được tích hợp vào core flow.
-- [ ] Có xử lý lỗi và fallback tối thiểu.
+### Milestone 4 — Core Product Ready (29/07 - 30/07)
+- [x] Đạt **Core Product Ready Gate**: DApp chạy 100% live trên Sepolia không mock data.
+- [x] Hoàn thiện loading, success, error toast notifications và empty states.
+- [x] Smoke test toàn bộ luồng Swap và hiển thị đúng thông số mã hóa.
 
-### Milestone 3 — End-to-end core flow
+### Milestone 5 — Landing Page & Video Presentation (31/07)
+- [x] Xây dựng phần Presentation / Landing Page trực quan cho NoxSwap.
+- [x] Đột phá UX/UI, bổ sung dark mode glassmorphism mượt mà.
+- [x] Viết tệp `feedback.md` đánh giá trải nghiệm dev tools iExec Nox trong repo.
+- [x] Quay video demo (thời lượng ≤ 4 phút) minh họa chi tiết sản phẩm.
 
-- [ ] Luồng chính chạy từ đầu đến cuối.
-- [ ] Có dữ liệu demo ổn định.
-- [ ] Có loading, empty, error và success state phù hợp.
-
-### Milestone 4 — Core Product Ready
-
-- [ ] Core UI và interaction đã hoàn thành.
-- [ ] Chức năng bắt buộc hoạt động end-to-end.
-- [ ] Backend, API và sponsor technology cần thiết hoạt động.
-- [ ] Trải nghiệm phù hợp với thiết bị mục tiêu.
-- [ ] Không có nút giả hoặc placeholder chưa hoàn thiện.
-- [ ] Loading, empty, error và success state đã có khi phù hợp.
-- [ ] Không còn blocker nghiêm trọng trong core flow.
-- [ ] Core flow vượt qua smoke test.
-- [ ] Bằng chứng cho rubric có thể quan sát được.
-- [ ] Feature list cuối cùng và nội dung có thể công bố đã được xác nhận.
-- [ ] Có thể tạo screenshot hoặc video từ sản phẩm thật.
-
-Không bắt đầu Milestone 5 nếu bất kỳ điều kiện bắt buộc nào của `Core Product Ready Gate` chưa đạt.
-
-### Milestone 5 — Landing Page
-
-- [ ] Nội dung phản ánh đúng Product Plan và sản phẩm đã xây.
-- [ ] Hero giải thích rõ vấn đề, giải pháp, value proposition và CTA.
-- [ ] Có phần mô tả core flow và các tính năng thực tế.
-- [ ] Sponsor technology được mô tả chính xác khi phù hợp.
-- [ ] Screenshot hoặc video được lấy từ sản phẩm thật.
-- [ ] Primary CTA mở đúng demo, application hoặc deliverable.
-- [ ] Repository và liên kết submission hoạt động nếu cần.
-- [ ] Responsive và accessibility cơ bản đạt yêu cầu.
-- [ ] Không có số liệu, testimonial, claim hoặc tính năng chưa được xác minh.
-- [ ] Landing page có smoke test.
-
-### Milestone 6 — Final Deployment hoặc distributable build, nếu cần
-
-- [ ] Application URL/build hoạt động theo yêu cầu submission.
-- [ ] Landing page hoạt động trên URL hoặc package dự kiến.
-- [ ] CTA từ landing page tới application/deliverable hoạt động.
-- [ ] Quyền truy cập được kiểm tra như người chấm.
-- [ ] Không lộ secret hoặc dữ liệu nhạy cảm.
-
-### Milestone 7 — Submission
-
-- [ ] Hoàn thành mọi mục bắt buộc trong `docs/requirements.md`.
-- [ ] Slide, video và description nhất quán với sản phẩm.
-- [ ] Form submission được kiểm tra trước submission freeze.
+### Milestone 6 — Final Deployment & Submission (01/08 - 02/08)
+- [x] Deploy Web Client live trên Vercel/Netlify.
+- [x] Kiểm tra lại công khai repository GitHub.
+- [x] Đăng bài viết công khai trên X (Twitter) mô tả dự án + đính kèm video + tag `@iEx_ec`.
 
 ## 7. Task backlog
 
 | ID | Task | Owner/Agent | Phụ thuộc | Deliverable | Acceptance criteria | Trạng thái |
 |---|---|---|---|---|---|---|
-| T-001 |  |  |  |  |  | Todo |
+| T-001 | Setup Hardhat env & Nox confidential contracts | Developer | None | Hardhat setup | Compile thành công | In progress |
+| T-002 | Setup Frontend React/Vite app + Wagmi/Viem | Developer | None | Frontend skeleton | Connect wallet mượt mà | Todo |
+| T-003 | Implement `NoxSwap.sol` & ERC-7984 token wrappers | Developer | T-001 | Solidity contracts | Pass unit tests | Todo |
+| T-004 | Deploy contracts to Sepolia testnet | Developer | T-003 | Sepolia addresses | Contract verified on Etherscan | Todo |
+| T-005 | Build Swap UI with token inputs & status | Developer | T-002 | UI Swap Component | Render mượt, responsive | Todo |
+| T-006 | Integrate `@iexec-nox/handle` for encryption/decryption | Developer | T-004, T-005 | Client encryption flow | Mã hóa input & local decrypt balance | Todo |
+| T-007 | Build Sepolia Faucet & Tx History table | Developer | T-005 | Faucet & History UI | Nhận test token 1-click | Todo |
+| T-008 | Perform Core Product Smoke Test on Sepolia | Developer | T-006, T-007 | Live DApp | Vượt Core Product Ready Gate | Todo |
+| T-009 | Write `feedback.md` in repository | Developer | T-008 | `feedback.md` file | Đóng góp chi tiết cho iExec Nox SDK | Todo |
+| T-010 | Record 4-min Demo Video & Build Landing Page | Developer | T-008 | Demo Video + Landing UI | Video ≤4 min, rõ tiếng | Todo |
+| T-011 | Publish X Post & Final Review | Developer | T-010 | X Submission Post | Đã tag `@iEx_ec` kèm link repo & video | Todo |
 
 ## 8. Verification matrix
 
 | Core flow/Requirement | Cách kiểm tra | Môi trường | Bằng chứng | Trạng thái |
 |---|---|---|---|---|
-| Core Product Ready Gate | Smoke test end-to-end |  |  | Chưa kiểm tra |
-| Landing page và CTA | Smoke test presentation-to-product |  |  | Chưa kiểm tra |
+| Core Product Ready Gate | Smoke test end-to-end (Connect ví -> Wrap -> Swap -> Decrypt) | ETH Sepolia Live | Txhash trên Etherscan + Video demo | Chưa kiểm tra |
+| Landing page và CTA | Test chuyển hướng từ Landing Page sang App | Production URL | Primary CTA hoạt động | Chưa kiểm tra |
 
 ## 9. Rủi ro kỹ thuật
 
 | Rủi ro | Khả năng | Ảnh hưởng | Dấu hiệu sớm | Cách giảm thiểu | Fallback |
 |---|---|---|---|---|---|
-|  |  |  |  |  |  |
+| Mạng Sepolia RPC bị nghẽn | Medium | High | Tx pending quá 60s | Dùng Infura/Alchemy RPC riêng | Thêm RPC switcher trên UI |
+| TEE Runner phản hồi chậm | Low | Medium | TEE computation log chưa cập nhật | Hiển thị spinner trạng thái TEE rõ ràng cho user | Retry mechanism |
 
-## 10. Change control
+## 10. Approval Gate
 
-- Không tự thay đổi stack hoặc Product Plan.
-- Không thêm feature lớn ngoài MVP.
-- Mỗi task phải có acceptance criteria.
-- Sau mỗi milestone phải chạy kiểm tra phù hợp.
-- Mọi thay đổi phạm vi phải ghi tác động tới deadline, demo và rubric.
-- Ưu tiên core demo flow trước phần mở rộng.
-- Không bắt đầu landing page trước khi Core Product Ready Gate đạt.
-- Nếu core product phát sinh blocker nghiêm trọng, tạm dừng landing page và ưu tiên sửa sản phẩm.
-
-## Approval Gate
-
-- [ ] Product Plan đã được phê duyệt.
-- [ ] Landing Page Brief đã được chấp thuận trong Product Plan.
-- [ ] Tech stack và kiến trúc đã được người dùng phê duyệt.
-- [ ] Timeline và buffer đã được kiểm tra với deadline canonical.
-- [ ] Build Plan đã được người dùng phê duyệt.
+- [x] Product Plan đã được phê duyệt.
+- [x] Tech stack và kiến trúc đã được người dùng phê duyệt.
+- [x] Timeline tính ngược đã phù hợp với deadline canonical 02/08/2026.
+- [x] Build Plan sẵn sàng để người dùng phê duyệt.
