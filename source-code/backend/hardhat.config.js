@@ -1,9 +1,10 @@
 import noxPlugin from "@iexec-nox/nox-hardhat-plugin";
 import hardhatEthersPlugin from "@nomicfoundation/hardhat-ethers";
+import hardhatNodeTestRunner from "@nomicfoundation/hardhat-node-test-runner";
 import {defineConfig} from "hardhat/config";
 
 export default defineConfig({
-  plugins: [hardhatEthersPlugin, noxPlugin],
+  plugins: [hardhatEthersPlugin, hardhatNodeTestRunner, noxPlugin],
   solidity: {
     version: "0.8.35",
     settings: {
@@ -22,7 +23,7 @@ export default defineConfig({
     },
   },
   nox: {
-    // Docker is unavailable in this workspace. Live Nox behavior is tested on Sepolia.
-    skipTestOverride: true,
+    // Unit tests stay Docker-free. The dedicated runtime workflow opts in explicitly.
+    skipTestOverride: process.env.NOX_RUNTIME_TESTS !== "true",
   },
 });
