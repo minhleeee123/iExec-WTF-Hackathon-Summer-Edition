@@ -731,6 +731,50 @@ export default function App() {
             </div>
           </section>
 
+          {/* FEATURE 7: ON-CHAIN PRIVACY PROOF INSPECTOR SECTION */}
+          <section className="neo-box unified-container mb-4">
+            <div className="unified-header">
+              <span className="neo-badge badge-green"><Maximize2 size={14} /> Feature 7</span>
+              <h2>On-Chain Privacy Proof Inspector</h2>
+              <p>Direct Comparison: Public Uniswap vs Confidential NoxSwap on Sepolia Testnet.</p>
+            </div>
+
+            <div className="modal-comparison-grid">
+              <div className="comp-card public-comp">
+                <h3 className="text-pink">❌ Public DEX (Uniswap v3)</h3>
+                <p>On-Chain Etherscan Log displays plaintext values:</p>
+                <div className="code-box">
+                  <div><strong>Trader Address:</strong> <code>0xE412...B64E</code></div>
+                  <div><strong>Amount In:</strong> <code>$5,000.00 USDC (EXPOSED)</code></div>
+                  <div><strong>Slippage Limit:</strong> <code>0.5% (EXPOSED)</code></div>
+                  <div><strong>MEV Sandwich Risk:</strong> <span className="neo-badge badge-pink">HIGH (Lost $120)</span></div>
+                </div>
+              </div>
+
+              <div className="comp-card private-comp">
+                <h3 className="text-green">✅ NoxSwap (iExec Nox TEE)</h3>
+                <p>Sepolia Etherscan Log displays 100% encrypted ciphertext:</p>
+                <div className="code-box">
+                  <div><strong>Trader Address:</strong> <code>0xE412...B64E</code></div>
+                  <div><strong>Amount In:</strong> <code className="text-enc">0xfbfe1df5...8deb1f7 (HIDDEN)</code></div>
+                  <div><strong>Slippage Limit:</strong> <code className="text-enc">[ENCRYPTED_HANDLE]</code></div>
+                  <div><strong>MEV Sandwich Protection:</strong> <span className="neo-badge badge-green">100% PROTECTED</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-3 text-center">
+              <a 
+                href={`https://sepolia.etherscan.io/address/${CONTRACT_ADDRESSES.NOX_SWAP}`} 
+                target="_blank" 
+                rel="noreferrer"
+                className="neo-btn btn-yellow"
+              >
+                VERIFY LIVE SEPOLIA CONTRACT ON ETHERSCAN <ExternalLink size={14} />
+              </a>
+            </div>
+          </section>
+
           {/* Unified Context Container */}
           <section className="neo-box unified-container">
             <div className="unified-header">
