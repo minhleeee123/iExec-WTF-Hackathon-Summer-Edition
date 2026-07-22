@@ -64,7 +64,7 @@ Kiểm tra tối thiểu:
 | Thành phần | Bắt buộc | Yêu cầu hoặc giới hạn | Source ID | Trạng thái |
 |---|---|---|---|---|
 | Source code | Yes | Public, complete and viewable open-source code | SRC-001 | Confirmed |
-| Repository URL | Yes | Public GitHub repository | SRC-001 | Confirmed |
+| Repository URL | Yes | https://github.com/minhleeee123/iExec-WTF-Hackathon-Summer-Edition | SRC-001 | Confirmed |
 | Demo URL hoặc application build | Yes | Deployed on ETH Sepolia | SRC-001 | Confirmed |
 | Slide | Chưa xác minh | Not explicitly required in the provided brief | SRC-001 | Chưa kiểm tra |
 | Video | Yes | Brief demo video, max 4 minutes | SRC-001 | Confirmed |
