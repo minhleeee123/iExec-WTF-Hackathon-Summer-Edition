@@ -7,7 +7,8 @@
     "dev": "npx --yes node@24 node_modules/vite/bin/vite.js",
     "build": "npx --yes node@24 node_modules/vite/bin/vite.js build",
     "lint": "npx --yes node@24 node_modules/oxlint/bin/oxlint",
-    "test:unit": "npx --yes node@24 --test src/lib/*.test.mjs",
+    "test:unit": "npx --yes node@24 --test src/lib/*.test.mjs api/_lib/*.test.mjs",
+    "test:agent:live": "npx --yes node@24 scripts/test-agent-live.mjs",
     "test:ui": "npm run build && npx --yes node@24 scripts/check-ui.mjs",
     "preview": "npx --yes node@24 node_modules/vite/bin/vite.js preview"
   },
