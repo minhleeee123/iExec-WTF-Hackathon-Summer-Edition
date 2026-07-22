@@ -565,11 +565,7 @@ export default function App() {
 
           <span className="neo-badge badge-purple">
             <span className="live-dot"></span>
-            ETH Sepolia ({userEthBalance} ETH)
-          </span>
-          <span className="neo-badge badge-green">
-            <Cpu size={12} />
-            iExec Nox TEE
+            Sepolia
           </span>
 
           <button className="neo-btn btn-yellow wallet-connect-btn" onClick={handleConnectWallet}>
