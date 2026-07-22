@@ -1,11 +1,4 @@
-#!/usr/bin/env node
-
-/**
- * NoxSwap Official Model Context Protocol (MCP) Server
- * Allows AI Agents (Claude Code, Cursor, Antigravity) to execute confidential token swaps
- * and query encrypted balances on Ethereum Sepolia Testnet programmatically.
- */
-
+import 'dotenv/config';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -15,8 +8,11 @@ import {
 import { ethers } from 'ethers';
 
 // Sepolia Network Configuration
-const SEPOLIA_RPC = 'https://ethereum-sepolia-rpc.publicnode.com';
-const PRIVATE_KEY = process.env.PRIVATE_KEY || '7302adb08ab8e3d0de0f658a4b73f953203bae0b61b6b8b6b03d0b3bd3c02e7a';
+const SEPOLIA_RPC = process.env.SEPOLIA_RPC || 'https://ethereum-sepolia-rpc.publicnode.com';
+const PRIVATE_KEY = process.env.PRIVATE_KEY;
+if (!PRIVATE_KEY) {
+  throw new Error('PRIVATE_KEY environment variable is missing in .env file!');
+}
 
 // Contract Addresses
 const CONTRACT_ADDRESSES = {

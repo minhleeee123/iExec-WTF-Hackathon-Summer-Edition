@@ -1,8 +1,12 @@
+import 'dotenv/config';
 import { ethers } from 'ethers';
 
 // Sepolia Config
-const SEPOLIA_RPC = 'https://ethereum-sepolia-rpc.publicnode.com';
-const PRIVATE_KEY = '7302adb08ab8e3d0de0f658a4b73f953203bae0b61b6b8b6b03d0b3bd3c02e7a';
+const SEPOLIA_RPC = process.env.SEPOLIA_RPC || 'https://ethereum-sepolia-rpc.publicnode.com';
+const PRIVATE_KEY = process.env.PRIVATE_KEY;
+if (!PRIVATE_KEY) {
+  throw new Error('PRIVATE_KEY environment variable is missing in .env file!');
+}
 const CONTRACT_ADDRESSES = {
   NOX_SWAP: '0x38585F5fbB2587bDc085995A0E3bC2B36B7CaA7a',
   cUSDC: '0x9c6858B1C40751E8AfBF2171f16cf425212f6068',

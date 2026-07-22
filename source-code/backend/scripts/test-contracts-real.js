@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { ethers } = require('ethers');
 
 const CONTRACT_ADDRESSES = {
@@ -20,7 +21,10 @@ const CTOKEN_ABI = [
 async function main() {
   console.log('=== STARTING LIVE SEPOLIA TEST FOR USER WALLET ===');
 
-  const privateKey = process.env.PRIVATE_KEY || '7302adb08ab8e3d0de0f658a4b73f953203bae0b61b6b8b6b03d0b3bd3c02e7a';
+  const privateKey = process.env.PRIVATE_KEY;
+  if (!privateKey) {
+    throw new Error('PRIVATE_KEY environment variable is missing in .env file!');
+  }
   const rpcUrl = 'https://ethereum-sepolia-rpc.publicnode.com';
 
   const provider = new ethers.JsonRpcProvider(rpcUrl);

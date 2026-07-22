@@ -1,3 +1,4 @@
+require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const solc = require('solc');
@@ -45,7 +46,10 @@ async function main() {
   const tokenContractBuild = output.contracts['NoxConfidentialToken.sol']['NoxConfidentialToken'];
   const swapContractBuild = output.contracts['NoxSwap.sol']['NoxSwap'];
 
-  const privateKey = process.env.PRIVATE_KEY || '7302adb08ab8e3d0de0f658a4b73f953203bae0b61b6b8b6b03d0b3bd3c02e7a';
+  const privateKey = process.env.PRIVATE_KEY;
+  if (!privateKey) {
+    throw new Error('PRIVATE_KEY environment variable is missing in .env file!');
+  }
   const rpcUrl = process.env.SEPOLIA_RPC_URL || 'https://ethereum-sepolia-rpc.publicnode.com';
 
   const provider = new ethers.JsonRpcProvider(rpcUrl);
