@@ -20,13 +20,12 @@ import {
   Globe,
   ArrowUpRight,
   Check,
-  X,
-  AlertTriangle
+  X
 } from 'lucide-react';
 import './App.css';
 
 export default function App() {
-  // Page Navigation State: 'landing' (First Page/Landing), 'swap', 'wrap', 'feedback'
+  // Navigation State: 'landing' (First Page/Landing), 'swap', 'wrap', 'feedback'
   const [activeTab, setActiveTab] = useState('landing');
   const [isConnected, setIsConnected] = useState(false);
   const [userAddress, setUserAddress] = useState('');
@@ -257,7 +256,7 @@ export default function App() {
             </h1>
 
             <p className="hero-description">
-              NoxSwap integrates the <strong>iExec Nox Protocol</strong> (Intel TDX TEE compute + ERC-7984 confidential smart contracts) to eliminate MEV sandwich attacks, front-running, and copy-trading without breaking EVM composability on Ethereum Sepolia.
+              NoxSwap integrates the <strong>iExec Nox Protocol</strong> (Intel TDX TEE compute + ERC-7984 confidential smart contracts) to eliminate MEV sandwich attacks and copy-trading without breaking EVM composability on Ethereum Sepolia.
             </p>
 
             <div className="hero-action-buttons">
@@ -275,65 +274,65 @@ export default function App() {
             </div>
           </section>
 
-          {/* Problem & Solution Grid */}
-          <section className="problem-solution-section">
-            <div className="neo-box card-problem">
-              <div className="card-tag tag-red">THE PROBLEM WITH PUBLIC DEXs</div>
-              <h2>Public Transparency Leaks Your Alpha & Money</h2>
-              <p>On standard AMMs like Uniswap, every trade amount, slippage bound, and balance is 100% visible on-chain. Bot operators exploit this to execute MEV Sandwich Attacks and front-run large trades.</p>
-              <ul className="problem-list">
-                <li><X size={16} color="#ff5757" /> Vulnerable to MEV Sandwich Attacks</li>
-                <li><X size={16} color="#ff5757" /> Public balance history & copy-trading</li>
-                <li><X size={16} color="#ff5757" /> Zero commercial privacy for institutions</li>
-              </ul>
+          {/* Unified Problem & Solution Container */}
+          <section className="neo-box unified-container">
+            <div className="unified-header">
+              <span className="neo-badge badge-pink">Context & Solution</span>
+              <h2>Eliminating MEV Front-Running with Off-Chain TEE Enclaves</h2>
             </div>
-
-            <div className="neo-box card-solution">
-              <div className="card-tag tag-green">THE NOXSWAP SOLUTION</div>
-              <h2>Confidentiality Without Fragmenting Liquidity</h2>
-              <p>By leveraging iExec Nox TEE runners off-chain and ERC-7984 token wrappers on Sepolia, NoxSwap encrypts trade amounts while retaining full EVM composability.</p>
-              <ul className="solution-list">
-                <li><Check size={16} color="#00e676" /> Encrypted input handles (`einput`)</li>
-                <li><Check size={16} color="#00e676" /> TEE Execution inside Intel TDX hardware</li>
-                <li><Check size={16} color="#00e676" /> 100% EVM Composability on Sepolia</li>
-              </ul>
-            </div>
-          </section>
-
-          {/* Architecture Walkthrough */}
-          <section className="neo-box architecture-section">
-            <h2 className="section-heading">HOW NOXSWAP WORKS (ARCHITECTURE)</h2>
-            <div className="arch-steps-grid">
-              <div className="arch-step-card">
-                <div className="step-num">01</div>
-                <h3>Client Encryption</h3>
-                <p>User inputs swap amount. The `@iexec-nox/handle` SDK encrypts inputs into a bytes32 handle (`einput`).</p>
+            
+            <div className="problem-solution-inner">
+              <div className="prob-col">
+                <h3 className="col-title text-pink">The Problem with Public AMMs</h3>
+                <p>On standard DEXs (Uniswap, Curve), trade sizes and slippage bounds are 100% transparent. Front-running bots exploit this visibility to extract value via MEV sandwich attacks.</p>
+                <ul className="clean-check-list">
+                  <li><X size={16} color="#ff5757" /> MEV Sandwich Attacks on public trades</li>
+                  <li><X size={16} color="#ff5757" /> Public balance history & copy-trading risk</li>
+                </ul>
               </div>
 
-              <div className="arch-step-card">
-                <div className="step-num">02</div>
-                <h3>Sepolia On-Chain Tx</h3>
-                <p>Metamask broadcasts transaction to `NoxSwap.sol`. Etherscan logs only ciphertext handles.</p>
-              </div>
-
-              <div className="arch-step-card">
-                <div className="step-num">03</div>
-                <h3>iExec Nox TEE Compute</h3>
-                <p>Off-chain Intel TDX TEE enclave fetches handles, calculates AMM swap ratio, and posts encrypted updates.</p>
-              </div>
-
-              <div className="arch-step-card">
-                <div className="step-num">04</div>
-                <h3>Local Balance Decrypt</h3>
-                <p>User decrypts private balance locally in browser using ephemeral viewing key signature.</p>
+              <div className="sol-col">
+                <h3 className="col-title text-green">The NoxSwap Confidential Solution</h3>
+                <p>NoxSwap encrypts swap parameters client-side via `@iexec-nox/handle`. State transitions are calculated in off-chain Intel TDX TEE enclaves and settled to Sepolia contracts.</p>
+                <ul className="clean-check-list">
+                  <li><Check size={16} color="#00e676" /> Encrypted input handles (`einput`)</li>
+                  <li><Check size={16} color="#00e676" /> 100% EVM Composability on Sepolia</li>
+                </ul>
               </div>
             </div>
           </section>
 
-          {/* Comparison Matrix */}
-          <section className="neo-box comparison-section">
-            <h2 className="section-heading">COMPETITOR COMPARISON</h2>
-            <div className="table-wrapper">
+          {/* Technical Architecture & Comparison Container */}
+          <section className="neo-box unified-container">
+            <div className="unified-header">
+              <span className="neo-badge badge-cyan">Architecture & Specs</span>
+              <h2>How NoxSwap Works & Competitor Matrix</h2>
+            </div>
+
+            <div className="arch-flow-row">
+              <div className="arch-mini-step">
+                <span className="step-badge">1</span>
+                <strong>Client Encryption</strong>
+                <span>Mã hóa input payload via SDK</span>
+              </div>
+              <div className="arch-mini-step">
+                <span className="step-badge">2</span>
+                <strong>Sepolia Tx</strong>
+                <span>On-chain log ciphertext</span>
+              </div>
+              <div className="arch-mini-step">
+                <span className="step-badge">3</span>
+                <strong>iExec Nox TEE</strong>
+                <span>Intel TDX off-chain compute</span>
+              </div>
+              <div className="arch-mini-step">
+                <span className="step-badge">4</span>
+                <strong>Local Decrypt</strong>
+                <span>Xem số dư local với Viewing Key</span>
+              </div>
+            </div>
+
+            <div className="table-wrapper mt-3">
               <table className="neo-table">
                 <thead>
                   <tr>
@@ -361,12 +360,6 @@ export default function App() {
                     <td>❌ High Vulnerability</td>
                     <td>⚠️ Partial</td>
                     <td><span className="neo-badge badge-green">✅ Complete Protection</span></td>
-                  </tr>
-                  <tr>
-                    <td>Compute Engine</td>
-                    <td>Public EVM</td>
-                    <td>ZK Prover (Slow)</td>
-                    <td><span className="neo-badge badge-cyan">Intel TDX TEE (Fast)</span></td>
                   </tr>
                 </tbody>
               </table>
@@ -502,7 +495,6 @@ export default function App() {
 
           {/* Right Sidebar: Decryption & On-Chain Inspector */}
           <div className="swap-sidebar">
-            {/* Decryption Control */}
             <div className="neo-box sidebar-card">
               <div className="card-header-row mb-2">
                 <h3>PRIVATE BALANCE DECRYPTION</h3>
@@ -520,7 +512,7 @@ export default function App() {
                   : 'Balances are stored as encrypted handles (ERC-7984). Click Decrypt to view plaintext.'}
               </p>
 
-              <div className="balance-rows">
+              <div className="balance-rows mb-3">
                 <div className="bal-row">
                   <span>cUSDC Balance</span>
                   <span className="mono-font bal-num">
@@ -534,28 +526,14 @@ export default function App() {
                   </span>
                 </div>
               </div>
-            </div>
 
-            {/* Sepolia Inspector */}
-            <div className="neo-box sidebar-card card-cyan">
-              <h3>ON-CHAIN SEPOLIA INSPECTOR</h3>
-              <p className="card-text mb-2">
-                Verification proof: On-chain Etherscan logs display encrypted ciphertext handles instead of trade amounts.
-              </p>
-
-              <div className="inspector-box">
+              <div className="inspector-mini-box">
                 <div className="insp-row">
-                  <span>Tx Hash:</span>
-                  <a href="https://sepolia.etherscan.io" target="_blank" rel="noreferrer" className="insp-link">
-                    0x9a8b...5a4b <ExternalLink size={12} />
-                  </a>
-                </div>
-                <div className="insp-row">
-                  <span>Event:</span>
+                  <span>Sepolia Inspector:</span>
                   <span className="neo-badge badge-green">NoxCompute Verified</span>
                 </div>
-                <div className="insp-row">
-                  <span>Trade Amount:</span>
+                <div className="insp-row mt-1">
+                  <span>On-Chain Amount:</span>
                   <span className="text-enc">[ENCRYPTED_HANDLE]</span>
                 </div>
               </div>
@@ -650,93 +628,102 @@ export default function App() {
         </div>
       )}
 
-      {/* PAGE 4: DEVELOPER FEEDBACK (`feedback.md` Viewer) */}
+      {/* PAGE 4: DEVELOPER FEEDBACK (SINGLE UNIFIED DOCUMENT CONTAINER) */}
       {activeTab === 'feedback' && (
         <div className="feedback-page-container">
-          {/* Header Card */}
-          <div className="neo-box feedback-card mb-3">
-            <div className="card-header-row">
-              <div>
-                <h2>iExec DEVELOPER ECOSYSTEM FEEDBACK</h2>
-                <p className="card-subtitle-text">Official deliverable submission report for iExec WTF Hackathon Summer Edition (`feedback.md`)</p>
+          {/* Single Unified Document Container */}
+          <article className="neo-box single-document-card">
+            {/* Document Header */}
+            <header className="doc-header">
+              <div className="doc-header-top">
+                <span className="neo-badge badge-green">REQ-004 Official Submission</span>
+                <span className="neo-badge badge-purple">iExec WTF Hackathon Summer Edition</span>
               </div>
-              <span className="neo-badge badge-green">Requirement REQ-004 Verified</span>
-            </div>
-          </div>
+              <h1 className="doc-main-title">iExec Developer Ecosystem Feedback Report</h1>
+              <p className="doc-meta-subtitle">
+                Comprehensive technical review & strategic recommendations based on building <strong>NoxSwap</strong> using the iExec Nox Protocol, ERC-7984, and `@iexec-nox/handle`.
+              </p>
+            </header>
 
-          {/* Section 1: Executive Summary */}
-          <div className="neo-box feedback-card mb-3">
-            <div className="card-tag tag-green">1. EXECUTIVE SUMMARY & CONTEXT</div>
-            <h3>Building NoxSwap on iExec Nox Ecosystem</h3>
-            <p className="card-text">
-              During the <strong>iExec WTF Hackathon Summer Edition</strong>, our team built <strong>NoxSwap</strong>, a confidential DEX router leveraging the <strong>iExec Nox Protocol</strong> (Intel TDX TEE compute + ERC-7984 confidential smart contracts) to execute confidential token swaps on Ethereum Sepolia.
-            </p>
-          </div>
+            <hr className="doc-divider" />
 
-          {/* Section 2: Developer Highlights Grid */}
-          <div className="neo-box feedback-card mb-3">
-            <div className="card-tag tag-yellow">2. DEVELOPER HIGHLIGHTS (WHAT WORKED GREAT)</div>
-            <div className="feedback-grid mt-2">
-              <div className="feedback-item-card">
-                <h4>ERC-7984 Confidential Tokens</h4>
-                <p>Standardized `IERC7984` interface makes replacing public balances with encrypted `bytes32` handles intuitive without needing custom ZK circuits.</p>
-              </div>
-              <div className="feedback-item-card">
-                <h4>Client-Side SDK (`@iexec-nox/handle`)</h4>
-                <p>Client-side handle generation integrated smoothly into React 18 / Vite without requiring heavy local WASM cryptographic binaries.</p>
-              </div>
-              <div className="feedback-item-card">
-                <h4>Hardhat Plugin & Starter</h4>
-                <p>`nox-hardhat-starter` and `nox-hardhat-plugin` allowed compilation and contract deployment to Sepolia within familiar developer workflows.</p>
-              </div>
-            </div>
-          </div>
+            {/* Section 1 */}
+            <section className="doc-section">
+              <h2 className="doc-sec-title">1. Executive Summary & Context</h2>
+              <p>
+                During the iExec WTF Hackathon Summer Edition, our team built <strong>NoxSwap</strong>, a confidential DEX swap router that leverages the <strong>iExec Nox Protocol</strong> to execute confidential token swaps on Ethereum Sepolia Testnet. 
+              </p>
+              <p>
+                NoxSwap addresses a critical challenge in decentralized finance: maintaining commercial transaction privacy and eliminating MEV sandwich attacks without breaking EVM composability. By combining on-chain smart contracts implementing the <strong>ERC-7984 Confidential Token Standard</strong> with off-chain <strong>Intel TDX Trusted Execution Environment (TEE)</strong> compute enclaves, Nox enables true privacy-preserving swaps.
+              </p>
+            </section>
 
-          {/* Section 3: Technical Friction Points */}
-          <div className="neo-box feedback-card mb-3">
-            <div className="card-tag tag-pink">3. TECHNICAL FRICTION POINTS & PAIN POINTS</div>
-            <div className="feedback-grid mt-2">
-              <div className="feedback-item-card">
-                <h4>TEE Execution State Visibility</h4>
-                <p>Tracking transitions from `TX_SUBMITTED` → `TEE_PROCESSING` → `SETTLED` currently requires manual contract event polling in frontends.</p>
+            {/* Section 2 */}
+            <section className="doc-section">
+              <h2 className="doc-sec-title">2. Developer Experience Highlights (What Worked Great)</h2>
+              <div className="doc-bullet-list">
+                <div className="doc-bullet-item">
+                  <strong>Standardized ERC-7984 Architecture:</strong> The `@iexec-nox/nox-confidential-contracts` package provides a clean `IERC7984` interface for confidential tokens (`cUSDC`, `cETH`). Replacing public balances with deterministic encrypted handles (`bytes32`) is elegant and avoids complex Zero-Knowledge circuit development.
+                </div>
+                <div className="doc-bullet-item">
+                  <strong>Client-Side Encryption SDK (`@iexec-nox/handle`):</strong> Integrating client-side handle generation directly into our React 18 / Vite Web DApp was smooth. Developers can produce valid `einput` ciphertext handles without needing heavy local WASM cryptographic binaries.
+                </div>
+                <div className="doc-bullet-item">
+                  <strong>Hardhat Starter & Plugin Ecosystem:</strong> The `nox-hardhat-starter` template and `nox-hardhat-plugin` provided a solid foundation for writing, compiling, and deploying `NoxSwap.sol` on Sepolia.
+                </div>
               </div>
-              <div className="feedback-item-card">
-                <h4>Error Diagnosis Inside TEE</h4>
-                <p>When an enclave execution reverts (e.g., liquidity check), on-chain logs report generic revert strings, making local debugging challenging.</p>
-              </div>
-              <div className="feedback-item-card">
-                <h4>Etherscan Handle Transparency</h4>
-                <p>Etherscan displays raw ciphertext handles without showing hardware attestation proofs next to transaction hashes.</p>
-              </div>
-            </div>
-          </div>
+            </section>
 
-          {/* Section 4: Strategic Recommendations */}
-          <div className="neo-box feedback-card mb-3">
-            <div className="card-tag tag-cyan">4. STRATEGIC RECOMMENDATIONS FOR iEXEC TEAM</div>
-            <div className="recs-grid mt-2">
-              <div className="rec-card">
-                <span className="neo-badge badge-purple">Rec #1</span>
-                <h4>Native WebSocket Event Subscription SDK</h4>
-                <p>Provide a WebSocket hook in `@iexec-nox/handle` (`noxSDK.onTEEStateChange`) for real-time frontend TEE progress animation.</p>
+            {/* Section 3 */}
+            <section className="doc-section">
+              <h2 className="doc-sec-title">3. In-Depth Technical Analysis & Pain Points</h2>
+              <div className="doc-bullet-list">
+                <div className="doc-bullet-item">
+                  <strong>TEE Execution State Visibility:</strong> Submitting a transaction on-chain triggers a `NoxCompute` event for off-chain TEE runners. However, tracking transitions from `TX_SUBMITTED` → `TEE_ENCLAVE_PROCESSING` → `SETTLED` currently requires manual contract event polling in the frontend.
+                </div>
+                <div className="doc-bullet-item">
+                  <strong>Error Diagnosis Inside TEE Enclaves:</strong> When an off-chain TEE runner encounters a state revert (e.g., liquidity check failure), the on-chain transaction logs generic revert strings, making local debugging challenging.
+                </div>
+                <div className="doc-bullet-item">
+                  <strong>Etherscan Transparency Visualization:</strong> On Sepolia Etherscan, transactions display raw `bytes32` ciphertext handles. Users cannot visually confirm that TEE hardware verification occurred without inspecting raw log topics.
+                </div>
               </div>
-              <div className="rec-card">
-                <span className="neo-badge badge-purple">Rec #2</span>
-                <h4>iExec Nox Etherscan Explorer Extension</h4>
-                <p>Build an official browser extension or explorer plugin to parse ERC-7984 handles and display Intel TDX hardware attestation proofs.</p>
+            </section>
+
+            {/* Section 4 */}
+            <section className="doc-section">
+              <h2 className="doc-sec-title">4. Strategic Recommendations for iExec Core Team</h2>
+              <div className="rec-summary-box">
+                <div className="rec-point">
+                  <span className="rec-num">Rec 1</span>
+                  <div>
+                    <strong>Native WebSocket Event Subscription SDK:</strong> Add a high-level WebSocket listener in `@iexec-nox/handle` (`noxSDK.onTEEStateChange(txHash, callback)`) for real-time frontend TEE progress animation.
+                  </div>
+                </div>
+
+                <div className="rec-point">
+                  <span className="rec-num">Rec 2</span>
+                  <div>
+                    <strong>Specialized iExec Nox Explorer / Etherscan Extension:</strong> Build an official explorer plugin that parses ERC-7984 handles and displays Intel TDX hardware attestation proofs directly next to transaction hashes.
+                  </div>
+                </div>
+
+                <div className="rec-point">
+                  <span className="rec-num">Rec 3</span>
+                  <div>
+                    <strong>Expanded Framework Starters:</strong> Provide official Next.js and Viem/Wagmi starter kits pre-configured with `@iexec-nox/handle` hooks and viewing-key decryption providers.
+                  </div>
+                </div>
+
+                <div className="rec-point">
+                  <span className="rec-num">Rec 4</span>
+                  <div>
+                    <strong>Local Mock TEE Hardhat Simulator Node:</strong> Provide an optional local Hardhat node module that simulates off-chain Nox TEE compute instantly during unit testing.
+                  </div>
+                </div>
               </div>
-              <div className="rec-card">
-                <span className="neo-badge badge-purple">Rec #3</span>
-                <h4>Expanded Framework Starters</h4>
-                <p>Provide Next.js and Viem/Wagmi starter kits pre-configured with `@iexec-nox/handle` hooks and viewing-key providers.</p>
-              </div>
-              <div className="rec-card">
-                <span className="neo-badge badge-purple">Rec #4</span>
-                <h4>Local Mock TEE Hardhat Node</h4>
-                <p>Provide a local Hardhat simulator node for testing off-chain TEE compute instantly during local unit testing.</p>
-              </div>
-            </div>
-          </div>
+            </section>
+          </article>
         </div>
       )}
     </div>
