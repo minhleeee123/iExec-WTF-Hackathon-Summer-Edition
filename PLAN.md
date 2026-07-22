@@ -74,7 +74,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 - [x] Ý tưởng cuối cùng đã được người dùng chọn.
 - [x] Product Plan đã được phê duyệt.
 - [x] Build Plan đã được phê duyệt.
-- [ ] Core Product Ready Gate đã đạt trước khi làm landing page.
-- [ ] Landing page phản ánh đúng sản phẩm thật và CTA hoạt động.
+- [x] Core Product Ready Gate đã đạt trước khi làm landing page.
+- [x] Landing page phản ánh đúng sản phẩm thật và CTA hoạt động.
 - [ ] Submission checklist canonical đã hoàn thành.
 - [ ] Bài nộp đã được final review.
