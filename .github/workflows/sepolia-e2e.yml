@@ -1,0 +1,49 @@
+name: Sepolia E2E
+
+on:
+  workflow_dispatch:
+    inputs:
+      include_mcp:
+        description: Run the live MCP protocol checks after the contract flow
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sepolia-e2e
+  cancel-in-progress: false
+
+jobs:
+  live:
+    name: Live Nox verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: sepolia
+    defaults:
+      run:
+        working-directory: source-code/backend
+    env:
+      PRIVATE_KEY: ${{ secrets.SEPOLIA_PRIVATE_KEY }}
+      SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
+      KEEPER_HISTORY_RPC_URL: ${{ secrets.SEPOLIA_ARCHIVE_RPC_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: source-code/backend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Compile contracts
+        run: npm run compile
+      - name: Run live confidential protocol checks
+        run: npm run test:sepolia
+      - name: Run live MCP checks
+        if: ${{ inputs.include_mcp }}
+        run: npm run test:mcp
