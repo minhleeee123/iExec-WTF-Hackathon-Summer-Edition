@@ -90,7 +90,23 @@ npm run dev
 ```
 Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-### 3. Smart Contract Deployment (Optional)
+### 3. Running the AI Agent Model Context Protocol (MCP) Server
+NoxSwap ships with a native **Model Context Protocol (MCP)** server, allowing autonomous AI agents (Claude Code, Cursor, Antigravity) to query confidential balances and execute swaps programmatically:
+```bash
+# Navigate to backend directory
+cd source-code/backend
+
+# Start stdio MCP Server
+npm run mcp
+```
+Exposed Tools:
+* `nox_confidential_swap(tokenIn, tokenOut, amount)`: Executes TEE-shielded swaps on Sepolia.
+* `nox_decrypt_balance(address, tokenSymbol)`: Resolves encrypted handles & plaintext balances.
+* `nox_create_limit_order(tokenIn, tokenOut, amount, targetPrice)`: Registers TEE limit orders.
+
+---
+
+### 4. Smart Contract Deployment (Optional)
 To redeploy contracts to Ethereum Sepolia:
 ```bash
 # Navigate to backend directory
