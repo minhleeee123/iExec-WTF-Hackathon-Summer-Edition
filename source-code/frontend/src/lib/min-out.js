@@ -21,13 +21,15 @@ export function deriveSwapMinOut({ amountIn, ethPrice, outputDecimals, tokenIn, 
   return decimalString(quotedOutput * DEFAULT_PROTECTION_FACTOR, outputDecimals);
 }
 
-export function deriveLimitOrderMinOut({ amount, outputDecimals, side, triggerPrice }) {
+export function deriveLimitOrderMinOut({ amount, outputDecimals, side, triggerPrice, slippageBps = 50 }) {
   const input = Number(amount);
   const trigger = Number(triggerPrice);
+  const protection = Number(slippageBps);
   if (!Number.isFinite(input) || input <= 0 || !Number.isFinite(trigger) || trigger <= 0) return '';
+  if (!Number.isInteger(protection) || protection < 10 || protection > 500) return '';
 
   const quotedOutput = side === 'buy'
     ? (input / trigger) * ROUTER_FEE_FACTOR
     : input * trigger * ROUTER_FEE_FACTOR;
-  return decimalString(quotedOutput * DEFAULT_PROTECTION_FACTOR, outputDecimals);
+  return decimalString(quotedOutput * (1 - protection / 10_000), outputDecimals);
 }

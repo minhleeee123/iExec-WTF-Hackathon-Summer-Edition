@@ -81,6 +81,31 @@ try {
     ]) {
       const page = await browser.newPage({ viewport });
       const errors = [];
+      let agentRequest = null;
+      await page.route('**/api/agent/plan', async (route) => {
+        agentRequest = route.request().postDataJSON();
+        await route.fulfill({
+          contentType: 'application/json',
+          body: JSON.stringify({
+            plan: {
+              version: 1,
+              supported: true,
+              unsupportedReason: '',
+              action: 'limit_order',
+              side: 'sell',
+              amountMode: 'exact',
+              amountValue: '0.01',
+              triggerPriceUsd: '2500',
+              slippageBps: 100,
+              expiryMinutes: 360,
+              requiresWrap: false,
+              summary: 'Sell 0.01 cETH if ETH reaches $2,500.',
+              riskNote: 'Execution depends on oracle freshness and encrypted pool liquidity.',
+            },
+            meta: { provider: 'groq', model: 'openai/gpt-oss-20b', requestId: 'ui-test' },
+          }),
+        });
+      });
       page.on('pageerror', (error) => errors.push(error.message));
       page.on('console', recordConsoleError(errors));
       await page.goto(url, { waitUntil: 'networkidle' });
@@ -122,6 +147,26 @@ try {
         await page.locator('.mobile-wallet-drawer .compact-wallet').waitFor();
         await page.getByRole('button', { name: 'Close private wallet' }).click();
       }
+
+      await page.getByRole('tab', { name: 'Strategy Agent' }).click();
+      await page.waitForURL(`${url}/app/trade?mode=agent`);
+      await page.getByLabel('Trading intent').fill('Sell 0.01 cETH when ETH reaches $2,500. Expire in 6 hours.');
+      await page.getByRole('button', { name: 'Generate private strategy draft' }).click();
+      await page.getByText('DRAFT READY').waitFor();
+      assert.deepEqual(Object.keys(agentRequest).sort(), ['intent', 'market']);
+      assert.deepEqual(Object.keys(agentRequest.market).sort(), ['blockTimestamp', 'ethPriceUsd', 'oracleUpdatedAt']);
+      assert.equal(JSON.stringify(agentRequest).match(/wallet|balance|handle|proof|signature/gi), null, 'agent request must contain only intent and public market context');
+      await page.getByRole('button', { name: 'Apply to order form' }).click();
+      assert.equal(await page.getByLabel('Limit order amount').inputValue(), '0.01');
+      assert.equal(await page.getByLabel('ETH trigger price').inputValue(), '2500');
+      assert.equal(await page.getByLabel('Limit order expiry minutes').inputValue(), '360');
+      await page.waitForFunction(() => document.querySelector('[aria-label="Limit order minimum output"]')?.value === '24.67575');
+      const agentLayout = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      }));
+      assert(agentLayout.scrollWidth <= agentLayout.clientWidth, `${viewport.name} agent view has horizontal overflow`);
+      await page.screenshot({ path: `/tmp/noxswap-agent-${viewport.name}.png`, fullPage: true });
 
       await page.getByRole('tab', { name: 'Limit orders' }).click();
       await page.waitForURL(`${url}/app/trade?mode=orders`);
@@ -192,8 +237,10 @@ try {
         appLayout,
         publicOrderCount,
         drawerLayout,
+        agentLayout,
         landingScreenshot: `/tmp/noxswap-${viewport.name}.png`,
         appScreenshot: `/tmp/noxswap-app-${viewport.name}.png`,
+        agentScreenshot: `/tmp/noxswap-agent-${viewport.name}.png`,
         orderDetailScreenshot: `/tmp/noxswap-order-detail-${viewport.name}.png`,
       });
       await page.close();

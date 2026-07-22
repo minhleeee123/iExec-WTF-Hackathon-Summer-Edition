@@ -16,6 +16,7 @@ test('derives a protected USDC to ETH minimum from Chainlink', () => {
 test('derives protected limit-order minimums in both directions', () => {
   assert.equal(deriveLimitOrderMinOut({ amount: '100', outputDecimals: 18, side: 'buy', triggerPrice: '2000' }), '0.04960075');
   assert.equal(deriveLimitOrderMinOut({ amount: '0.05', outputDecimals: 6, side: 'sell', triggerPrice: '2000' }), '99.2015');
+  assert.equal(deriveLimitOrderMinOut({ amount: '100', outputDecimals: 18, side: 'buy', triggerPrice: '2000', slippageBps: 100 }), '0.0493515');
 });
 
 test('does not invent a quote for unsupported pairs or invalid input', () => {

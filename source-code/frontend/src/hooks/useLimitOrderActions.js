@@ -33,6 +33,7 @@ export default function useLimitOrderActions({
   const [amount, setAmount] = useState('5');
   const [minOut, setMinOut] = useState('');
   const [minOutAuto, setMinOutAuto] = useState(true);
+  const [protectionBps, setProtectionBps] = useState(50);
   const [allowZeroMinOut, setAllowZeroMinOut] = useState(false);
   const [trigger, setTrigger] = useState('');
   const [expiryMinutes, setExpiryMinutes] = useState('30');
@@ -48,8 +49,9 @@ export default function useLimitOrderActions({
     amount,
     outputDecimals: tokenOut.decimals,
     side,
+    slippageBps: protectionBps,
     triggerPrice: trigger,
-  }), [amount, side, tokenOut.decimals, trigger]);
+  }), [amount, protectionBps, side, tokenOut.decimals, trigger]);
   const amountValidation = useMemo(
     () => validateTokenAmount(amount, tokenIn.decimals, available),
     [amount, available, tokenIn.decimals],
@@ -326,6 +328,15 @@ export default function useLimitOrderActions({
     formError,
     minOut,
     minOutAuto,
+    applyAgentPlan: (plan) => {
+      setSide(plan.side);
+      setAmount(plan.amount);
+      setTrigger(plan.triggerPriceUsd);
+      setExpiryMinutes(String(plan.expiryMinutes));
+      setProtectionBps(plan.slippageBps);
+      setMinOutAuto(true);
+      setAllowZeroMinOut(false);
+    },
     onAmountChange: setAmount,
     onExpiryChange: setExpiryMinutes,
     onMax: () => setAmount(formatInputAmount(available, tokenIn.decimals)),
@@ -338,6 +349,7 @@ export default function useLimitOrderActions({
     onSideChange: (nextSide) => {
       setSide(nextSide);
       setAmount(nextSide === 'buy' ? '5' : '0.001');
+      setProtectionBps(50);
       setMinOutAuto(true);
       setAllowZeroMinOut(false);
     },

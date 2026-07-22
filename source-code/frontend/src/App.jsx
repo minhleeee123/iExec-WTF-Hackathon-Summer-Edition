@@ -665,6 +665,12 @@ export default function App() {
   };
   const orderContext = {
     account,
+    agentMarket: {
+      available: Boolean(ethPrice && priceUpdatedAt && chainNow > 0 && chainNow - priceUpdatedAt <= 3600),
+      blockTimestamp: chainNow,
+      ethPriceUsd: ethPrice,
+      oracleUpdatedAt: priceUpdatedAt,
+    },
     balances,
     busy,
     chainId,
