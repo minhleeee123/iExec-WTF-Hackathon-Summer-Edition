@@ -1,4 +1,5 @@
 export const TEST_TOKEN_ABI = [
+  'error FaucetCooldown(uint64 availableAt)',
   'function balanceOf(address account) view returns (uint256)',
   'function allowance(address owner,address spender) view returns (uint256)',
   'function approve(address spender,uint256 amount) returns (bool)',

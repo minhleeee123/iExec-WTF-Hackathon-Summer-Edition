@@ -1,25 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ethers } from 'ethers';
-import {
-  Activity,
-  ArrowDown,
-  ArrowUpRight,
-  CheckCircle2,
-  Copy,
-  Droplets,
-  ExternalLink,
-  Eye,
-  EyeOff,
-  FileKey2,
-  History,
-  KeyRound,
-  LoaderCircle,
-  LockKeyhole,
-  RefreshCw,
-  ShieldCheck,
-  Wallet,
-  X,
-} from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import deployment from './deployment.json';
 import {
   CHAINLINK_ETH_USD,
@@ -28,62 +9,36 @@ import {
   NOX_SWAP_ABI,
   TEST_TOKEN_ABI,
 } from './contracts';
-import hero from './assets/hero.png';
+import {
+  createInitialBalances,
+  createInitialFaucets,
+  FAUCET_COOLDOWN_SECONDS,
+  RPC_URL,
+  SEPOLIA_HEX,
+  TOKENS,
+} from './config';
+import { createHandleClient, retry } from './lib/nox';
+import { queryRecentSwapEvents } from './lib/history';
+import {
+  decodeReceiptImage,
+  formatDuration,
+  formatInputAmount,
+  formatToken,
+  isHandle,
+  shorten,
+} from './lib/format';
+import { getCooldownRemaining, validateTokenAmount } from './lib/validation';
+import AclSection from './components/AclSection';
+import ActivitySection from './components/ActivitySection';
+import AppHeader from './components/AppHeader';
+import AppModals from './components/AppModals';
+import AssetOperations from './components/AssetOperations';
+import EvidenceSection from './components/EvidenceSection';
+import HeroSection from './components/HeroSection';
+import NoticeBanner from './components/NoticeBanner';
+import PrivateWallet from './components/PrivateWallet';
+import SwapPanel from './components/SwapPanel';
 import './App.css';
-
-const ZERO_HANDLE = `0x${'0'.repeat(64)}`;
-const SEPOLIA_HEX = '0xaa36a7';
-const RPC_URL = 'https://ethereum-sepolia-rpc.publicnode.com';
-const TOKENS = {
-  cUSDC: {
-    symbol: 'cUSDC',
-    publicSymbol: 'nUSDC',
-    decimals: 6,
-    wrapper: deployment.contracts.cUSDC,
-    underlying: deployment.contracts.underlyingUSDC,
-  },
-  cETH: {
-    symbol: 'cETH',
-    publicSymbol: 'nWETH',
-    decimals: 18,
-    wrapper: deployment.contracts.cETH,
-    underlying: deployment.contracts.underlyingWETH,
-  },
-};
-
-const shorten = (value, head = 6, tail = 4) =>
-  value ? `${value.slice(0, head)}...${value.slice(-tail)}` : '--';
-
-const isHandle = (value) => value && value !== ZERO_HANDLE;
-
-const formatToken = (value, decimals, maximumFractionDigits = 6) =>
-  Number(ethers.formatUnits(value, decimals)).toLocaleString(undefined, { maximumFractionDigits });
-
-const decodeReceiptImage = (tokenUri) => {
-  if (!tokenUri?.startsWith('data:application/json;base64,')) return '';
-  const json = JSON.parse(atob(tokenUri.split(',')[1]));
-  return json.image ?? '';
-};
-
-const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
-
-const createHandleClient = async (signer) => {
-  const { createEthersHandleClient } = await import('@iexec-nox/handle');
-  return createEthersHandleClient(signer);
-};
-
-async function retry(operation, attempts = 12, delay = 8000) {
-  let lastError;
-  for (let index = 0; index < attempts; index += 1) {
-    try {
-      return await operation();
-    } catch (error) {
-      lastError = error;
-      if (index < attempts - 1) await sleep(delay);
-    }
-  }
-  throw lastError;
-}
 
 export default function App() {
   const [account, setAccount] = useState('');
@@ -95,10 +50,8 @@ export default function App() {
   const [asset, setAsset] = useState('cUSDC');
   const [assetAmount, setAssetAmount] = useState('100');
   const [assetMode, setAssetMode] = useState('wrap');
-  const [balances, setBalances] = useState({
-    cUSDC: { public: 0n, handle: ZERO_HANDLE, decrypted: null },
-    cETH: { public: 0n, handle: ZERO_HANDLE, decrypted: null },
-  });
+  const [balances, setBalances] = useState(createInitialBalances);
+  const [faucets, setFaucets] = useState(createInitialFaucets);
   const [ethBalance, setEthBalance] = useState(0n);
   const [pool, setPool] = useState(null);
   const [ethPrice, setEthPrice] = useState(null);
@@ -111,11 +64,27 @@ export default function App() {
   const [receipt, setReceipt] = useState(null);
   const [showProof, setShowProof] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
-  const [showHandles, setShowHandles] = useState(true);
+  const [privateBalancesVisible, setPrivateBalancesVisible] = useState(false);
+  const [clockTick, setClockTick] = useState(() => Math.floor(Date.now() / 1000));
+  const [chainTimeOffset, setChainTimeOffset] = useState(0);
 
   const tokenOut = tokenIn === 'cUSDC' ? 'cETH' : 'cUSDC';
   const connected = Boolean(account);
   const correctNetwork = chainId === deployment.chainId;
+  const chainNow = clockTick + chainTimeOffset;
+  const assetToken = TOKENS[asset];
+  const assetAvailable = assetMode === 'wrap'
+    ? balances[asset].public
+    : privateBalancesVisible ? balances[asset].decrypted : null;
+  const swapAvailable = privateBalancesVisible ? balances[tokenIn].decrypted : null;
+  const assetValidation = useMemo(
+    () => validateTokenAmount(assetAmount, assetToken.decimals, assetAvailable),
+    [assetAmount, assetAvailable, assetToken.decimals],
+  );
+  const swapValidation = useMemo(
+    () => validateTokenAmount(amountIn, TOKENS[tokenIn].decimals, swapAvailable),
+    [amountIn, swapAvailable, tokenIn],
+  );
 
   const referenceOutput = useMemo(() => {
     const amount = Number(amountIn);
@@ -180,34 +149,57 @@ export default function App() {
     if (!address || !window.ethereum) return;
     const provider = new ethers.BrowserProvider(window.ethereum);
     const next = {};
+    const nextFaucets = {};
     await Promise.all(Object.values(TOKENS).map(async (token) => {
       const underlying = new ethers.Contract(token.underlying, TEST_TOKEN_ABI, provider);
       const wrapper = new ethers.Contract(token.wrapper, CONFIDENTIAL_TOKEN_ABI, provider);
-      const [publicBalance, handle] = await Promise.all([
+      const [publicBalance, handle, faucetAmount, lastClaimAt] = await Promise.all([
         underlying.balanceOf(address),
         wrapper.confidentialBalanceOf(address),
+        underlying.faucetAmount(),
+        underlying.lastClaimAt(address),
       ]);
       next[token.symbol] = { public: publicBalance, handle, decrypted: null };
+      nextFaucets[token.symbol] = {
+        amount: faucetAmount,
+        nextClaimAt: lastClaimAt === 0n ? 0 : Number(lastClaimAt) + FAUCET_COOLDOWN_SECONDS,
+      };
     }));
-    setBalances(next);
-    setEthBalance(await provider.getBalance(address));
+    const [activeAccounts, nativeBalance, latestBlock] = await Promise.all([
+      provider.send('eth_accounts', []),
+      provider.getBalance(address),
+      provider.getBlock('latest'),
+    ]);
+    if (activeAccounts[0]?.toLowerCase() !== address.toLowerCase()) return;
+
+    setBalances((current) => Object.fromEntries(Object.values(TOKENS).map((token) => {
+      const loaded = next[token.symbol];
+      const decrypted = current[token.symbol].handle === loaded.handle
+        ? current[token.symbol].decrypted
+        : null;
+      return [token.symbol, { ...loaded, decrypted }];
+    })));
+    setFaucets(nextFaucets);
+    setEthBalance(nativeBalance);
+    if (latestBlock) setChainTimeOffset(Number(latestBlock.timestamp) - Math.floor(Date.now() / 1000));
 
     const router = new ethers.Contract(deployment.contracts.noxSwapRouter, NOX_SWAP_ABI, provider);
-    const deploymentReceipt = await provider.getTransactionReceipt(deployment.deploymentTransactions.noxSwapRouter);
-    const events = await router.queryFilter(
-      router.filters.SwapExecuted(address),
-      deploymentReceipt.blockNumber,
-      'latest',
-    );
-    setHistory(events.slice(-12).reverse().map((event) => ({
-      hash: event.transactionHash,
-      block: event.blockNumber,
-      tokenIn: event.args.tokenIn,
-      tokenOut: event.args.tokenOut,
-      inputHandle: event.args.encryptedInput,
-      outputHandle: event.args.encryptedOutput,
-      receiptId: event.args.receiptId.toString(),
-    })));
+    try {
+      const deploymentReceipt = await provider.getTransactionReceipt(deployment.deploymentTransactions.noxSwapRouter);
+      const events = await queryRecentSwapEvents(router, address, deploymentReceipt.blockNumber, latestBlock.number);
+      setHistory(events.slice(-12).reverse().map((event) => ({
+        hash: event.transactionHash,
+        block: event.blockNumber,
+        tokenIn: event.args.tokenIn,
+        tokenOut: event.args.tokenOut,
+        inputHandle: event.args.encryptedInput,
+        outputHandle: event.args.encryptedOutput,
+        receiptId: event.args.receiptId.toString(),
+      })));
+    } catch (error) {
+      console.warn('Swap history is temporarily unavailable.', error);
+      setHistory([]);
+    }
   };
 
   const refresh = async () => {
@@ -222,6 +214,11 @@ export default function App() {
   };
 
   useEffect(() => {
+    const timer = window.setInterval(() => setClockTick(Math.floor(Date.now() / 1000)), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
     loadMarket().catch(fail);
     if (!window.ethereum) return undefined;
     const sync = async () => {
@@ -230,8 +227,28 @@ export default function App() {
       setAccount(accounts[0] ?? '');
       setChainId(Number(BigInt(chain)));
     };
-    const onAccounts = (accounts) => setAccount(accounts[0] ?? '');
-    const onChain = (chain) => setChainId(Number(BigInt(chain)));
+    const onAccounts = (accounts) => {
+      setPrivateBalancesVisible(false);
+      setBalances(createInitialBalances());
+      setFaucets(createInitialFaucets());
+      setEthBalance(0n);
+      setHistory([]);
+      setAclResult(null);
+      setLastProof(null);
+      setReceipt(null);
+      setAccount(accounts[0] ?? '');
+    };
+    const onChain = (chain) => {
+      const nextChainId = Number(BigInt(chain));
+      setChainId(nextChainId);
+      setPrivateBalancesVisible(false);
+      if (nextChainId !== deployment.chainId) {
+        setBalances(createInitialBalances());
+        setFaucets(createInitialFaucets());
+        setEthBalance(0n);
+        setHistory([]);
+      }
+    };
     sync().catch(fail);
     window.ethereum.on('accountsChanged', onAccounts);
     window.ethereum.on('chainChanged', onChain);
@@ -251,6 +268,23 @@ export default function App() {
       const wallet = await getWallet();
       const token = TOKENS[symbol];
       const contract = new ethers.Contract(token.underlying, TEST_TOKEN_ABI, wallet.signer);
+      const [lastClaimAt, latestBlock] = await Promise.all([
+        contract.lastClaimAt(wallet.address),
+        wallet.provider.getBlock('latest'),
+      ]);
+      const nextClaimAt = lastClaimAt === 0n ? 0 : Number(lastClaimAt) + FAUCET_COOLDOWN_SECONDS;
+      const remaining = getCooldownRemaining(nextClaimAt, latestBlock.timestamp);
+      setFaucets((current) => ({
+        ...current,
+        [symbol]: { ...current[symbol], nextClaimAt },
+      }));
+      if (remaining > 0) {
+        setNotice({
+          type: 'info',
+          text: `${token.publicSymbol} faucet is cooling down. Try again in ${formatDuration(remaining)}.`,
+        });
+        return;
+      }
       const transaction = await contract.faucet();
       addLog(`${token.publicSymbol} faucet submitted`, transaction.hash);
       await transaction.wait();
@@ -266,14 +300,16 @@ export default function App() {
   const manageAsset = async () => {
     try {
       const token = TOKENS[asset];
-      const amount = ethers.parseUnits(assetAmount, token.decimals);
-      if (amount <= 0n) throw new Error('Enter an amount greater than zero.');
+      if (assetValidation.error) throw new Error(assetValidation.error);
+      const amount = assetValidation.amount;
       setBusy(assetMode);
       const wallet = await getWallet();
       const wrapper = new ethers.Contract(token.wrapper, CONFIDENTIAL_TOKEN_ABI, wallet.signer);
       const underlying = new ethers.Contract(token.underlying, TEST_TOKEN_ABI, wallet.signer);
 
       if (assetMode === 'wrap') {
+        const liveBalance = await underlying.balanceOf(wallet.address);
+        if (amount > liveBalance) throw new Error('Amount exceeds your current public balance. Refresh and try again.');
         const approval = await underlying.approve(token.wrapper, amount);
         addLog(`Approve ${token.publicSymbol}`, approval.hash);
         await approval.wait();
@@ -281,6 +317,10 @@ export default function App() {
         addLog(`Wrap ${assetAmount} ${token.publicSymbol}`, transaction.hash);
         await transaction.wait();
       } else {
+        const liveHandle = await wrapper.confidentialBalanceOf(wallet.address);
+        if (liveHandle !== balances[asset].handle) {
+          throw new Error('Your private balance changed. Reveal the latest balance and try again.');
+        }
         const client = await createHandleClient(wallet.signer);
         const encrypted = await client.encryptInput(amount, 'uint256', token.wrapper);
         const request = await wrapper['unwrap(address,address,bytes32,bytes)'](
@@ -303,6 +343,7 @@ export default function App() {
       }
 
       setNotice({ type: 'success', text: `${assetMode === 'wrap' ? 'Wrap' : 'Unwrap'} completed on Sepolia.` });
+      setPrivateBalancesVisible(false);
       await loadAccount(wallet.address);
     } catch (error) {
       fail(error);
@@ -322,9 +363,12 @@ export default function App() {
         if (isHandle(current.handle)) {
           const result = await retry(() => client.decrypt(current.handle), 5, 3000);
           next[token.symbol] = { ...current, decrypted: result.value };
+        } else {
+          next[token.symbol] = { ...current, decrypted: 0n };
         }
       }
       setBalances(next);
+      setPrivateBalancesVisible(true);
       setNotice({ type: 'success', text: 'Authorized balances decrypted with an EIP-712 signature.' });
       addLog('Nox Gateway returned authorized balance plaintexts');
     } catch (error) {
@@ -334,17 +378,29 @@ export default function App() {
     }
   };
 
+  const togglePrivateBalances = async () => {
+    if (privateBalancesVisible) {
+      setPrivateBalancesVisible(false);
+      return;
+    }
+    await decryptBalances();
+  };
+
   const swap = async () => {
     try {
       const input = TOKENS[tokenIn];
       const output = TOKENS[tokenOut];
-      const amount = ethers.parseUnits(amountIn, input.decimals);
-      if (amount <= 0n) throw new Error('Enter an amount greater than zero.');
+      if (swapValidation.error) throw new Error(swapValidation.error);
+      const amount = swapValidation.amount;
       setBusy('swap');
       setNotice({ type: 'info', text: 'Preparing confidential input with Nox Gateway...' });
       const wallet = await getWallet();
       const inputContract = new ethers.Contract(input.wrapper, CONFIDENTIAL_TOKEN_ABI, wallet.signer);
       const router = new ethers.Contract(deployment.contracts.noxSwapRouter, NOX_SWAP_ABI, wallet.signer);
+      const liveHandle = await inputContract.confidentialBalanceOf(wallet.address);
+      if (liveHandle !== balances[tokenIn].handle) {
+        throw new Error('Your private balance changed. Reveal the latest balance and try again.');
+      }
       if (!(await inputContract.isOperator(wallet.address, deployment.contracts.noxSwapRouter))) {
         const expiry = BigInt(Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60);
         const operatorTx = await inputContract.setOperator(deployment.contracts.noxSwapRouter, expiry);
@@ -392,6 +448,7 @@ export default function App() {
         text: `Swap confirmed. Received ${formatToken(decrypted.value, output.decimals)} ${output.symbol}; receipt #${receiptData.id} minted.`,
       });
       addLog(`Output decrypted: ${formatToken(decrypted.value, output.decimals)} ${output.symbol}`, transaction.hash);
+      setPrivateBalancesVisible(false);
       await Promise.all([loadAccount(wallet.address), loadMarket()]);
     } catch (error) {
       fail(error);
@@ -418,6 +475,7 @@ export default function App() {
         const viewers = [...acl.admins, ...acl.viewers].map((entry) => entry.toLowerCase());
         results.push({ symbol: token.symbol, handle, confirmed: viewers.includes(auditor.toLowerCase()) });
       }
+      if (results.length === 0) throw new Error('No initialized confidential balance is available to share.');
       setAclResult(results);
       setNotice({ type: 'success', text: 'ACL transactions confirmed and checked against the Nox subgraph.' });
     } catch (error) {
@@ -449,221 +507,88 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <header className="topbar">
-        <a className="brand" href="#swap" aria-label="NoxSwap home">
-          <span className="brand-mark"><LockKeyhole size={20} /></span>
-          <span>NoxSwap</span>
-          <span className="network-chip">Sepolia</span>
-        </a>
-        <nav aria-label="Primary navigation">
-          <a href="#swap">Swap</a>
-          <a href="#assets">Assets</a>
-          <a href="#activity">Activity</a>
-        </nav>
-        <button className="wallet-button" onClick={connect} disabled={busy === 'connect'}>
-          {busy === 'connect' ? <LoaderCircle className="spin" size={17} /> : <Wallet size={17} />}
-          {connected ? shorten(account) : 'Connect wallet'}
-        </button>
-      </header>
+      <AppHeader account={account} busy={busy} onConnect={connect} />
 
       <main>
-        <section className="status-band">
-          <div>
-            <p className="eyebrow">CONFIDENTIAL AMM ON ETHEREUM SEPOLIA</p>
-            <h1>Swap without publishing amounts.</h1>
-            <p className="lede">Real ERC-7984 balances, Nox encrypted handles, constant-product settlement, and on-chain receipt NFTs.</p>
-            <div className="status-row">
-              <span><CheckCircle2 size={16} /> NoxCompute deployed</span>
-              <span><CheckCircle2 size={16} /> Encrypted pool live</span>
-              <a href={deployment.explorerUrl} target="_blank" rel="noreferrer">Router <ExternalLink size={14} /></a>
-            </div>
-          </div>
-          <div className="protocol-visual" aria-label="Nox encrypted execution architecture">
-            <img src={hero} alt="Two protocol layers representing encrypted input and settlement" />
-            <dl>
-              <div><dt>Gateway</dt><dd>gateway-testnets.noxprotocol.dev</dd></div>
-              <div><dt>Network</dt><dd>Chain ID 11155111</dd></div>
-              <div><dt>ETH / USD</dt><dd>{ethPrice ? `$${ethPrice.toLocaleString()}` : 'Loading...'}</dd></div>
-            </dl>
-          </div>
-        </section>
-
-        {notice && (
-          <div className={`notice ${notice.type}`} role="status">
-            <span>{notice.text}</span>
-            <button className="icon-button" onClick={() => setNotice(null)} aria-label="Dismiss"><X size={16} /></button>
-          </div>
-        )}
-        {!window.ethereum && <div className="notice error">MetaMask is not installed. Read-only market data remains available.</div>}
-        {connected && !correctNetwork && <div className="notice error">Switch MetaMask to Ethereum Sepolia to use NoxSwap.</div>}
+        <HeroSection ethPrice={ethPrice} />
+        <NoticeBanner notice={notice} onDismiss={() => setNotice(null)} />
+        {!window.ethereum && <NoticeBanner notice={{ type: 'error', text: 'MetaMask is not installed. Read-only market data remains available.' }} />}
+        {connected && !correctNetwork && <NoticeBanner notice={{ type: 'error', text: 'Switch MetaMask to Ethereum Sepolia to use NoxSwap.' }} />}
 
         <section id="swap" className="workspace-grid">
-          <div className="swap-panel">
-            <div className="section-heading">
-              <div><p className="eyebrow">LIVE CONTRACT</p><h2>Confidential swap</h2></div>
-              <button className="icon-button" onClick={refresh} aria-label="Refresh chain data" title="Refresh chain data">
-                <RefreshCw className={busy === 'refresh' ? 'spin' : ''} size={18} />
-              </button>
-            </div>
-
-            <div className="amount-box">
-              <div className="amount-meta"><span>You encrypt</span><span>{connected ? `Handle ${shorten(balances[tokenIn].handle, 8, 6)}` : 'Connect wallet'}</span></div>
-              <div className="amount-row">
-                <input value={amountIn} onChange={(event) => setAmountIn(event.target.value)} inputMode="decimal" aria-label="Swap amount" />
-                <select value={tokenIn} onChange={(event) => setTokenIn(event.target.value)} aria-label="Input token">
-                  <option value="cUSDC">cUSDC</option><option value="cETH">cETH</option>
-                </select>
-              </div>
-            </div>
-            <div className="direction"><ArrowDown size={18} /></div>
-            <div className="amount-box output">
-              <div className="amount-meta"><span>Reference output</span><span>Chainlink price, 0.30% fee</span></div>
-              <div className="amount-row"><strong>{referenceOutput}</strong><span className="token-pill">{tokenOut}</span></div>
-            </div>
-            <p className="field-note">The reference is public UI guidance. The contract computes the final amount from encrypted pool reserves.</p>
-
-            <button className="primary-action" onClick={connected ? swap : connect} disabled={Boolean(busy)}>
-              {busy === 'swap' ? <LoaderCircle className="spin" size={19} /> : <ShieldCheck size={19} />}
-              {connected ? 'Encrypt and swap' : 'Connect wallet to swap'}
-            </button>
-            <div className="contract-strip">
-              <span>Router {shorten(deployment.contracts.noxSwapRouter, 10, 8)}</span>
-              <span>Fee 0.30%</span>
-              <span>{priceUpdatedAt ? `Oracle ${new Date(priceUpdatedAt * 1000).toLocaleTimeString()}` : 'Oracle loading'}</span>
-            </div>
-          </div>
-
-          <aside className="account-panel">
-            <div className="section-heading">
-              <div><p className="eyebrow">PRIVATE WALLET</p><h2>Encrypted balances</h2></div>
-              <button className="icon-button" onClick={() => setShowHandles((value) => !value)} aria-label="Toggle handle display" title="Toggle handle display">
-                {showHandles ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-            <p className="wallet-line">{connected ? account : 'No wallet connected'}</p>
-            {Object.values(TOKENS).map((token) => (
-              <div className="balance-row" key={token.symbol}>
-                <div><span>{token.symbol}</span><small>{showHandles ? shorten(balances[token.symbol].handle, 12, 8) : 'Encrypted handle hidden'}</small></div>
-                <strong>{balances[token.symbol].decrypted === null ? 'Encrypted' : formatToken(balances[token.symbol].decrypted, token.decimals)}</strong>
-              </div>
-            ))}
-            <button className="secondary-action" onClick={decryptBalances} disabled={!connected || Boolean(busy)}>
-              {busy === 'decrypt' ? <LoaderCircle className="spin" size={17} /> : <KeyRound size={17} />} Decrypt my balances
-            </button>
-            <div className="native-balance"><span>Sepolia ETH for gas</span><strong>{formatToken(ethBalance, 18, 4)}</strong></div>
-          </aside>
+          <SwapPanel
+            amountIn={amountIn}
+            balance={balances[tokenIn]}
+            busy={busy}
+            connected={connected}
+            onAmountChange={setAmountIn}
+            onConnect={connect}
+            onMax={() => setAmountIn(formatInputAmount(balances[tokenIn].decrypted, TOKENS[tokenIn].decimals))}
+            onRefresh={refresh}
+            onReveal={decryptBalances}
+            onSwap={swap}
+            onTokenChange={setTokenIn}
+            priceUpdatedAt={priceUpdatedAt}
+            privateBalancesVisible={privateBalancesVisible}
+            referenceOutput={referenceOutput}
+            token={TOKENS[tokenIn]}
+            tokenIn={tokenIn}
+            tokenOut={tokenOut}
+            validation={swapValidation}
+          />
+          <PrivateWallet
+            account={account}
+            balances={balances}
+            busy={busy}
+            ethBalance={ethBalance}
+            onToggleBalances={togglePrivateBalances}
+            privateBalancesVisible={privateBalancesVisible}
+            tokens={TOKENS}
+          />
         </section>
 
-        <section id="assets" className="section-band">
-          <div className="section-title"><div><p className="eyebrow">ASSET OPERATIONS</p><h2>Fund, wrap, and unwrap</h2></div><p>Test faucets enforce a one-hour cooldown. Wrapping is 1:1; unwrapping finalizes with a Nox public decryption proof.</p></div>
-          <div className="asset-layout">
-            <div className="faucet-list">
-              {Object.values(TOKENS).map((token) => (
-                <div className="faucet-item" key={token.symbol}>
-                  <div><span>{token.publicSymbol}</span><small>Public balance {formatToken(balances[token.symbol].public, token.decimals)}</small></div>
-                  <button onClick={() => faucet(token.symbol)} disabled={!connected || Boolean(busy)}>
-                    <Droplets size={16} /> Faucet
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div className="asset-form">
-              <div className="segmented" role="group" aria-label="Asset operation">
-                <button className={assetMode === 'wrap' ? 'active' : ''} onClick={() => setAssetMode('wrap')}>Wrap</button>
-                <button className={assetMode === 'unwrap' ? 'active' : ''} onClick={() => setAssetMode('unwrap')}>Unwrap</button>
-              </div>
-              <div className="inline-fields">
-                <input value={assetAmount} onChange={(event) => setAssetAmount(event.target.value)} inputMode="decimal" aria-label="Asset amount" />
-                <select value={asset} onChange={(event) => setAsset(event.target.value)} aria-label="Asset">
-                  <option value="cUSDC">{assetMode === 'wrap' ? 'nUSDC' : 'cUSDC'}</option>
-                  <option value="cETH">{assetMode === 'wrap' ? 'nWETH' : 'cETH'}</option>
-                </select>
-              </div>
-              <button className="primary-action compact" onClick={manageAsset} disabled={!connected || Boolean(busy)}>
-                {busy === assetMode ? <LoaderCircle className="spin" size={18} /> : <RefreshCw size={18} />} {assetMode === 'wrap' ? 'Approve and wrap' : 'Request and finalize unwrap'}
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <section className="section-band acl-band">
-          <div className="section-title"><div><p className="eyebrow">SELECTIVE DISCLOSURE</p><h2>Grant an auditor access</h2></div><p>The viewer is written to the ACL of each initialized balance handle. Public explorers still see only bytes32 handles.</p></div>
-          <div className="acl-form">
-            <FileKey2 size={22} />
-            <input value={auditor} onChange={(event) => setAuditor(event.target.value)} placeholder="0x auditor address" aria-label="Auditor address" />
-            <button onClick={grantAuditor} disabled={!connected || Boolean(busy)}>{busy === 'acl' ? <LoaderCircle className="spin" size={17} /> : <KeyRound size={17} />} Grant viewer</button>
-          </div>
-          {aclResult && <div className="acl-results">{aclResult.map((item) => <span key={item.symbol} className={item.confirmed ? 'pass' : 'pending'}>{item.symbol}: {item.confirmed ? 'confirmed' : 'indexing'}</span>)}</div>}
-        </section>
-
-        <section id="activity" className="activity-grid">
-          <div className="history-panel">
-            <div className="section-heading"><div><p className="eyebrow">ON-CHAIN EVENTS</p><h2>Swap history</h2></div><History size={20} /></div>
-            {history.length === 0 ? <p className="empty-state">No SwapExecuted events found for this wallet.</p> : (
-              <div className="history-table" role="table">
-                {history.map((item) => (
-                  <div className="history-item" key={item.hash} role="row">
-                    <div><strong>Receipt #{item.receiptId}</strong><small>Block {item.block}</small></div>
-                    <code>{shorten(item.outputHandle, 12, 8)}</code>
-                    <a href={`https://sepolia.etherscan.io/tx/${item.hash}`} target="_blank" rel="noreferrer" aria-label="Open transaction"><ArrowUpRight size={17} /></a>
-                    <button className="icon-button" onClick={() => openHistoryReceipt(item)} aria-label={`Open receipt ${item.receiptId}`}><FileKey2 size={17} /></button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="log-panel">
-            <div className="section-heading"><div><p className="eyebrow">CLIENT LOG</p><h2>Execution evidence</h2></div><Activity size={20} /></div>
-            {logs.length === 0 ? <p className="empty-state">Wallet actions will appear here as they occur.</p> : logs.map((entry, index) => (
-              <div className="log-entry" key={`${entry.time}-${index}`}><time>{entry.time}</time><span>{entry.message}</span>{entry.transactionHash && <a href={`https://sepolia.etherscan.io/tx/${entry.transactionHash}`} target="_blank" rel="noreferrer"><ExternalLink size={14} /></a>}</div>
-            ))}
-          </div>
-        </section>
-
-        <section className="evidence-band">
-          <div><p className="eyebrow">VERIFIABLE DEPLOYMENT</p><h2>Inspect what the wallet submitted.</h2><p>Input proofs, calldata, output handles, block numbers, and receipt metadata come from the most recent confirmed transaction.</p></div>
-          <div className="evidence-actions">
-            <button onClick={() => setShowProof(true)} disabled={!lastProof}><ShieldCheck size={17} /> Inspect last proof</button>
-            <button onClick={() => setShowReceipt(true)} disabled={!receipt}><FileKey2 size={17} /> Open receipt NFT</button>
-          </div>
-          <div className="deployment-facts">
-            <span><LockKeyhole size={16} /> Router bytecode live</span>
-            <span><ShieldCheck size={16} /> NoxCompute {shorten(deployment.contracts.noxCompute, 8, 6)}</span>
-            <span><KeyRound size={16} /> Pool handles {pool ? 'initialized' : 'loading'}</span>
-          </div>
-        </section>
+        <AssetOperations
+          asset={asset}
+          assetAmount={assetAmount}
+          assetMode={assetMode}
+          available={assetAvailable}
+          balances={balances}
+          busy={busy}
+          chainNow={chainNow}
+          connected={connected}
+          faucets={faucets}
+          onAmountChange={setAssetAmount}
+          onAssetChange={setAsset}
+          onFaucet={faucet}
+          onManage={manageAsset}
+          onMax={() => setAssetAmount(formatInputAmount(assetAvailable, assetToken.decimals))}
+          onModeChange={setAssetMode}
+          onReveal={decryptBalances}
+          privateBalancesVisible={privateBalancesVisible}
+          tokens={TOKENS}
+          validation={assetValidation}
+        />
+        <AclSection aclResult={aclResult} auditor={auditor} busy={busy} connected={connected} onAuditorChange={setAuditor} onGrant={grantAuditor} />
+        <ActivitySection history={history} logs={logs} onOpenReceipt={openHistoryReceipt} />
+        <EvidenceSection
+          lastProof={lastProof}
+          onOpenProof={() => setShowProof(true)}
+          onOpenReceipt={() => setShowReceipt(true)}
+          pool={pool}
+          receipt={receipt}
+        />
       </main>
 
       <footer><span>NoxSwap</span><span>Ethereum Sepolia / iExec Nox</span><a href={deployment.explorerUrl} target="_blank" rel="noreferrer">Contract <ExternalLink size={13} /></a></footer>
 
-      {showProof && lastProof && (
-        <div className="modal-backdrop" onMouseDown={() => setShowProof(false)}>
-          <div className="modal" onMouseDown={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label="Privacy proof inspector">
-            <div className="section-heading"><div><p className="eyebrow">TRANSACTION EVIDENCE</p><h2>Privacy proof inspector</h2></div><button className="icon-button" onClick={() => setShowProof(false)}><X size={18} /></button></div>
-            <dl className="proof-list">
-              <div><dt>Transaction</dt><dd>{lastProof.transactionHash}</dd></div>
-              <div><dt>Router</dt><dd>{lastProof.contract}</dd></div>
-              <div><dt>Input handle</dt><dd>{lastProof.inputHandle}</dd></div>
-              <div><dt>Input proof</dt><dd>{lastProof.inputProofBytes} bytes</dd></div>
-              <div><dt>Output handle</dt><dd>{lastProof.outputHandle}</dd></div>
-              <div><dt>Block</dt><dd>{lastProof.blockNumber}</dd></div>
-              <div><dt>Calldata</dt><dd className="calldata">{lastProof.calldata}</dd></div>
-            </dl>
-            <button className="secondary-action" onClick={() => navigator.clipboard.writeText(lastProof.transactionHash)}><Copy size={16} /> Copy transaction hash</button>
-          </div>
-        </div>
-      )}
-
-      {showReceipt && receipt && (
-        <div className="modal-backdrop" onMouseDown={() => setShowReceipt(false)}>
-          <div className="modal receipt-modal" onMouseDown={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label="Receipt NFT">
-            <div className="section-heading"><div><p className="eyebrow">ERC-721 ON SEPOLIA</p><h2>Receipt #{receipt.id}</h2></div><button className="icon-button" onClick={() => setShowReceipt(false)}><X size={18} /></button></div>
-            {receipt.image && <img src={receipt.image} alt={`On-chain NoxSwap receipt ${receipt.id}`} />}
-            <p>Owner <code>{receipt.owner}</code></p>
-            <a className="secondary-action" href={`https://sepolia.etherscan.io/tx/${receipt.transactionHash}`} target="_blank" rel="noreferrer">View mint transaction <ExternalLink size={16} /></a>
-          </div>
-        </div>
-      )}
+      <AppModals
+        lastProof={lastProof}
+        onCloseProof={() => setShowProof(false)}
+        onCloseReceipt={() => setShowReceipt(false)}
+        receipt={receipt}
+        showProof={showProof}
+        showReceipt={showReceipt}
+      />
     </div>
   );
 }

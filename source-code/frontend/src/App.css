@@ -60,6 +60,8 @@ h2 { margin: 0; font-size: 25px; line-height: 1.1; letter-spacing: 0; }
 .amount-box { padding: 17px; background: #efeee9; border: 1px solid var(--ink); border-radius: 5px; }
 .amount-box.output { background: #f2efff; }
 .amount-meta { margin-bottom: 14px; display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 11px; }
+.available-inline { min-width: 0; display: inline-flex; align-items: center; justify-content: flex-end; gap: 7px; text-align: right; }
+.text-button { padding: 0; color: var(--violet); background: transparent; border: 0; font-size: 11px; font-weight: 850; text-decoration: underline; cursor: pointer; }
 .amount-row { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; }
 .amount-row input { width: 100%; min-width: 0; padding: 0; background: transparent; border: 0; color: var(--ink); font-size: 34px; font-weight: 850; }
 .amount-row strong { overflow: hidden; font-size: 34px; text-overflow: ellipsis; }
@@ -67,6 +69,7 @@ h2 { margin: 0; font-size: 25px; line-height: 1.1; letter-spacing: 0; }
 .token-pill { display: flex; align-items: center; }
 .direction { width: 38px; height: 38px; margin: -7px auto; position: relative; z-index: 2; display: grid; place-items: center; background: var(--yellow); border: 2px solid var(--ink); border-radius: 50%; }
 .field-note { margin: 12px 0 18px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.field-error { margin: -7px 0 14px; color: var(--red); font-size: 12px; font-weight: 800; line-height: 1.4; }
 .primary-action { width: 100%; min-height: 52px; padding: 0 18px; background: var(--pink); box-shadow: 3px 3px 0 var(--ink); }
 .primary-action:hover:not(:disabled), .secondary-action:hover:not(:disabled), .faucet-item button:hover:not(:disabled), .acl-form button:hover:not(:disabled), .evidence-actions button:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
 .primary-action.compact { min-height: 46px; }
@@ -76,6 +79,7 @@ h2 { margin: 0; font-size: 25px; line-height: 1.1; letter-spacing: 0; }
 .balance-row div { min-width: 0; display: grid; gap: 5px; }
 .balance-row span, .balance-row strong { font-weight: 850; }
 .balance-row small { overflow: hidden; color: var(--muted); font: 11px ui-monospace, monospace; text-overflow: ellipsis; }
+.privacy-note { margin: 14px 0 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
 .secondary-action { width: 100%; min-height: 42px; margin-top: 18px; padding: 0 14px; background: var(--white); text-decoration: none; }
 .native-balance { margin-top: 14px; display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 11px; }
 
@@ -89,10 +93,15 @@ h2 { margin: 0; font-size: 25px; line-height: 1.1; letter-spacing: 0; }
 .faucet-item div { display: grid; gap: 5px; }
 .faucet-item span { font-weight: 850; }
 .faucet-item small { color: var(--muted); }
+.faucet-item small.cooldown { color: var(--red); font-weight: 750; }
 .faucet-item button, .acl-form button, .evidence-actions button { min-height: 38px; padding: 0 13px; background: var(--yellow); }
+.faucet-item button { min-width: 104px; }
 .segmented { width: max-content; padding: 3px; display: grid; grid-template-columns: 1fr 1fr; background: #e4e2db; border: 1px solid var(--ink); border-radius: 5px; }
 .segmented button { min-width: 90px; height: 34px; border: 0; border-radius: 3px; background: transparent; font-weight: 800; cursor: pointer; }
 .segmented button.active { color: white; background: var(--ink); }
+.available-row { min-height: 30px; margin-top: 16px; display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.available-row > span { color: var(--muted); }
+.available-row > strong { min-width: 0; margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .inline-fields { margin: 20px 0 16px; display: grid; grid-template-columns: minmax(0, 1fr) 130px; }
 .inline-fields input, .inline-fields select, .acl-form input { min-width: 0; height: 46px; padding: 0 13px; background: var(--white); border: 2px solid var(--ink); }
 .inline-fields input { border-radius: 5px 0 0 5px; font-size: 20px; font-weight: 800; }
@@ -168,6 +177,8 @@ footer a { display: inline-flex; align-items: center; gap: 5px; }
   h2 { font-size: 21px; }
   .amount-row input, .amount-row strong { font-size: 27px; }
   .amount-row select, .token-pill { max-width: 108px; }
+  .amount-meta { align-items: flex-start; }
+  .available-inline { flex-wrap: wrap; }
   .section-band, .evidence-band { padding: 38px 14px; }
   .acl-form { grid-template-columns: 1fr; }
   .acl-form > svg { display: none; }
