@@ -5,12 +5,12 @@
 
 ## 1. Trạng thái hiện tại
 
-- Giai đoạn hiện tại: Phase 4 — Product Plan
-- Trạng thái: Waiting for approval
-- Bước tiếp theo: Người dùng duyệt Product Plan cho NoxSwap tại `plan/product-plan.md` để bắt đầu Phase 5 (Build Plan).
+- Giai đoạn hiện tại: Phase 6 — Development
+- Trạng thái: In progress
+- Bước tiếp theo: Bắt đầu lập trình hợp đồng thông minh NoxSwap và giao diện Web DApp client.
 - Blocker hiện tại: Không.
-- Đang chờ phê duyệt từ: Người dùng (Phê duyệt Product Plan).
-- Cập nhật lần cuối: 2026-07-22T10:48:00+07:00
+- Đang chờ phê duyệt từ: Không.
+- Cập nhật lần cuối: 2026-07-22T10:56:30+07:00
 
 Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for approval`, `Blocked`, `Completed`, `Skipped`.
 
@@ -32,9 +32,9 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 | 1. Context verification | Năm file trong `docs/` | Giải quyết thông tin chưa rõ có ảnh hưởng lớn | Context đủ để ra quyết định | Người dùng xác nhận | Completed |
 | 2. Research | Context đã xác minh | Nghiên cứu người dùng, sản phẩm tương tự và benchmark theo rubric | Evidence Log, competitor/rubric benchmark và research handoff | Không | Completed |
 | 3. Brainstorm | Research output | Hard gate, rubric scoring và shortlist | Ý tưởng được chọn | Người dùng chọn ý tưởng | Completed |
-| 4. Product Plan | Ý tưởng được chọn | Hoàn thiện `plan/product-plan.md` | MVP, non-goals và demo scenario | Người dùng phê duyệt | Waiting for approval |
-| 5. Build Plan | Product Plan đã duyệt | Hoàn thiện `plan/build-plan.md` | Stack, kiến trúc, timeline và backlog | Người dùng phê duyệt | Todo |
-| 6. Development | Build Plan đã duyệt | Hoàn thiện core product, vượt Core Product Ready Gate, sau đó xây landing page | Demo-ready application và landing page | Milestone verification | Todo |
+| 4. Product Plan | Ý tưởng được chọn | Hoàn thiện `plan/product-plan.md` | MVP, non-goals và demo scenario | Người dùng phê duyệt | Completed |
+| 5. Build Plan | Product Plan đã duyệt | Hoàn thiện `plan/build-plan.md` | Stack, kiến trúc, timeline và backlog | Người dùng phê duyệt | Completed |
+| 6. Development | Build Plan đã duyệt | Hoàn thiện core product, vượt Core Product Ready Gate, sau đó xây landing page | Demo-ready application và landing page | Milestone verification | In progress |
 | 7. Submission | Demo-ready application và landing page | Hoàn thiện mọi deliverable bắt buộc | Bài nộp hoàn chỉnh | Người dùng final review | Todo |
 
 ## 4. Approval Log
@@ -44,8 +44,8 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 | Participation Fit | Approved | User | 2026-07-21T21:34:36+07:00 | Challenge yêu cầu functional front-end, end-to-end accessibility, ETH Sepolia deploy, UX và iExec Nox integration. |
 | Context verification | Approved | User | 2026-07-22T10:43:00+07:00 | Đã xác nhận chi tiết deadline chính thức từ người dùng (Hạn chót 02/08/2026) và trọng số sao của rubric. |
 | Idea selection | Approved | User | 2026-07-22T10:46:53+07:00 | Đã chọn Option 1: NoxSwap — Confidential Liquidity & Swap Router. |
-| Product Plan | Pending |  |  |  |
-| Build Plan | Pending |  |  |  |
+| Product Plan | Approved | User | 2026-07-22T10:56:00+07:00 | Người dùng đã xem xét và đồng ý thực hiện Product Plan cho NoxSwap. |
+| Build Plan | Approved | User | 2026-07-22T10:56:30+07:00 | Phê duyệt Build Plan cho ứng dụng NoxSwap. |
 | Final submission | Pending |  |  |  |
 
 ## 5. Blockers và câu hỏi mở
@@ -57,8 +57,8 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 
 ## 6. Bước tiếp theo
 
-1. Người dùng xem xét và phê duyệt Product Plan tại `plan/product-plan.md`.
-2. Chuyển sang Phase 5 (Build Plan).
+1. Tiến hành Milestone 1 & Milestone 2 của Phase 6: Khởi tạo project skeleton (Frontend React/Vite + Smart Contract Hardhat env).
+2. Phát triển hợp đồng `NoxSwap.sol` tích hợp chuẩn ERC-7984 & iExec Nox TEE.
 
 ## 7. Quy tắc cập nhật PLAN.md
 
@@ -72,8 +72,8 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 - [x] Context đã được người dùng kiểm tra.
 - [x] Research có evidence và nguồn.
 - [x] Ý tưởng cuối cùng đã được người dùng chọn.
-- [ ] Product Plan đã được phê duyệt.
-- [ ] Build Plan đã được phê duyệt.
+- [x] Product Plan đã được phê duyệt.
+- [x] Build Plan đã được phê duyệt.
 - [ ] Core Product Ready Gate đã đạt trước khi làm landing page.
 - [ ] Landing page phản ánh đúng sản phẩm thật và CTA hoạt động.
 - [ ] Submission checklist canonical đã hoàn thành.
