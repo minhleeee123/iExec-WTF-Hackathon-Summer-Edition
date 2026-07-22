@@ -24,6 +24,19 @@ async function send(label, transactionPromise) {
   return receipt;
 }
 
+async function expectRevert(label, action, pattern) {
+  await assert.rejects(action, pattern, `${label} must revert`);
+  console.log(`${label}: PASS`);
+}
+
+async function waitForBlockAfter(provider, timestamp) {
+  for (;;) {
+    const block = await provider.getBlock('latest');
+    if (Number(block.timestamp) > timestamp) return block;
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
+  }
+}
+
 function eventFrom(contract, receipt, name) {
   return receipt.logs
     .map((log) => {
@@ -144,6 +157,7 @@ async function main() {
   };
   const router = new Contract(addresses.noxSwapRouter, routerAbi, wallet);
   const orderBook = new Contract(addresses.limitOrderBook, orderAbi, wallet);
+  const outsiderOrderBook = orderBook.connect(Wallet.createRandom().connect(provider));
   const operatorExpiry = BigInt(Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60);
 
   for (const pool of Object.values(deployment.pools)) {
@@ -244,6 +258,7 @@ async function main() {
   const orderId = created.args.orderId;
   const executable = await orderBook.canExecute(orderId);
   assert.equal(executable.executable, true, 'Test order trigger must be executable');
+  await outsiderOrderBook.executeOrder.staticCall(orderId);
   const executionReceipt = await send('Execute confidential limit order', orderBook.executeOrder(orderId));
   const executed = eventFrom(orderBook, executionReceipt, 'OrderExecuted');
   assert(executed, 'OrderExecuted must be emitted');
@@ -252,6 +267,8 @@ async function main() {
   assert(orderOutput.value >= orderMinOut, 'Limit order output must meet encrypted minOut');
   assert.equal(orderRefund.value, 0n, 'Filled limit order must not refund input');
   assert.equal((await orderBook.getOrder(orderId)).status, 1n, 'Order status must be Executed');
+  await expectRevert('Reject double execution', () => orderBook.executeOrder.staticCall(orderId), /not open/i);
+  await expectRevert('Reject cancellation after execution', () => orderBook.cancelOrder.staticCall(orderId), /not open/i);
 
   const cancelAmount = parseUnits('2', 6);
   const encryptedCancelAmount = await client.encryptInput(cancelAmount, 'uint256', addresses.limitOrderBook);
@@ -270,11 +287,42 @@ async function main() {
     ),
   );
   const cancelOrderId = eventFrom(orderBook, cancelCreateReceipt, 'OrderCreated').args.orderId;
+  await expectRevert('Reject non-owner cancellation', () => outsiderOrderBook.cancelOrder.staticCall(cancelOrderId), /not owner/i);
+  await expectRevert('Reject early expiry', () => outsiderOrderBook.expireOrder.staticCall(cancelOrderId), /not expired/i);
   const cancelReceipt = await send('Cancel confidential limit order', orderBook.cancelOrder(cancelOrderId));
   const cancelled = eventFrom(orderBook, cancelReceipt, 'OrderCancelled');
   const cancelRefund = await decryptWithRetry(client, cancelled.args.encryptedRefund);
   assert.equal(cancelRefund.value, cancelAmount, 'Cancellation must refund the full encrypted amount');
   assert.equal((await orderBook.getOrder(cancelOrderId)).status, 2n, 'Order status must be Cancelled');
+  await expectRevert('Reject execution after cancellation', () => outsiderOrderBook.executeOrder.staticCall(cancelOrderId), /not open/i);
+
+  const expiryAmount = parseUnits('1', 6);
+  const encryptedExpiryAmount = await client.encryptInput(expiryAmount, 'uint256', addresses.limitOrderBook);
+  const encryptedExpiryMin = await client.encryptInput(0n, 'uint256', addresses.limitOrderBook);
+  const expiry = Number((await provider.getBlock('latest')).timestamp) + 45;
+  const expiryCreateReceipt = await send(
+    'Create expiring confidential order',
+    orderBook.createOrder(
+      addresses.cUSDC,
+      addresses.cETH,
+      encryptedExpiryAmount.handle,
+      encryptedExpiryAmount.handleProof,
+      encryptedExpiryMin.handle,
+      encryptedExpiryMin.handleProof,
+      1n,
+      expiry,
+    ),
+  );
+  const expiryOrderId = eventFrom(orderBook, expiryCreateReceipt, 'OrderCreated').args.orderId;
+  await expectRevert('Reject expiry before deadline', () => outsiderOrderBook.expireOrder.staticCall(expiryOrderId), /not expired/i);
+  await waitForBlockAfter(provider, expiry);
+  await outsiderOrderBook.expireOrder.staticCall(expiryOrderId);
+  const expiryReceipt = await send('Permissionlessly expire confidential order', orderBook.expireOrder(expiryOrderId));
+  const expired = eventFrom(orderBook, expiryReceipt, 'OrderExpired');
+  const expiryRefund = await decryptWithRetry(client, expired.args.encryptedRefund);
+  assert.equal(expiryRefund.value, expiryAmount, 'Expiry must refund the full encrypted amount');
+  assert.equal((await orderBook.getOrder(expiryOrderId)).status, 3n, 'Order status must be Expired');
+  await expectRevert('Reject repeated expiry', () => outsiderOrderBook.expireOrder.staticCall(expiryOrderId), /not open/i);
 
   const auditor = '0x000000000000000000000000000000000000dEaD';
   const currentUsdcHandle = await wrappers.cUSDC.confidentialBalanceOf(wallet.address);
@@ -318,6 +366,7 @@ async function main() {
     assetSwaps,
     limitOrder: { orderId: orderId.toString(), transaction: executionReceipt.hash, filled: true },
     cancelledOrder: { orderId: cancelOrderId.toString(), refunded: `${formatUnits(cancelRefund.value, 6)} cUSDC` },
+    expiredOrder: { orderId: expiryOrderId.toString(), refunded: `${formatUnits(expiryRefund.value, 6)} cUSDC` },
     selectiveViewerConfirmed: auditor,
     unwrappedUnderlying: `${formatUnits(unwrapAmount, 18)} nWETH`,
   }, null, 2));
