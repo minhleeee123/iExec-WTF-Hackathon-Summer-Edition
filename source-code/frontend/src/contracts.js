@@ -37,6 +37,8 @@ export const LIMIT_ORDER_ABI = [
   'function expireOrder(uint256 orderId) returns (bytes32 encryptedRefund)',
   'function canExecute(uint256 orderId) view returns (bool executable,uint256 currentPrice)',
   'function getOrder(uint256 orderId) view returns (address owner,address tokenIn,address tokenOut,bytes32 encryptedAmountIn,bytes32 encryptedMinOut,uint256 triggerPrice,uint64 expiry,uint8 status)',
+  'function nextOrderId() view returns (uint256)',
+  'function MAX_ORACLE_AGE() view returns (uint256)',
   'function priceDecimals() view returns (uint8)',
   'event OrderCreated(uint256 indexed orderId,address indexed owner,address indexed tokenIn,address tokenOut,bytes32 encryptedAmountIn,bytes32 encryptedMinOut,uint256 triggerPrice,uint64 expiry)',
   'event OrderExecuted(uint256 indexed orderId,address indexed executor,bytes32 encryptedOutput,bytes32 encryptedRefund,uint256 receiptId)',

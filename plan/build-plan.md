@@ -1,6 +1,6 @@
 # Build Plan
 
-> Trạng thái: Approved; extended real-feature implementation complete, public frontend deployment pending.
+> Trạng thái: Approved; extended real-feature implementation and public frontend deployment complete.
 
 ## 1. Preconditions
 
@@ -15,7 +15,7 @@
 - Wallet/RPC: Ethers v6 `BrowserProvider`, MetaMask và Ethereum Sepolia.
 - Core flow: Connect -> Faucet -> Wrap -> SDK encrypt -> Confidential swap -> SDK decrypt -> Receipt/history.
 - Supporting real flows: Unwrap với public decryption proof, ACL viewer, Chainlink reference price, MCP stdio.
-- Public frontend deployment: Chưa xác minh; local production build và responsive browser test đã pass.
+- Public frontend deployment: `https://frontend-dusky-five-56.vercel.app`; external mobile smoke test and four-order public read passed.
 - Contract deployment: Live on Ethereum Sepolia, addresses canonical trong `source-code/backend/deployment-sepolia.json`.
 
 ## 3. Tech stack
@@ -94,12 +94,14 @@ Failure handling:
 - [x] Build, lint and responsive headless-browser checks.
 - [x] Separate landing from the app shell; consolidate workflows into Trade, Wallet, and Activity.
 - [x] Keep account, gas, refresh, and private-balance reveal globally available across app workflows.
+- [x] Replace wallet-scoped order cards with a real public orderbook, URL filters, detail drawer, permission-aware actions, and session-only owner reveal.
+- [x] Add the stateless permissionless keeper with dry-run, health, structured logs, optional webhook, and competing-keeper protection.
 - [ ] Manual MetaMask smoke test in the final public-hosted URL.
 
 ### Milestone 5: Submission
 
 - [x] Update README, developer feedback and verification report.
-- [ ] Deploy frontend publicly and record its canonical URL.
+- [x] Deploy frontend publicly and record its canonical URL.
 - [ ] Verify repository public accessibility.
 - [ ] Record/publish demo video no longer than four minutes.
 - [ ] Publish X post and complete final submission review.
@@ -116,16 +118,17 @@ Failure handling:
 
 | Flow | Test | Evidence | Status |
 |---|---|---|---|
-| Compile/ABI/security regression | `npm run compile && npm test` | 6 passing Node tests | Pass |
+| Compile/ABI/security regression | `npm run compile && npm test` | 13 passing Node tests | Pass |
+| Keeper decisions and lifecycle | `npm test`, `npm run keeper:dry`, and one authorized live cycle | Unit coverage plus order #3 permissionlessly executed by the stateless keeper | Pass |
 | Live Router V2 protections | `npm run test:sepolia` | Normal output plus forced minOut rejection with exact confidential refund | Pass |
 | New pools | Same live E2E | cWBTC and cSOL swaps decrypt to real cUSDC output | Pass |
 | Confidential limit order | Same live E2E | Order execution and exact cancellation refund | Pass |
 | ACL viewer | Same live E2E | ACL subgraph contains granted viewer | Pass |
 | Unwrap | Same live E2E | Exactly `0.01 nWETH` released after proof finalization | Pass |
 | MCP protocol | `npm run test:mcp` | Seven tools, three live pools, order read, balance decrypt | Pass |
-| Frontend static quality | `npm run build && npm run lint` | Production build and zero lint errors | Pass |
-| Responsive layout | Headless Chrome 1440x1000 and 390x844 | Landing/app separation, desktop sidebar, mobile drawer/bottom nav, no horizontal overflow | Pass |
-| Public dApp accessibility | Manual external URL test | URL not yet recorded | Pending |
+| Frontend static quality | `npm run test:unit && npm run build && npm run lint` | Order state/filter/URL/permission coverage, production build, and zero lint errors | Pass |
+| Responsive layout | Headless Chrome 1440x1000 and 390x844 | Wallet-free live orderbook, responsive detail, URL reload, owner/non-owner controls, landing/app separation, and no horizontal overflow | Pass |
+| Public dApp accessibility | Headless external URL test | Production route loads four real orders at `https://frontend-dusky-five-56.vercel.app` | Pass |
 | MetaMask UI happy path | Manual browser wallet test | Requires extension/user confirmation | Pending |
 
 ## 7. Remaining risks
@@ -137,7 +140,7 @@ Failure handling:
 | Public RPC rate limits/timeouts | Medium | Allow configurable RPC and use static network configuration |
 | Nox subgraph indexing delay | Medium | Bounded retries and explicit waiting status |
 | Faucet cooldown blocks repeated demo | Medium | Pre-fund demo wallet and show remaining public balance |
-| Public frontend not yet deployed | Disqualifying if unresolved | Deploy and manually smoke-test before submission freeze |
+| Production wallet write flow not manually confirmed | Medium | Run MetaMask happy path on the public URL before recording the demo |
 
 ## 8. Scope decisions
 

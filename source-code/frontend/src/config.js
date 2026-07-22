@@ -3,6 +3,7 @@ import deployment from './deployment.json';
 export const ZERO_HANDLE = `0x${'0'.repeat(64)}`;
 export const SEPOLIA_HEX = '0xaa36a7';
 export const RPC_URL = 'https://ethereum-sepolia-rpc.publicnode.com';
+export const ORDER_HISTORY_RPC_URL = import.meta.env.VITE_SEPOLIA_ARCHIVE_RPC_URL ?? 'https://sepolia.drpc.org';
 export const FAUCET_COOLDOWN_SECONDS = 60 * 60;
 
 export const TOKENS = {

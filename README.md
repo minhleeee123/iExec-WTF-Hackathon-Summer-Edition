@@ -6,6 +6,8 @@ The working deployment is on Ethereum Sepolia. It supports faucet, wrap/unwrap, 
 
 ## Live Deployment
 
+Web application: [https://frontend-dusky-five-56.vercel.app](https://frontend-dusky-five-56.vercel.app)
+
 | Contract | Sepolia address |
 |---|---|
 | NoxSwap Router V2 and receipt NFT | [`0x6e8d...1015`](https://sepolia.etherscan.io/address/0x6e8df82d708196e75Fb735120B4817f5c2551015) |
@@ -58,6 +60,8 @@ The router computes the 0.30% fee and constant-product quote using `Nox.mul`, `N
 - Encrypt `minOut`; reject and confidentially refund the full input when the quote is insufficient or the public deadline has passed.
 - Swap cUSDC/cETH, cWBTC/cUSDC, and cSOL/cUSDC using live encrypted pools.
 - Create, execute, cancel, and expiry-refund cUSDC/cETH limit orders with encrypted amount/minOut and a public Chainlink trigger.
+- Browse the complete public orderbook without connecting a wallet, with operational status, filters, pagination, shareable URLs, live Chainlink readiness, encrypted handles, and lifecycle transaction links.
+- Run permissionless execute/expiry actions manually or through the stateless keeper; only the owner can cancel or reveal private order terms.
 - Decrypt only handles authorized for the connected wallet.
 - Grant an auditor access to a current balance handle and verify the indexed ACL.
 - Unwrap through `UnwrapRequested`, Nox public decryption, and `finalizeUnwrap` proof verification.
@@ -89,8 +93,17 @@ source-code/
     scripts/test-sepolia-e2e.js
     scripts/test-mcp.js
     mcp-server.js
+    keeper.js
+    lib/keeper-decision.js
+    lib/keeper-scanner.js
+    lib/keeper-notifier.js
+    lib/keeper-health.js
   frontend/
     src/App.jsx
+    src/components/OrderBook.jsx
+    src/components/OrderDetail.jsx
+    src/hooks/useLimitOrderBook.js
+    src/hooks/useLimitOrderActions.js
     src/components/AppSidebar.jsx
     src/pages/TradePage.jsx
     src/pages/WalletPage.jsx
@@ -118,6 +131,12 @@ the desktop sidebar or the mobile wallet drawer.
 MetaMask must be on Ethereum Sepolia for write operations. Read-only pool and
 Chainlink data load without a wallet.
 
+The limit-order view is also public and URL-addressable. For example,
+`/app/trade?mode=orders&status=executed&order=1` restores its filter and detail
+drawer after reload. Set `VITE_SEPOLIA_ARCHIVE_RPC_URL` when the default archive
+RPC is unsuitable, and optionally set `VITE_KEEPER_HEALTH_URL` to expose keeper
+health in the UI. Neither variable contains a signing key.
+
 ## Compile and Test
 
 Hardhat 3 and its native EDR dependency require a newer Node runtime than the machine default, so backend scripts invoke Node 24 through `npx`.
@@ -127,6 +146,7 @@ cd source-code/backend
 npm install
 npm run compile
 npm test
+npm run keeper:dry
 ```
 
 Live tests require a funded Sepolia test wallet. Never commit its private key.
@@ -138,6 +158,24 @@ npm run verify:sourcify
 ```
 
 The local Nox off-chain Hardhat stack requires Docker. When Docker is unavailable, the acceptance path is compile plus unit tests plus the live Sepolia E2E test.
+
+## Stateless Order Keeper
+
+The keeper reads the canonical Sepolia deployment JSON, scans every open order,
+rechecks status before submission, and sequentially calls only `executeOrder` or
+`expireOrder`. It has no database and never decrypts handles.
+
+```bash
+cd source-code/backend
+npm run keeper:dry
+KEEPER_PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run keeper:once
+KEEPER_PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run keeper
+```
+
+Polling mode exposes `GET /health` on port `8787` by default and supports an
+optional `NOTIFICATION_WEBHOOK_URL`. See
+[`source-code/backend/.env.example`](./source-code/backend/.env.example) and
+[`source-code/backend/README.md`](./source-code/backend/README.md).
 
 ## MCP Server
 

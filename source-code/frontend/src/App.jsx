@@ -7,7 +7,6 @@ import {
   CHAINLINK_ETH_USD,
   CHAINLINK_FEED_ABI,
   CONFIDENTIAL_TOKEN_ABI,
-  LIMIT_ORDER_ABI,
   NOX_SWAP_ABI,
   TEST_TOKEN_ABI,
 } from './contracts';
@@ -21,7 +20,7 @@ import {
   TOKENS,
 } from './config';
 import { createHandleClient, retry } from './lib/nox';
-import { queryEventsWithFallback, queryRecentSwapEvents } from './lib/history';
+import { queryRecentSwapEvents } from './lib/history';
 import {
   decodeReceiptImage,
   formatDuration,
@@ -63,12 +62,6 @@ export default function App() {
   const [ethPrice, setEthPrice] = useState(null);
   const [priceUpdatedAt, setPriceUpdatedAt] = useState(null);
   const [history, setHistory] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [orderSide, setOrderSide] = useState('buy');
-  const [orderAmount, setOrderAmount] = useState('5');
-  const [orderMinOut, setOrderMinOut] = useState('0');
-  const [orderTrigger, setOrderTrigger] = useState('');
-  const [orderExpiryMinutes, setOrderExpiryMinutes] = useState('30');
   const [logs, setLogs] = useState([]);
   const [auditor, setAuditor] = useState('');
   const [aclResult, setAclResult] = useState(null);
@@ -109,27 +102,6 @@ export default function App() {
     return '';
   }, [deadlineMinutes]);
   const swapError = swapValidation.error || minOutValidation.error || deadlineError;
-
-  const orderTokenIn = orderSide === 'buy' ? TOKENS.cUSDC : TOKENS.cETH;
-  const orderTokenOut = orderSide === 'buy' ? TOKENS.cETH : TOKENS.cUSDC;
-  const orderAvailable = privateBalancesVisible ? balances[orderTokenIn.symbol].decrypted : null;
-  const orderAmountValidation = useMemo(
-    () => validateTokenAmount(orderAmount, orderTokenIn.decimals, orderAvailable),
-    [orderAmount, orderAvailable, orderTokenIn.decimals],
-  );
-  const orderMinOutValidation = useMemo(
-    () => validateNonNegativeAmount(orderMinOut, orderTokenOut.decimals),
-    [orderMinOut, orderTokenOut.decimals],
-  );
-  const orderError = useMemo(() => {
-    if (orderAmountValidation.error) return orderAmountValidation.error;
-    if (orderMinOutValidation.error) return orderMinOutValidation.error;
-    if (!/^\d+(\.\d+)?$/.test(orderTrigger) || Number(orderTrigger) <= 0) return 'Enter a positive ETH/USD trigger price.';
-    if (!/^\d+$/.test(orderExpiryMinutes) || Number(orderExpiryMinutes) < 1 || Number(orderExpiryMinutes) > 10080) {
-      return 'Expiry must be between 1 minute and 7 days.';
-    }
-    return '';
-  }, [orderAmountValidation.error, orderExpiryMinutes, orderMinOutValidation.error, orderTrigger]);
 
   const referenceOutputValue = useMemo(() => {
     const amount = Number(amountIn);
@@ -255,36 +227,6 @@ export default function App() {
       setHistory([]);
     }
 
-    const orderBook = new ethers.Contract(deployment.contracts.limitOrderBook, LIMIT_ORDER_ABI, provider);
-    try {
-      const deploymentReceipt = await provider.getTransactionReceipt(deployment.deploymentTransactions.limitOrderBook);
-      const events = await queryEventsWithFallback(
-        orderBook,
-        orderBook.filters.OrderCreated(null, address),
-        deploymentReceipt.blockNumber,
-        latestBlock.number,
-      );
-      const addressToSymbol = (tokenAddress) => Object.values(TOKENS)
-        .find((token) => token.wrapper.toLowerCase() === tokenAddress.toLowerCase())?.symbol ?? shorten(tokenAddress);
-      const loadedOrders = await Promise.all(events.slice(-12).reverse().map(async (event) => {
-        const order = await orderBook.getOrder(event.args.orderId);
-        return {
-          id: event.args.orderId.toString(),
-          owner: order.owner,
-          tokenIn: addressToSymbol(order.tokenIn),
-          tokenOut: addressToSymbol(order.tokenOut),
-          amountHandle: order.encryptedAmountIn,
-          minOutHandle: order.encryptedMinOut,
-          triggerPrice: order.triggerPrice,
-          expiry: Number(order.expiry),
-          status: Number(order.status),
-        };
-      }));
-      setOrders(loadedOrders);
-    } catch (error) {
-      console.warn('Limit order history is temporarily unavailable.', error);
-      setOrders([]);
-    }
   };
 
   const refresh = async () => {
@@ -329,7 +271,6 @@ export default function App() {
       setFaucets(createInitialFaucets());
       setEthBalance(0n);
       setHistory([]);
-      setOrders([]);
       setAclResult(null);
       setLastProof(null);
       setReceipt(null);
@@ -346,7 +287,6 @@ export default function App() {
         setFaucets(createInitialFaucets());
         setEthBalance(0n);
         setHistory([]);
-        setOrders([]);
       }
     };
     sync().catch(fail);
@@ -361,10 +301,6 @@ export default function App() {
   useEffect(() => {
     if (account && correctNetwork) loadAccount(account).catch(fail);
   }, [account, correctNetwork]);
-
-  useEffect(() => {
-    if (ethPrice && !orderTrigger) setOrderTrigger(String(Math.round(ethPrice)));
-  }, [ethPrice, orderTrigger]);
 
   const faucet = async (symbol) => {
     try {
@@ -595,124 +531,6 @@ export default function App() {
     }
   };
 
-  const createLimitOrder = async () => {
-    try {
-      if (orderError) throw new Error(orderError);
-      setBusy('create-order');
-      setNotice({ type: 'info', text: 'Encrypting order amount and minOut for the order book...' });
-      const wallet = await getWallet();
-      const inputContract = new ethers.Contract(orderTokenIn.wrapper, CONFIDENTIAL_TOKEN_ABI, wallet.signer);
-      const orderBook = new ethers.Contract(deployment.contracts.limitOrderBook, LIMIT_ORDER_ABI, wallet.signer);
-      const liveHandle = await inputContract.confidentialBalanceOf(wallet.address);
-      if (liveHandle !== balances[orderTokenIn.symbol].handle) {
-        throw new Error('Your private balance changed. Reveal the latest balance and try again.');
-      }
-      if (!(await inputContract.isOperator(wallet.address, deployment.contracts.limitOrderBook))) {
-        const operatorTx = await inputContract.setOperator(deployment.contracts.limitOrderBook, BigInt('281474976710655'));
-        addLog(`Authorize order book for ${orderTokenIn.symbol}`, operatorTx.hash);
-        await operatorTx.wait();
-      }
-      const client = await createHandleClient(wallet.signer);
-      const [encryptedAmount, encryptedMinimum] = await Promise.all([
-        client.encryptInput(orderAmountValidation.amount, 'uint256', deployment.contracts.limitOrderBook),
-        client.encryptInput(orderMinOutValidation.amount, 'uint256', deployment.contracts.limitOrderBook),
-      ]);
-      const triggerPrice = ethers.parseUnits(orderTrigger, 8);
-      const expiry = chainNow + Number(orderExpiryMinutes) * 60;
-      const transaction = await orderBook.createOrder(
-        orderTokenIn.wrapper,
-        orderTokenOut.wrapper,
-        encryptedAmount.handle,
-        encryptedAmount.handleProof,
-        encryptedMinimum.handle,
-        encryptedMinimum.handleProof,
-        triggerPrice,
-        expiry,
-      );
-      addLog(`Confidential ${orderSide} order submitted`, transaction.hash);
-      const mined = await transaction.wait();
-      const event = mined.logs
-        .map((log) => { try { return orderBook.interface.parseLog(log); } catch { return null; } })
-        .find((item) => item?.name === 'OrderCreated');
-      if (!event) throw new Error('OrderCreated event was not found.');
-      setNotice({ type: 'success', text: `Order #${event.args.orderId} is escrowed on Sepolia. Amount and minOut remain encrypted.` });
-      setPrivateBalancesVisible(false);
-      await loadAccount(wallet.address);
-    } catch (error) {
-      fail(error);
-    } finally {
-      setBusy('');
-    }
-  };
-
-  const executeLimitOrder = async (orderId) => {
-    try {
-      setBusy(`execute-order-${orderId}`);
-      const wallet = await getWallet();
-      const orderBook = new ethers.Contract(deployment.contracts.limitOrderBook, LIMIT_ORDER_ABI, wallet.signer);
-      const [executable, currentPrice] = await orderBook.canExecute(orderId);
-      if (!executable) {
-        throw new Error(`Order trigger is not reached at the current oracle price ($${Number(ethers.formatUnits(currentPrice, 8)).toLocaleString()}).`);
-      }
-      const transaction = await orderBook.executeOrder(orderId);
-      addLog(`Execute limit order #${orderId}`, transaction.hash);
-      const mined = await transaction.wait();
-      const event = mined.logs
-        .map((log) => { try { return orderBook.interface.parseLog(log); } catch { return null; } })
-        .find((item) => item?.name === 'OrderExecuted');
-      if (!event) throw new Error('OrderExecuted event was not found.');
-      const client = await createHandleClient(wallet.signer);
-      const [output, refund] = await Promise.all([
-        retry(() => client.decrypt(event.args.encryptedOutput)),
-        retry(() => client.decrypt(event.args.encryptedRefund)),
-      ]);
-      const order = orders.find((item) => item.id === String(orderId));
-      const outputToken = TOKENS[order?.tokenOut ?? 'cETH'];
-      const inputToken = TOKENS[order?.tokenIn ?? 'cUSDC'];
-      setGatewayEvidence({ verifiedAt: Date.now(), handles: 2 });
-      setNotice({
-        type: 'success',
-        text: `Order #${orderId} executed. Output ${formatToken(output.value, outputToken.decimals)} ${outputToken.symbol}; refund ${formatToken(refund.value, inputToken.decimals)} ${inputToken.symbol}.`,
-      });
-      setPrivateBalancesVisible(false);
-      await Promise.all([loadAccount(wallet.address), loadMarket()]);
-    } catch (error) {
-      fail(error);
-    } finally {
-      setBusy('');
-    }
-  };
-
-  const refundLimitOrder = async (orderId, mode) => {
-    try {
-      setBusy(`${mode}-order-${orderId}`);
-      const wallet = await getWallet();
-      const orderBook = new ethers.Contract(deployment.contracts.limitOrderBook, LIMIT_ORDER_ABI, wallet.signer);
-      const transaction = mode === 'cancel'
-        ? await orderBook.cancelOrder(orderId)
-        : await orderBook.expireOrder(orderId);
-      addLog(`${mode === 'cancel' ? 'Cancel' : 'Refund expired'} order #${orderId}`, transaction.hash);
-      const mined = await transaction.wait();
-      const eventName = mode === 'cancel' ? 'OrderCancelled' : 'OrderExpired';
-      const event = mined.logs
-        .map((log) => { try { return orderBook.interface.parseLog(log); } catch { return null; } })
-        .find((item) => item?.name === eventName);
-      if (!event) throw new Error(`${eventName} event was not found.`);
-      const client = await createHandleClient(wallet.signer);
-      const refund = await retry(() => client.decrypt(event.args.encryptedRefund));
-      const order = orders.find((item) => item.id === String(orderId));
-      const inputToken = TOKENS[order?.tokenIn ?? 'cUSDC'];
-      setGatewayEvidence({ verifiedAt: Date.now(), handles: 1 });
-      setNotice({ type: 'success', text: `Order #${orderId} ${mode === 'cancel' ? 'cancelled' : 'expired'}; refunded ${formatToken(refund.value, inputToken.decimals)} ${inputToken.symbol}.` });
-      setPrivateBalancesVisible(false);
-      await loadAccount(wallet.address);
-    } catch (error) {
-      fail(error);
-    } finally {
-      setBusy('');
-    }
-  };
-
   const grantAuditor = async () => {
     try {
       if (!ethers.isAddress(auditor)) throw new Error('Enter a valid Ethereum address.');
@@ -818,35 +636,22 @@ export default function App() {
     tokenOut,
     tokens: TOKENS,
   };
-  const orderProps = {
-    amount: orderAmount,
-    available: orderAvailable,
+  const orderContext = {
+    account,
+    balances,
     busy,
-    chainNow,
-    connected,
-    error: orderError,
-    expiryMinutes: orderExpiryMinutes,
-    minOut: orderMinOut,
-    onAmountChange: setOrderAmount,
-    onCancel: (orderId) => refundLimitOrder(orderId, 'cancel'),
-    onCreate: createLimitOrder,
-    onExecute: executeLimitOrder,
-    onExpire: (orderId) => refundLimitOrder(orderId, 'expire'),
-    onExpiryChange: setOrderExpiryMinutes,
-    onMax: () => setOrderAmount(formatInputAmount(orderAvailable, orderTokenIn.decimals)),
-    onMinOutChange: setOrderMinOut,
+    chainId,
+    ethBalance,
+    getWallet,
+    onConnect: connect,
+    onGatewayEvidence: setGatewayEvidence,
+    onLog: addLog,
+    onNotice: setNotice,
+    onPrivateBalancesStale: () => setPrivateBalancesVisible(false),
+    onRefreshAccount: loadAccount,
     onReveal: decryptBalances,
-    onSideChange: (side) => {
-      setOrderSide(side);
-      setOrderAmount(side === 'buy' ? '5' : '0.001');
-      setOrderMinOut('0');
-    },
-    onTriggerChange: setOrderTrigger,
-    orders,
     privateBalancesVisible,
-    side: orderSide,
-    tokens: TOKENS,
-    trigger: orderTrigger,
+    setBusy,
   };
   const assetProps = {
     asset,
@@ -903,7 +708,7 @@ export default function App() {
             </div>
             <Suspense fallback={<div className="route-loading"><LoaderCircle className="spin" size={24} /><span>Loading NoxSwap</span></div>}>
               <Routes>
-                <Route path="/app/trade" element={<TradePage orderProps={orderProps} swapProps={swapProps} />} />
+                <Route path="/app/trade" element={<TradePage orderContext={orderContext} swapProps={swapProps} />} />
                 <Route path="/app/wallet" element={<WalletPage aclProps={aclProps} assetProps={assetProps} />} />
                 <Route path="/app/activity" element={<ActivityPage activityProps={activityProps} evidenceProps={evidenceProps} />} />
                 <Route path="/swap" element={<Navigate replace to="/app/trade" />} />

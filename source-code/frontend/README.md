@@ -13,7 +13,7 @@ npm run test:ui
 npm run build
 ```
 
-`test:ui` checks desktop/mobile layout and uses a read-only EIP-1193 provider backed by Sepolia to verify faucet cooldown messaging and amount validation. It never sends a transaction or uses a private key.
+`test:ui` checks desktop/mobile layout, the wallet-free public orderbook, URL-backed filters, responsive order detail, and a read-only EIP-1193 wallet provider for faucet cooldown messaging and amount validation. It never sends a transaction or uses a private key.
 
 ## Source layout
 
@@ -24,6 +24,9 @@ npm run build
 - `src/contracts.js`: minimal contract ABIs used by the client.
 - `src/lib/nox.js`: Nox Handle SDK loading and bounded retry helper.
 - `src/lib/history.js`: RPC-compatible event history query with bounded block-range fallback.
+- `src/lib/orders.js`: contract/operational status and permission policy.
+- `src/lib/order-filters.js`: public filtering, sorting, and pagination.
+- `src/lib/order-url-state.js`: privacy-safe shareable orderbook URL state.
 - `src/lib/format.js`: handle, token, receipt, and duration formatting.
 - `src/lib/validation.js`: shared amount and faucet cooldown validation.
 - `src/deployment.json`: canonical Sepolia addresses synchronized from the backend deployment.
@@ -51,6 +54,7 @@ Vercel.
 - Protected encrypted swaps with encrypted `minOut`, deadline, output, and refund handles.
 - Three live pools: cUSDC/cETH, cWBTC/cUSDC, and cSOL/cUSDC.
 - Chainlink-triggered confidential cUSDC/cETH limit-order create, execute, cancel, and expiry refund.
+- Wallet-free public orderbook with isolated RPC failures, owner-only reveal, permissionless manual settlement, and optional keeper health.
 - Four faucet/wrap/unwrap asset flows with balance-aware validation.
 - Gateway signature evidence after authorized SDK decryption and measured ETH/USDC execution deviation.
 

@@ -10,6 +10,9 @@
     "deploy:sepolia": "npx --yes node@24 scripts/deploy-sepolia.js",
     "test:sepolia": "npx --yes node@24 scripts/test-sepolia-e2e.js",
     "test:mcp": "npx --yes node@24 scripts/test-mcp.js",
+    "keeper": "npx --yes node@24 keeper.js",
+    "keeper:once": "npx --yes node@24 keeper.js --once",
+    "keeper:dry": "npx --yes node@24 keeper.js --once --dry-run",
     "verify:sourcify": "npx --yes node@24 scripts/verify-sourcify.js",
     "mcp": "npx --yes node@24 mcp-server.js"
   },

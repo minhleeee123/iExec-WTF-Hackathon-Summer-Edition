@@ -3,7 +3,7 @@ import LimitOrders from '../components/LimitOrders';
 import PageHeading from '../components/PageHeading';
 import SwapPanel from '../components/SwapPanel';
 
-export default function TradePage({ orderProps, swapProps }) {
+export default function TradePage({ orderContext, swapProps }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const mode = searchParams.get('mode') === 'orders' ? 'orders' : 'swap';
 
@@ -20,7 +20,7 @@ export default function TradePage({ orderProps, swapProps }) {
           <button role="tab" aria-selected={mode === 'orders'} className={mode === 'orders' ? 'active' : ''} onClick={() => selectMode('orders')}>Limit orders</button>
         </div>
         <div className="workflow-content">
-          {mode === 'swap' ? <SwapPanel {...swapProps} /> : <LimitOrders {...orderProps} embedded />}
+          {mode === 'swap' ? <SwapPanel {...swapProps} /> : <LimitOrders context={orderContext} embedded />}
         </div>
       </div>
     </main>

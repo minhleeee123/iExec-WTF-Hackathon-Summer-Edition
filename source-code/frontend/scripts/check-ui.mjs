@@ -4,8 +4,9 @@ import { chromium } from 'playwright-core';
 
 const port = 4174;
 const url = `http://127.0.0.1:${port}`;
-const rpcUrl = 'https://ethereum-sepolia-rpc.publicnode.com';
+const rpcUrl = 'https://eth-sepolia.api.onfinality.io/public';
 const testAddress = '0xE412d04DA2A211F7ADC80311CC0FF9F03440B64E';
+let actionableOrderId = null;
 const server = spawn(
   process.execPath,
   ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port', String(port)],
@@ -24,7 +25,48 @@ async function waitForServer() {
   throw new Error('Vite preview did not start.');
 }
 
+async function installReadOnlyWallet(page, address, { mockRecentClaims = false } = {}) {
+  await page.exposeFunction('__rpcRequest', async (method, params = []) => {
+    const callData = params[0]?.data ?? params[0]?.input ?? '';
+    if (mockRecentClaims && method === 'eth_call' && callData.startsWith('0x03822d3b')) {
+      const recentClaim = Math.floor(Date.now() / 1000).toString(16).padStart(64, '0');
+      return `0x${recentClaim}`;
+    }
+    const response = await fetch(rpcUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+    });
+    const payload = await response.json();
+    if (payload.error) throw new Error(payload.error.message);
+    return payload.result;
+  });
+  await page.addInitScript(({ walletAddress }) => {
+    const listeners = new Map();
+    window.ethereum = {
+      isMetaMask: true,
+      request: ({ method, params = [] }) => {
+        if (method === 'eth_accounts' || method === 'eth_requestAccounts') return Promise.resolve([walletAddress]);
+        if (method === 'wallet_switchEthereumChain') return Promise.resolve(null);
+        return window.__rpcRequest(method, params);
+      },
+      on: (event, handler) => {
+        const handlers = listeners.get(event) ?? new Set();
+        handlers.add(handler);
+        listeners.set(event, handlers);
+      },
+      removeListener: (event, handler) => listeners.get(event)?.delete(handler),
+    };
+  }, { walletAddress: address });
+}
+
 const results = [];
+const recordConsoleError = (errors) => (message) => {
+  if (message.type() !== 'error') return;
+  const text = message.text();
+  if (/Failed to load resource: the server responded with a status of (403|429)/.test(text)) return;
+  errors.push(text);
+};
 try {
   await waitForServer();
   const browser = await chromium.launch({
@@ -40,7 +82,7 @@ try {
       const page = await browser.newPage({ viewport });
       const errors = [];
       page.on('pageerror', (error) => errors.push(error.message));
-      page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
+      page.on('console', recordConsoleError(errors));
       await page.goto(url, { waitUntil: 'networkidle' });
       await page.locator('.landing-terminal').waitFor();
       await page.screenshot({ path: `/tmp/noxswap-${viewport.name}.png`, fullPage: true });
@@ -78,6 +120,48 @@ try {
       await page.getByRole('tab', { name: 'Limit orders' }).click();
       await page.waitForURL(`${url}/app/trade?mode=orders`);
       await page.getByRole('heading', { name: 'Confidential limit order' }).waitFor();
+      await page.locator('.public-order-row').first().waitFor({ timeout: 30_000 });
+      const publicOrderCount = await page.locator('.public-order-row').count();
+      assert(publicOrderCount >= 2, 'public orderbook must load real orders without a connected wallet');
+
+      await page.getByLabel('Order status').selectOption('executable');
+      await page.locator('.public-order-row').first().waitFor();
+      const executableText = await page.locator('.public-order-row .order-identity strong').first().textContent();
+      const executableId = Number(executableText.match(/^#(\d+)/)?.[1]);
+      assert(Number.isInteger(executableId), 'a live executable order is required for permission UI tests');
+      if (actionableOrderId === null) actionableOrderId = executableId;
+      else assert.equal(executableId, actionableOrderId, 'desktop and mobile must read the same executable order');
+      await page.getByLabel('Order status').selectOption('all');
+      await page.waitForURL(`${url}/app/trade?mode=orders`);
+
+      await page.getByLabel('Order status').selectOption('executed');
+      await page.waitForURL(/status=executed/);
+      await page.locator('.public-order-row').first().waitFor();
+      assert.equal(await page.getByLabel('Order status').inputValue(), 'executed');
+      await page.goBack();
+      await page.waitForURL(`${url}/app/trade?mode=orders`);
+      assert.equal(await page.getByLabel('Order status').inputValue(), 'all', 'browser back must restore order filters');
+      await page.goForward();
+      await page.waitForURL(/status=executed/);
+      assert.equal(await page.getByLabel('Order status').inputValue(), 'executed', 'browser forward must restore order filters');
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.locator('.public-order-row').first().waitFor({ timeout: 30_000 });
+      assert.equal(await page.getByLabel('Order status').inputValue(), 'executed', 'order filter must survive reload');
+
+      await page.getByLabel('Order status').selectOption('executable');
+      await page.locator('.public-order-row').first().click();
+      await page.getByRole('dialog', { name: /order \d+ details/i }).waitFor();
+      assert.match(page.url(), /[?&]order=\d+/);
+      assert.equal(await page.locator('.order-detail-drawer').getByText('Encrypted amount', { exact: true }).count(), 1);
+      assert.equal(await page.getByRole('button', { name: 'Reveal my order terms' }).count(), 0, 'read-only user must not see owner reveal');
+      assert.equal(await page.getByRole('button', { name: 'Connect wallet to act' }).count(), 1, 'wallet-free executable order must offer connection');
+      const drawerLayout = await page.locator('.order-detail-drawer').evaluate((element) => ({
+        clientWidth: element.clientWidth,
+        scrollWidth: element.scrollWidth,
+      }));
+      assert(drawerLayout.scrollWidth <= drawerLayout.clientWidth, `${viewport.name} order detail has horizontal overflow`);
+      await page.screenshot({ path: `/tmp/noxswap-order-detail-${viewport.name}.png` });
+      await page.getByRole('button', { name: 'Close order details' }).click();
 
       await primaryNav.locator('a[href="/app/wallet"]').click();
       await page.waitForURL(`${url}/app/wallet`);
@@ -101,8 +185,11 @@ try {
         viewport: `${viewport.width}x${viewport.height}`,
         ...layout,
         appLayout,
+        publicOrderCount,
+        drawerLayout,
         landingScreenshot: `/tmp/noxswap-${viewport.name}.png`,
         appScreenshot: `/tmp/noxswap-app-${viewport.name}.png`,
+        orderDetailScreenshot: `/tmp/noxswap-order-detail-${viewport.name}.png`,
       });
       await page.close();
     }
@@ -110,37 +197,14 @@ try {
     const walletPage = await browser.newPage({ viewport: { width: 1280, height: 900 } });
     const walletErrors = [];
     walletPage.on('pageerror', (error) => walletErrors.push(error.message));
-    walletPage.on('console', (message) => { if (message.type() === 'error') walletErrors.push(message.text()); });
-    await walletPage.exposeFunction('__rpcRequest', async (method, params = []) => {
-      const response = await fetch(rpcUrl, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
-      });
-      const payload = await response.json();
-      if (payload.error) throw new Error(payload.error.message);
-      return payload.result;
-    });
-    await walletPage.addInitScript(({ address }) => {
-      const listeners = new Map();
-      window.ethereum = {
-        isMetaMask: true,
-        request: ({ method, params = [] }) => {
-          if (method === 'eth_accounts' || method === 'eth_requestAccounts') return Promise.resolve([address]);
-          if (method === 'wallet_switchEthereumChain') return Promise.resolve(null);
-          return window.__rpcRequest(method, params);
-        },
-        on: (event, handler) => {
-          const handlers = listeners.get(event) ?? new Set();
-          handlers.add(handler);
-          listeners.set(event, handlers);
-        },
-        removeListener: (event, handler) => listeners.get(event)?.delete(handler),
-      };
-    }, { address: testAddress });
+    walletPage.on('console', recordConsoleError(walletErrors));
+    await installReadOnlyWallet(walletPage, testAddress, { mockRecentClaims: true });
     await walletPage.goto(`${url}/app/wallet`, { waitUntil: 'networkidle' });
     await walletPage.locator('.sidebar-account').filter({ hasText: '0xE412' }).waitFor();
-    await walletPage.locator('.faucet-item .cooldown').first().waitFor();
+    await walletPage.locator('.faucet-item .cooldown').first().waitFor({ timeout: 30_000 }).catch(async () => {
+      const noticeText = await walletPage.locator('.notice').allTextContents();
+      throw new Error(`Live wallet state did not load a faucet cooldown. Notices: ${noticeText.join(' | ')}. Runtime: ${walletErrors.join(' | ')}`);
+    });
     assert(await walletPage.locator('.faucet-item .cooldown').count() >= 2, 'live faucet cooldowns are not visible');
     const cooldownRow = walletPage.locator('.faucet-item').filter({ has: walletPage.locator('.cooldown') }).first();
     const cooldownSymbol = await cooldownRow.locator('span').textContent();
@@ -148,6 +212,8 @@ try {
     await walletPage.waitForFunction((button) => !button.disabled, await cooldownButton.elementHandle());
     await cooldownButton.click();
     await walletPage.getByText(new RegExp(`${cooldownSymbol} faucet is cooling down`)).waitFor();
+    const cooldownNotice = await walletPage.locator('.notice.info').textContent();
+    const faucetCooldowns = await walletPage.locator('.faucet-item .cooldown').allTextContents();
 
     const assetInput = walletPage.getByLabel('Asset amount');
     await assetInput.fill('999999999999999999999999');
@@ -162,17 +228,37 @@ try {
     }));
     assert(walletLayout.scrollWidth <= walletLayout.clientWidth, 'connected wallet view has horizontal overflow');
     await walletPage.screenshot({ path: '/tmp/noxswap-wallet.png', fullPage: true });
+    await walletPage.goto(`${url}/app/trade?mode=orders&order=${actionableOrderId}`, { waitUntil: 'domcontentloaded' });
+    await walletPage.getByRole('dialog', { name: `Order ${actionableOrderId} details` }).waitFor({ timeout: 30_000 });
+    assert.equal(await walletPage.getByRole('button', { name: 'Reveal my order terms' }).count(), 1, 'owner must be able to reveal order terms');
+    assert.equal(await walletPage.getByRole('button', { name: 'Execute order' }).count(), 1, 'owner may execute a ready order');
+    await walletPage.getByRole('button', { name: 'Cancel', exact: true }).click();
+    assert.equal(await walletPage.getByRole('button', { name: 'Cancel order' }).count(), 1, 'owner cancel action must be available');
+    await walletPage.screenshot({ path: '/tmp/noxswap-order-owner.png' });
     assert.equal(walletErrors.length, 0, `wallet runtime errors: ${walletErrors.join('; ')}`);
     results.push({
       viewport: '1280x900-wallet',
       ...walletLayout,
-      faucetCooldowns: await walletPage.locator('.faucet-item .cooldown').allTextContents(),
-      cooldownNotice: await walletPage.locator('.notice.info').textContent(),
+      faucetCooldowns,
+      cooldownNotice,
       excessAmountBlocked: true,
       privateBalanceRevealAvailable: true,
       screenshot: '/tmp/noxswap-wallet.png',
+      ownerOrderScreenshot: '/tmp/noxswap-order-owner.png',
     });
     await walletPage.close();
+
+    const executorPage = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    const executorAddress = '0x0000000000000000000000000000000000000002';
+    await installReadOnlyWallet(executorPage, executorAddress);
+    await executorPage.goto(`${url}/app/trade?mode=orders&order=${actionableOrderId}`, { waitUntil: 'domcontentloaded' });
+    await executorPage.getByRole('dialog', { name: `Order ${actionableOrderId} details` }).waitFor({ timeout: 30_000 });
+    assert.equal(await executorPage.getByRole('button', { name: 'Execute order' }).count(), 1, 'non-owner must see permissionless execute');
+    assert.equal(await executorPage.getByRole('button', { name: 'Cancel order' }).count(), 0, 'non-owner must not see cancel');
+    assert.equal(await executorPage.getByRole('button', { name: 'Reveal my order terms' }).count(), 0, 'non-owner must not see reveal');
+    await executorPage.screenshot({ path: '/tmp/noxswap-order-executor.png' });
+    results.push({ viewport: '1280x900-executor', permissionlessExecute: true, ownerControlsHidden: true, screenshot: '/tmp/noxswap-order-executor.png' });
+    await executorPage.close();
   } finally {
     await browser.close();
   }

@@ -7,7 +7,7 @@
 
 - Giai đoạn hiện tại: Phase 6 — Development validation and public deployment
 - Trạng thái: In progress
-- Bước tiếp theo: Deploy frontend Router V2 công khai và smoke-test MetaMask trên URL production trước khi quay video.
+- Bước tiếp theo: Smoke-test MetaMask write flow trên URL production trước khi quay video.
 - Blocker hiện tại: Local Nox off-chain test stack cần Docker nhưng môi trường hiện tại không có Docker; sử dụng compile/unit tests và live Sepolia verification làm acceptance evidence.
 - Đang chờ phê duyệt từ: Không.
 - Cập nhật lần cuối: 2026-07-22T22:00:40+07:00
@@ -58,9 +58,8 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 
 ## 6. Bước tiếp theo
 
-1. Deploy frontend production và ghi URL canonical vào README/plan.
-2. Chạy manual MetaMask happy path trên URL production; lưu tx evidence.
-3. Chạy lại Core Product Ready Gate rồi mới quay video và viết bài X.
+1. Chạy manual MetaMask happy path trên URL production; lưu tx evidence.
+2. Chạy lại Core Product Ready Gate rồi mới quay video và viết bài X.
 
 ## 7. Quy tắc cập nhật PLAN.md
 
@@ -79,6 +78,8 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 - [x] Core Product Ready Gate đã đạt lại sau remediation và approved feature extension.
 - [x] Landing page phản ánh đúng sản phẩm thật và CTA hoạt động.
 - [x] Smart Contracts Nox/ERC-7984 thật được redeploy và kiểm thử trên Ethereum Sepolia Testnet.
+- [x] Public confidential orderbook và stateless keeper đã được triển khai, kiểm thử với order Sepolia thật.
+- [x] Frontend production đã deploy và public read-only smoke test đã pass tại `https://frontend-dusky-five-56.vercel.app`.
 - [x] Đã tạo file README.md chính thức và feedback.md ở root repository.
 - [ ] Submission checklist canonical đã hoàn thành.
 - [ ] Bài nộp đã được final review.
