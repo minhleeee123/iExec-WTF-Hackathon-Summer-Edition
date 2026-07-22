@@ -1,10 +1,13 @@
-require("@nomicfoundation/hardhat-toolbox");
+import noxPlugin from "@iexec-nox/nox-hardhat-plugin";
+import hardhatEthersPlugin from "@nomicfoundation/hardhat-ethers";
+import {defineConfig} from "hardhat/config";
 
-/** @type import('hardhat/config').HardhatUserConfig */
-module.exports = {
+export default defineConfig({
+  plugins: [hardhatEthersPlugin, noxPlugin],
   solidity: {
-    version: "0.8.24",
+    version: "0.8.35",
     settings: {
+      viaIR: true,
       optimizer: {
         enabled: true,
         runs: 200,
@@ -12,18 +15,14 @@ module.exports = {
     },
   },
   networks: {
-    sepolia: {
-      url: process.env.SEPOLIA_RPC_URL || "https://rpc.ankr.com/eth_sepolia",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-    },
-    hardhat: {
-      chainId: 1337,
+    default: {
+      type: "edr-simulated",
+      chainType: "op",
+      allowUnlimitedContractSize: true,
     },
   },
-  paths: {
-    sources: "./contracts",
-    tests: "./test",
-    cache: "./cache",
-    artifacts: "./artifacts",
+  nox: {
+    // Docker is unavailable in this workspace. Live Nox behavior is tested on Sepolia.
+    skipTestOverride: true,
   },
-};
+});

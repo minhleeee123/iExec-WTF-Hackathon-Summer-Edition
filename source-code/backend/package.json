@@ -1,24 +1,33 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "NoxSwap Nox/ERC-7984 contracts, deployment scripts and MCP tools",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "mcp": "node mcp-server.js"
+    "compile": "npx --yes node@24 node_modules/hardhat/dist/src/cli.js compile",
+    "test": "npx --yes node@24 --test test/*.test.js",
+    "deploy:sepolia": "npx --yes node@24 scripts/deploy-sepolia.js",
+    "test:sepolia": "npx --yes node@24 scripts/test-sepolia-e2e.js",
+    "test:mcp": "npx --yes node@24 scripts/test-mcp.js",
+    "verify:sourcify": "npx --yes node@24 scripts/verify-sourcify.js",
+    "mcp": "npx --yes node@24 mcp-server.js"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^7.0.0",
+    "@iexec-nox/nox-hardhat-plugin": "^0.1.0",
+    "@nomicfoundation/hardhat-ethers": "^4.0.6",
     "ethers": "^6.17.0",
     "hardhat": "^3.11.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "dotenv": "^17.4.2",
-    "solc": "^0.8.24"
+    "@iexec-nox/handle": "^0.1.0-beta.13",
+    "@iexec-nox/nox-confidential-contracts": "^0.2.2",
+    "@iexec-nox/nox-protocol-contracts": "^0.2.4",
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "@openzeppelin/contracts": "^5.4.0",
+    "dotenv": "^17.4.2"
   }
 }

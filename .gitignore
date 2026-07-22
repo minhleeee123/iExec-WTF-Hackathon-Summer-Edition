@@ -5,6 +5,8 @@ node_modules/
 # Build outputs
 dist/
 build/
+artifacts/
+cache/
 .next/
 out/
 

@@ -1,122 +1,165 @@
-require('dotenv').config();
-const fs = require('fs');
-const path = require('path');
-const solc = require('solc');
-const { ethers } = require('ethers');
+import 'dotenv/config';
 
-async function main() {
-  console.log('Compiling Solidity contracts...');
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createEthersHandleClient } from '@iexec-nox/handle';
+import {
+  ContractFactory,
+  JsonRpcProvider,
+  Wallet,
+  formatEther,
+  parseUnits,
+} from 'ethers';
 
-  const ier7984Src = fs.readFileSync(path.join(__dirname, '../contracts/IERC7984.sol'), 'utf8');
-  const tokenSrc = fs.readFileSync(path.join(__dirname, '../contracts/NoxConfidentialToken.sol'), 'utf8');
-  const swapSrc = fs.readFileSync(path.join(__dirname, '../contracts/NoxSwap.sol'), 'utf8');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const rootDir = path.resolve(__dirname, '..');
+const rpcUrl = process.env.SEPOLIA_RPC_URL ?? 'https://ethereum-sepolia-rpc.publicnode.com';
+const privateKey = process.env.PRIVATE_KEY;
 
-  const input = {
-    language: 'Solidity',
-    sources: {
-      'IERC7984.sol': { content: ier7984Src },
-      'NoxConfidentialToken.sol': { content: tokenSrc },
-      'NoxSwap.sol': { content: swapSrc }
-    },
-    settings: {
-      outputSelection: {
-        '*': {
-          '*': ['abi', 'evm.bytecode']
-        }
-      },
-      optimizer: {
-        enabled: true,
-        runs: 200
-      }
-    }
-  };
-
-  const output = JSON.parse(solc.compile(JSON.stringify(input)));
-
-  if (output.errors) {
-    const fatal = output.errors.filter(e => e.severity === 'error');
-    if (fatal.length > 0) {
-      console.error('Compilation Errors:', fatal);
-      process.exit(1);
-    }
-  }
-
-  console.log('Compilation successful!');
-
-  const tokenContractBuild = output.contracts['NoxConfidentialToken.sol']['NoxConfidentialToken'];
-  const swapContractBuild = output.contracts['NoxSwap.sol']['NoxSwap'];
-
-  const privateKey = process.env.PRIVATE_KEY;
-  if (!privateKey) {
-    throw new Error('PRIVATE_KEY environment variable is missing in .env file!');
-  }
-  const rpcUrl = process.env.SEPOLIA_RPC_URL || 'https://ethereum-sepolia-rpc.publicnode.com';
-
-  const provider = new ethers.JsonRpcProvider(rpcUrl);
-  const wallet = new ethers.Wallet(privateKey, provider);
-
-  console.log(`\nDeploying from Account: ${wallet.address}`);
-  const balance = await provider.getBalance(wallet.address);
-  console.log(`Current Balance: ${ethers.formatEther(balance)} Sepolia ETH`);
-
-  // 1. Deploy cUSDC
-  console.log('\n[1/3] Deploying cUSDC (ERC-7984)...');
-  const TokenFactory = new ethers.ContractFactory(tokenContractBuild.abi, tokenContractBuild.evm.bytecode.object, wallet);
-  const cUSDC = await TokenFactory.deploy('Confidential USDC', 'cUSDC', '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238');
-  await cUSDC.waitForDeployment();
-  const cUSDCAddress = await cUSDC.getAddress();
-  console.log(`✅ cUSDC Deployed at: ${cUSDCAddress}`);
-
-  // 2. Deploy cETH
-  console.log('\n[2/3] Deploying cETH (ERC-7984)...');
-  const cETH = await TokenFactory.deploy('Confidential ETH', 'cETH', '0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9');
-  await cETH.waitForDeployment();
-  const cETHAddress = await cETH.getAddress();
-  console.log(`✅ cETH Deployed at: ${cETHAddress}`);
-
-  // 3. Deploy NoxSwap Router
-  console.log('\n[3/3] Deploying NoxSwap Router...');
-  const SwapFactory = new ethers.ContractFactory(swapContractBuild.abi, swapContractBuild.evm.bytecode.object, wallet);
-  const noxSwap = await SwapFactory.deploy();
-  await noxSwap.waitForDeployment();
-  const noxSwapAddress = await noxSwap.getAddress();
-  console.log(`✅ NoxSwap Router Deployed at: ${noxSwapAddress}`);
-
-  // 4. Initialize Pool
-  console.log('\n[4/4] Initializing cUSDC/cETH Liquidity Pool...');
-  const initTx = await noxSwap.addLiquidity(
-    cUSDCAddress,
-    cETHAddress,
-    ethers.parseEther('1000000'),
-    ethers.parseEther('500')
-  );
-  await initTx.wait();
-  console.log('✅ Liquidity Pool initialized!');
-
-  console.log('\n================ SEPOLIA DEPLOYMENT SUMMARY ================');
-  console.log(`Network: Ethereum Sepolia Testnet`);
-  console.log(`Deployer: ${wallet.address}`);
-  console.log(`cUSDC Address: ${cUSDCAddress}`);
-  console.log(`cETH Address: ${cETHAddress}`);
-  console.log(`NoxSwap Router Address: ${noxSwapAddress}`);
-  console.log(`Etherscan Link: https://sepolia.etherscan.io/address/${noxSwapAddress}`);
-  console.log('===========================================================');
-
-  // Write deployment addresses to JSON file
-  const deploymentInfo = {
-    network: 'sepolia',
-    chainId: 11155111,
-    deployer: wallet.address,
-    cUSDC: cUSDCAddress,
-    cETH: cETHAddress,
-    noxSwapRouter: noxSwapAddress,
-    etherscanUrl: `https://sepolia.etherscan.io/address/${noxSwapAddress}`,
-    deployedAt: new Date().toISOString()
-  };
-  fs.writeFileSync(path.join(__dirname, '../deployment-sepolia.json'), JSON.stringify(deploymentInfo, null, 2));
+if (!privateKey) {
+  throw new Error('Set PRIVATE_KEY in the environment; deployment scripts never contain a fallback key.');
 }
 
-main().catch(err => {
-  console.error('Deployment Failed:', err);
-  process.exit(1);
+function loadArtifact(name) {
+  const artifactPath = path.join(rootDir, 'artifacts', 'contracts', `${name}.sol`, `${name}.json`);
+  return JSON.parse(fs.readFileSync(artifactPath, 'utf8'));
+}
+
+async function waitFor(label, transactionPromise) {
+  const transaction = await transactionPromise;
+  console.log(`${label}: ${transaction.hash}`);
+  const receipt = await transaction.wait();
+  if (receipt.status !== 1) throw new Error(`${label} reverted: ${transaction.hash}`);
+  return receipt;
+}
+
+async function deploy(label, artifact, signer, args = []) {
+  const factory = new ContractFactory(artifact.abi, artifact.bytecode, signer);
+  const contract = await factory.deploy(...args);
+  const transaction = contract.deploymentTransaction();
+  console.log(`${label} deployment: ${transaction.hash}`);
+  await contract.waitForDeployment();
+  console.log(`${label}: ${await contract.getAddress()}`);
+  return { contract, transactionHash: transaction.hash };
+}
+
+async function main() {
+  const provider = new JsonRpcProvider(rpcUrl, 11155111, { staticNetwork: true });
+  const wallet = new Wallet(privateKey, provider);
+  const network = await provider.getNetwork();
+  if (network.chainId !== 11155111n) {
+    throw new Error(`Expected Ethereum Sepolia (11155111), received ${network.chainId}.`);
+  }
+
+  console.log(`Deployer: ${wallet.address}`);
+  console.log(`Balance: ${formatEther(await provider.getBalance(wallet.address))} Sepolia ETH`);
+
+  const tokenArtifact = loadArtifact('NoxTestToken');
+  const wrapperArtifact = loadArtifact('NoxConfidentialToken');
+  const swapArtifact = loadArtifact('NoxSwap');
+
+  const usdc = await deploy('Test USDC', tokenArtifact, wallet, [
+    'NoxSwap Test USDC',
+    'nUSDC',
+    6,
+    parseUnits('10000', 6),
+  ]);
+  const weth = await deploy('Test WETH', tokenArtifact, wallet, [
+    'NoxSwap Test Wrapped Ether',
+    'nWETH',
+    18,
+    parseUnits('5', 18),
+  ]);
+  const usdcAddress = await usdc.contract.getAddress();
+  const wethAddress = await weth.contract.getAddress();
+
+  const cUsdc = await deploy('Confidential USDC', wrapperArtifact, wallet, [
+    'NoxSwap Confidential USDC',
+    'cUSDC',
+    usdcAddress,
+  ]);
+  const cEth = await deploy('Confidential ETH', wrapperArtifact, wallet, [
+    'NoxSwap Confidential ETH',
+    'cETH',
+    wethAddress,
+  ]);
+  const router = await deploy('NoxSwap Router', swapArtifact, wallet);
+  const cUsdcAddress = await cUsdc.contract.getAddress();
+  const cEthAddress = await cEth.contract.getAddress();
+  const routerAddress = await router.contract.getAddress();
+
+  const usdcLiquidity = parseUnits('1000000', 6);
+  const wethLiquidity = parseUnits('500', 18);
+  await waitFor('Mint USDC liquidity', usdc.contract.mintLiquidity(wallet.address, usdcLiquidity));
+  await waitFor('Mint WETH liquidity', weth.contract.mintLiquidity(wallet.address, wethLiquidity));
+  await waitFor('Approve cUSDC wrapper', usdc.contract.approve(cUsdcAddress, usdcLiquidity));
+  await waitFor('Approve cETH wrapper', weth.contract.approve(cEthAddress, wethLiquidity));
+  await waitFor('Wrap cUSDC liquidity', cUsdc.contract.wrap(wallet.address, usdcLiquidity));
+  await waitFor('Wrap cETH liquidity', cEth.contract.wrap(wallet.address, wethLiquidity));
+
+  const operatorExpiry = BigInt(Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60);
+  await waitFor('Authorize router for cUSDC', cUsdc.contract.setOperator(routerAddress, operatorExpiry));
+  await waitFor('Authorize router for cETH', cEth.contract.setOperator(routerAddress, operatorExpiry));
+
+  const handleClient = await createEthersHandleClient(wallet);
+  const encryptedUsdc = await handleClient.encryptInput(usdcLiquidity, 'uint256', routerAddress);
+  const encryptedEth = await handleClient.encryptInput(wethLiquidity, 'uint256', routerAddress);
+  const liquidityReceipt = await waitFor(
+    'Add encrypted cUSDC/cETH liquidity',
+    router.contract.addLiquidity(
+      cUsdcAddress,
+      cEthAddress,
+      encryptedUsdc.handle,
+      encryptedUsdc.handleProof,
+      encryptedEth.handle,
+      encryptedEth.handleProof,
+    ),
+  );
+
+  const pool = await router.contract.getPoolHandles(cUsdcAddress, cEthAddress);
+  const deploymentInfo = {
+    network: 'ethereum-sepolia',
+    chainId: Number(network.chainId),
+    deployer: wallet.address,
+    contracts: {
+      underlyingUSDC: usdcAddress,
+      underlyingWETH: wethAddress,
+      cUSDC: cUsdcAddress,
+      cETH: cEthAddress,
+      noxSwapRouter: routerAddress,
+      noxCompute: '0x24Ef36Ec5b626D7DCD09a98F3083c2758F0F77bF',
+    },
+    pool: {
+      token0: pool.token0,
+      token1: pool.token1,
+      reserve0Handle: pool.reserve0,
+      reserve1Handle: pool.reserve1,
+      liquidityTransaction: liquidityReceipt.hash,
+    },
+    deploymentTransactions: {
+      underlyingUSDC: usdc.transactionHash,
+      underlyingWETH: weth.transactionHash,
+      cUSDC: cUsdc.transactionHash,
+      cETH: cEth.transactionHash,
+      noxSwapRouter: router.transactionHash,
+    },
+    gatewayUrl: 'https://gateway-testnets.noxprotocol.dev',
+    explorerUrl: `https://sepolia.etherscan.io/address/${routerAddress}`,
+    deployedAt: new Date().toISOString(),
+  };
+
+  const serializedDeployment = `${JSON.stringify(deploymentInfo, null, 2)}\n`;
+  fs.writeFileSync(path.join(rootDir, 'deployment-sepolia.json'), serializedDeployment);
+  fs.writeFileSync(
+    path.resolve(rootDir, '../frontend/src/deployment.json'),
+    serializedDeployment,
+  );
+  console.log(JSON.stringify(deploymentInfo, null, 2));
+  console.log(`Remaining balance: ${formatEther(await provider.getBalance(wallet.address))} Sepolia ETH`);
+}
+
+main().catch((error) => {
+  console.error(error.shortMessage ?? error.message ?? error);
+  process.exitCode = 1;
 });

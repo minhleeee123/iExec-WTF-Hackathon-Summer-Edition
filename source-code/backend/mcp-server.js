@@ -1,201 +1,206 @@
 import 'dotenv/config';
+
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createEthersHandleClient } from '@iexec-nox/handle';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
-import { ethers } from 'ethers';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { Contract, JsonRpcProvider, Wallet, formatUnits, parseUnits } from 'ethers';
 
-// Sepolia Network Configuration
-const SEPOLIA_RPC = process.env.SEPOLIA_RPC || 'https://ethereum-sepolia-rpc.publicnode.com';
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
-if (!PRIVATE_KEY) {
-  throw new Error('PRIVATE_KEY environment variable is missing in .env file!');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const deployment = JSON.parse(fs.readFileSync(path.join(__dirname, 'deployment-sepolia.json'), 'utf8'));
+const rpcUrl = process.env.SEPOLIA_RPC_URL ?? 'https://ethereum-sepolia-rpc.publicnode.com';
+const privateKey = process.env.PRIVATE_KEY;
+
+if (!privateKey) {
+  throw new Error('Set PRIVATE_KEY in the environment. The MCP server has no embedded signing key.');
 }
 
-// Contract Addresses
-const CONTRACT_ADDRESSES = {
-  NOX_SWAP: '0x38585F5fbB2587bDc085995A0E3bC2B36B7CaA7a',
-  cUSDC: '0x9c6858B1C40751E8AfBF2171f16cf425212f6068',
-  cETH: '0x7eC766eE1Fe08eCe28B2eb92324BbF53bF22641e'
+const provider = new JsonRpcProvider(rpcUrl, 11155111, { staticNetwork: true });
+const wallet = new Wallet(privateKey, provider);
+const addresses = deployment.contracts;
+const tokens = {
+  cUSDC: { address: addresses.cUSDC, decimals: 6 },
+  cETH: { address: addresses.cETH, decimals: 18 },
 };
 
-const NOX_SWAP_ABI = [
-  "function confidentialSwap(address tokenIn, address tokenOut, bytes calldata encryptedAmount, uint256 estimatedAmount) external returns (bytes32)"
+const routerAbi = [
+  'function confidentialSwap(address tokenIn,address tokenOut,bytes32 encryptedAmountIn,bytes inputProof) returns (bytes32,uint256)',
+  'function getPoolHandles(address tokenA,address tokenB) view returns (address token0,address token1,bytes32 reserve0,bytes32 reserve1)',
+  'event SwapExecuted(address indexed trader,address indexed tokenIn,address indexed tokenOut,bytes32 encryptedInput,bytes32 encryptedOutput,uint256 receiptId)',
+];
+const tokenAbi = [
+  'function confidentialBalanceOf(address account) view returns (bytes32)',
+  'function isOperator(address holder,address spender) view returns (bool)',
+  'function setOperator(address operator,uint48 until)',
 ];
 
-const CTOKEN_ABI = [
-  "function shadowBalanceOf(address account) external view returns (uint256)",
-  "function confidentialBalanceOf(address account) external view returns (bytes32)"
-];
+let handleClientPromise;
+const getHandleClient = () => {
+  handleClientPromise ??= createEthersHandleClient(wallet);
+  return handleClientPromise;
+};
 
-// Initialize Ethers Provider & Signer
-const provider = new ethers.JsonRpcProvider(SEPOLIA_RPC);
-const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
-
-const server = new Server(
-  {
-    name: 'noxswap-mcp-server',
-    version: '1.0.0',
-  },
-  {
-    capabilities: {
-      tools: {},
-    },
-  }
-);
-
-// Define List of Tools
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return {
-    tools: [
-      {
-        name: 'nox_confidential_swap',
-        description: 'Execute a confidential token swap on Ethereum Sepolia Testnet via iExec Nox TEE router.',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            tokenIn: { type: 'string', description: 'Input token symbol (e.g. cUSDC, cETH)' },
-            tokenOut: { type: 'string', description: 'Output token symbol (e.g. cETH, cUSDC)' },
-            amount: { type: 'number', description: 'Amount of input token to swap' }
-          },
-          required: ['tokenIn', 'tokenOut', 'amount']
-        }
-      },
-      {
-        name: 'nox_decrypt_balance',
-        description: 'Fetch on-chain encrypted ciphertext handle & decrypt plaintext balance for an address on Sepolia.',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            address: { type: 'string', description: 'Ethereum address to query balance for' },
-            tokenSymbol: { type: 'string', description: 'Token symbol (cUSDC or cETH)' }
-          },
-          required: ['address', 'tokenSymbol']
-        }
-      },
-      {
-        name: 'nox_create_limit_order',
-        description: 'Create a confidential TEE limit order trigger for automated execution.',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            tokenIn: { type: 'string', description: 'Input token symbol' },
-            tokenOut: { type: 'string', description: 'Output token symbol' },
-            amount: { type: 'number', description: 'Amount of token' },
-            targetPrice: { type: 'number', description: 'Target trigger price in USD' }
-          },
-          required: ['tokenIn', 'tokenOut', 'amount', 'targetPrice']
-        }
-      }
-    ],
-  };
+const jsonText = (value) => ({
+  content: [{
+    type: 'text',
+    text: JSON.stringify(value, (_, item) => typeof item === 'bigint' ? item.toString() : item, 2),
+  }],
 });
 
-// Handle Tool Execution Requests
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
+const getToken = (symbol) => {
+  const token = tokens[symbol];
+  if (!token) throw new Error(`Unsupported token ${symbol}. Supported tokens: cUSDC, cETH.`);
+  return token;
+};
 
+const server = new Server(
+  { name: 'noxswap-mcp-server', version: '2.0.0' },
+  { capabilities: { tools: {} } },
+);
+
+server.setRequestHandler(ListToolsRequestSchema, async () => ({
+  tools: [
+    {
+      name: 'nox_confidential_swap',
+      description: 'Encrypt an amount with the iExec Nox Handle SDK and execute a real NoxSwap transaction on Ethereum Sepolia.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          tokenIn: { type: 'string', enum: ['cUSDC', 'cETH'] },
+          tokenOut: { type: 'string', enum: ['cUSDC', 'cETH'] },
+          amount: { type: 'string', description: 'Decimal token amount, for example "100".' },
+        },
+        required: ['tokenIn', 'tokenOut', 'amount'],
+        additionalProperties: false,
+      },
+    },
+    {
+      name: 'nox_decrypt_balance',
+      description: 'Read and decrypt the MCP signer wallet ERC-7984 balance using its Nox ACL authorization and EIP-712 signature.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          address: { type: 'string', description: 'Must match the configured MCP signer address.' },
+          tokenSymbol: { type: 'string', enum: ['cUSDC', 'cETH'] },
+        },
+        required: ['address', 'tokenSymbol'],
+        additionalProperties: false,
+      },
+    },
+    {
+      name: 'nox_view_acl',
+      description: 'Read the indexed Nox access control list for a bytes32 encrypted handle.',
+      inputSchema: {
+        type: 'object',
+        properties: { handle: { type: 'string', pattern: '^0x[0-9a-fA-F]{64}$' } },
+        required: ['handle'],
+        additionalProperties: false,
+      },
+    },
+    {
+      name: 'nox_get_pool_handles',
+      description: 'Read the live encrypted reserve handles for the deployed cUSDC/cETH pool.',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    },
+  ],
+}));
+
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args = {} } = request.params;
   try {
     if (name === 'nox_confidential_swap') {
-      const { tokenIn, tokenOut, amount } = args;
-      const tokenInAddr = CONTRACT_ADDRESSES[tokenIn] || CONTRACT_ADDRESSES.cUSDC;
-      const tokenOutAddr = CONTRACT_ADDRESSES[tokenOut] || CONTRACT_ADDRESSES.cETH;
+      const input = getToken(args.tokenIn);
+      const output = getToken(args.tokenOut);
+      if (input.address === output.address) throw new Error('Input and output tokens must differ.');
+      const amount = parseUnits(args.amount, input.decimals);
+      if (amount <= 0n) throw new Error('Amount must be greater than zero.');
 
-      const noxContract = new ethers.Contract(CONTRACT_ADDRESSES.NOX_SWAP, NOX_SWAP_ABI, wallet);
-      const estimatedAmt = ethers.parseEther((amount * (tokenIn === 'cUSDC' ? 0.000333 : 3000)).toFixed(4));
-      const encryptedPayload = ethers.keccak256(ethers.toUtf8Bytes(`${wallet.address}-${tokenIn}-${amount}-${Date.now()}`));
+      const inputContract = new Contract(input.address, tokenAbi, wallet);
+      if (!(await inputContract.isOperator(wallet.address, addresses.noxSwapRouter))) {
+        const expiry = BigInt(Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60);
+        await (await inputContract.setOperator(addresses.noxSwapRouter, expiry)).wait();
+      }
 
-      const tx = await noxContract.confidentialSwap(tokenInAddr, tokenOutAddr, encryptedPayload, estimatedAmt);
-      const receipt = await tx.wait();
+      const handleClient = await getHandleClient();
+      const encrypted = await handleClient.encryptInput(amount, 'uint256', addresses.noxSwapRouter);
+      const router = new Contract(addresses.noxSwapRouter, routerAbi, wallet);
+      const transaction = await router.confidentialSwap(
+        input.address,
+        output.address,
+        encrypted.handle,
+        encrypted.handleProof,
+      );
+      const receipt = await transaction.wait();
+      const event = receipt.logs
+        .map((log) => { try { return router.interface.parseLog(log); } catch { return null; } })
+        .find((item) => item?.name === 'SwapExecuted');
+      if (!event) throw new Error('SwapExecuted event was not emitted.');
+      const decryptedOutput = await handleClient.decrypt(event.args.encryptedOutput);
 
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              status: 'SUCCESS',
-              message: `Confidential Swap Executed on Sepolia!`,
-              txHash: receipt.hash,
-              etherscanUrl: `https://sepolia.etherscan.io/tx/${receipt.hash}`,
-              encryptedHandle: `0xeinput_7984_${receipt.hash.substring(2, 10)}`,
-              teeEnclave: 'Intel TDX Verified'
-            }, null, 2)
-          }
-        ]
-      };
+      return jsonText({
+        status: 'CONFIRMED',
+        network: 'ethereum-sepolia',
+        transactionHash: receipt.hash,
+        explorerUrl: `https://sepolia.etherscan.io/tx/${receipt.hash}`,
+        encryptedInputHandle: encrypted.handle,
+        inputProofBytes: (encrypted.handleProof.length - 2) / 2,
+        encryptedOutputHandle: event.args.encryptedOutput,
+        decryptedOutput: formatUnits(decryptedOutput.value, output.decimals),
+        outputToken: args.tokenOut,
+        receiptId: event.args.receiptId,
+      });
     }
 
     if (name === 'nox_decrypt_balance') {
-      const { address, tokenSymbol } = args;
-      const targetTokenAddr = CONTRACT_ADDRESSES[tokenSymbol] || CONTRACT_ADDRESSES.cUSDC;
-
-      const cTokenContract = new ethers.Contract(targetTokenAddr, CTOKEN_ABI, provider);
-      const [shadowBal, handle] = await Promise.all([
-        cTokenContract.shadowBalanceOf(address).catch(() => 0n),
-        cTokenContract.confidentialBalanceOf(address).catch(() => '0xba2928c52c36c92b3f2f5e5a81902374952ddd48b95191504f482968d61282c1')
-      ]);
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              address,
-              tokenSymbol,
-              decryptedPlaintextBalance: `${ethers.formatEther(shadowBal)} ${tokenSymbol}`,
-              onChainEncryptedHandle: handle,
-              network: 'Ethereum Sepolia (ChainId 11155111)'
-            }, null, 2)
-          }
-        ]
-      };
+      if (args.address.toLowerCase() !== wallet.address.toLowerCase()) {
+        throw new Error(`This MCP signer can only decrypt its own balances (${wallet.address}).`);
+      }
+      const token = getToken(args.tokenSymbol);
+      const contract = new Contract(token.address, tokenAbi, provider);
+      const handle = await contract.confidentialBalanceOf(wallet.address);
+      if (handle === `0x${'0'.repeat(64)}`) {
+        return jsonText({ address: wallet.address, tokenSymbol: args.tokenSymbol, handle, balance: '0' });
+      }
+      const decrypted = await (await getHandleClient()).decrypt(handle);
+      return jsonText({
+        address: wallet.address,
+        tokenSymbol: args.tokenSymbol,
+        encryptedBalanceHandle: handle,
+        balance: formatUnits(decrypted.value, token.decimals),
+        solidityType: decrypted.solidityType,
+        network: 'ethereum-sepolia',
+      });
     }
 
-    if (name === 'nox_create_limit_order') {
-      const { tokenIn, tokenOut, amount, targetPrice } = args;
-      const limitId = `mcp-lim-${Date.now()}`;
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              status: 'ORDER_CREATED',
-              orderId: limitId,
-              pair: `${tokenIn} → ${tokenOut}`,
-              amount: `${amount} ${tokenIn}`,
-              targetPrice: `${targetPrice} USD`,
-              encryptedHandle: `0xelim_7984_${Math.floor(Math.random() * 899999 + 100000).toString(16)}`,
-              teeState: 'Watching inside Intel TDX Enclave'
-            }, null, 2)
-          }
-        ]
-      };
+    if (name === 'nox_view_acl') {
+      return jsonText({ handle: args.handle, ...await (await getHandleClient()).viewACL(args.handle) });
+    }
+
+    if (name === 'nox_get_pool_handles') {
+      const router = new Contract(addresses.noxSwapRouter, routerAbi, provider);
+      const pool = await router.getPoolHandles(addresses.cUSDC, addresses.cETH);
+      return jsonText({
+        router: addresses.noxSwapRouter,
+        token0: pool.token0,
+        token1: pool.token1,
+        reserve0Handle: pool.reserve0,
+        reserve1Handle: pool.reserve1,
+        liquidityTransaction: deployment.pool.liquidityTransaction,
+      });
     }
 
     throw new Error(`Unknown tool: ${name}`);
   } catch (error) {
     return {
       isError: true,
-      content: [
-        {
-          type: 'text',
-          text: `Error executing tool ${name}: ${error.message}`
-        }
-      ]
+      content: [{ type: 'text', text: error.shortMessage ?? error.message ?? String(error) }],
     };
   }
 });
 
-// Start Stdio Transport
-async function run() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error('NoxSwap MCP Server running on stdio');
-}
-
-run().catch((error) => {
-  console.error('Fatal error in MCP Server:', error);
-  process.exit(1);
-});
+const transport = new StdioServerTransport();
+await server.connect(transport);
+console.error(`NoxSwap MCP v2 connected on stdio as ${wallet.address}`);

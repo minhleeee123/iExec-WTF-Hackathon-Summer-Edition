@@ -1,6 +1,6 @@
 # Important Notes
 
-> Trạng thái: Hoàn tất cho workspace handoff
+> Trạng thái: Active; updated during implementation validation
 > File này quản lý nguồn, deadline, xung đột, rủi ro bị loại và thông tin chưa xác minh.
 
 ## 1. Source Register
@@ -32,6 +32,8 @@
 | Reuse project from previous Vibe Coding Hackathon leads to disqualification | SRC-001 | High | Xác nhận project mới, không tái sử dụng project cũ. |
 | Missing ETH Sepolia deployment or end-to-end accessibility | SRC-001 | High | Thiết kế demo để chạy thật trên Sepolia và tránh mock data cho core flow. |
 | Missing public GitHub, README, docs, `feedback.md` or X submission post | SRC-001 | High | Đưa các deliverable này vào scope submission ngay từ đầu. |
+| Frontend chưa có URL production đã smoke-test | Internal implementation audit, 2026-07-22 | High | Deploy build hiện tại, kiểm tra MetaMask happy path từ mạng ngoài và ghi URL canonical trước submission. |
+| Local Nox integration stack không chạy vì môi trường thiếu Docker | Nox Hardhat plugin runtime check, 2026-07-22 | Low | Dùng compile/unit + live Sepolia E2E; chạy lại local integration trong CI có Docker nếu có. |
 
 ## 5. Thông tin chưa xác minh
 
