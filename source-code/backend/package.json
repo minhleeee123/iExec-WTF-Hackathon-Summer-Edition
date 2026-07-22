@@ -10,6 +10,7 @@
     "deploy:sepolia": "npx --yes node@24 scripts/deploy-sepolia.js",
     "test:sepolia": "npx --yes node@24 scripts/test-sepolia-e2e.js",
     "test:mcp": "npx --yes node@24 scripts/test-mcp.js",
+    "test:mcp:write": "npx --yes node@24 scripts/test-mcp.js --write",
     "keeper": "npx --yes node@24 keeper.js",
     "keeper:once": "npx --yes node@24 keeper.js --once",
     "keeper:dry": "npx --yes node@24 keeper.js --once --dry-run",
