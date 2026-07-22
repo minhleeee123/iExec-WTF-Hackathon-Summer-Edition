@@ -71,8 +71,8 @@ export default function App() {
   const [wrapMode, setWrapMode] = useState('wrap');
   const [isProcessingWrap, setIsProcessingWrap] = useState(false);
   
-  // Decryption state
-  const [isDecrypted, setIsDecrypted] = useState(false);
+  // Decryption state (defaults to decrypted view for clarity)
+  const [isDecrypted, setIsDecrypted] = useState(true);
   const [toastMessage, setToastMessage] = useState('');
 
   // Balances
@@ -853,9 +853,22 @@ export default function App() {
               </div>
             </div>
 
+            {/* Live On-Chain Balance Banner */}
+            <div className="neo-box sidebar-card card-cyan mb-3">
+              <div className="insp-row">
+                <span>Your Live On-Chain cUSDC Balance:</span>
+                <span className="mono-font bal-num font-bold">{balances.cUSDC?.decrypted} cUSDC</span>
+              </div>
+              <div className="insp-row mt-1">
+                <span>Encrypted Handle (ERC-7984):</span>
+                <code className="text-enc">{balances.cUSDC?.handle}</code>
+              </div>
+            </div>
+
             <div className="neo-input-box mb-3">
               <div className="input-header">
                 <span>{wrapMode === 'wrap' ? 'Public Sepolia USDC' : 'Confidential cUSDC (ERC-7984)'}</span>
+                <span className="balance-lbl">Balance: {balances.cUSDC?.decrypted} cUSDC</span>
               </div>
               <div className="input-fields">
                 <input 
