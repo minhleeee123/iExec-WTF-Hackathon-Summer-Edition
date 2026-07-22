@@ -3,6 +3,7 @@ import 'dotenv/config';
 import { Contract, JsonRpcProvider, Wallet, parseEther } from 'ethers';
 import deployment from './deployment-sepolia.json' with { type: 'json' };
 import { createHealthState } from './lib/keeper-health.js';
+import { createRemoteKeeperObserver } from './lib/agent-client.js';
 import { startHealthServer } from './lib/keeper-health-server.js';
 import { createNotifier, writeStructuredLog } from './lib/keeper-notifier.js';
 import { createKeeperOrderSource } from './lib/keeper-order-index.js';
@@ -42,6 +43,7 @@ const config = {
 };
 const health = createHealthState({ keeperAddress: signer?.address ?? null, minBalanceWei: config.minBalanceWei });
 const notify = createNotifier({ webhookUrl: process.env.NOTIFICATION_WEBHOOK_URL ?? '', log: writeStructuredLog });
+const observe = createRemoteKeeperObserver({ endpoint: process.env.KEEPER_AI_OBSERVER_URL ?? '' });
 const deploymentReceipt = await provider.getTransactionReceipt(deployment.deploymentTransactions.limitOrderBook);
 if (!deploymentReceipt) throw new Error('LimitOrderBook deployment receipt is unavailable.');
 const orderSource = createKeeperOrderSource({
@@ -80,7 +82,7 @@ process.on('SIGTERM', stop);
 async function main() {
   if (!once) healthServer = startHealthServer({ health, port: Number(process.env.KEEPER_HEALTH_PORT ?? 8787) });
   do {
-    try { await runKeeperCycle({ adapter, config, health, log: writeStructuredLog, notify }); } catch { /* Health and structured logs already capture the cycle failure. */ }
+    try { await runKeeperCycle({ adapter, config, health, log: writeStructuredLog, notify, observe }); } catch { /* Health and structured logs already capture the cycle failure. */ }
     if (once || stopped) break;
     await new Promise((resolve) => {
       let watcher;

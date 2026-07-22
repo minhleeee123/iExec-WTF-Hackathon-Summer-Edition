@@ -94,6 +94,26 @@ test('webhook failure is isolated from the confirmed transaction result', async 
   assert(logs.some((entry) => entry.result === 'webhook-failed'));
 });
 
+test('AI observer cannot gate deterministic keeper writes and failures stay isolated', async () => {
+  const adapter = fakeAdapter([{ status: 0, expiry: 200 }], { executable: [1] });
+  const observations = [];
+  await runKeeperCycle({
+    adapter,
+    config,
+    health: createHealthState(),
+    log: silent,
+    notify,
+    observe: async (event) => {
+      observations.push(event);
+      throw new Error('AI offline');
+    },
+  });
+  assert.deepEqual(adapter.sends, [{ action: 'execute', id: 1 }]);
+  assert.equal(observations.length, 1);
+  assert.equal(observations[0].result, 'confirmed');
+  assert.equal('encryptedAmount' in observations[0], false);
+});
+
 test('health transitions between ok, degraded, and error without exposing secrets', () => {
   const health = createHealthState({ keeperAddress: '0x1', minBalanceWei: 10n, errorThreshold: 2 });
   recordKeeperCycle(health, { balanceWei: 20n, rpcSuccess: true });

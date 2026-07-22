@@ -76,10 +76,27 @@ try {
     'nox_create_limit_order',
     'nox_decrypt_balance',
     'nox_get_limit_order',
+    'nox_get_market_context',
     'nox_get_pool_handles',
     'nox_manage_limit_order',
+    'nox_plan_confidential_order',
     'nox_view_acl',
   ]);
+
+  const market = parseTool(await client.callTool({ name: 'nox_get_market_context', arguments: {} }), 'market context');
+  assert.equal(market.chainId, 11155111);
+  assert.equal(market.oracleAvailable, true);
+  assert(market.ethPriceUsd > 0);
+
+  let strategyPlan = null;
+  if (process.env.NOXSWAP_AGENT_API_URL) {
+    strategyPlan = parseTool(await client.callTool({
+      name: 'nox_plan_confidential_order',
+      arguments: { intent: 'Buy cETH with 10 percent of cUSDC if ETH falls 3 percent. Expire in one day.' },
+    }), 'confidential strategy plan');
+    assert.equal(strategyPlan.plan.action, 'limit_order');
+    assert.equal(strategyPlan.meta.provider, 'groq');
+  }
 
   const pools = [];
   for (const poolName of ['cUSDC/cETH', 'cWBTC/cUSDC', 'cSOL/cUSDC']) {
@@ -208,6 +225,8 @@ try {
     tools: names,
     pools: pools.map((pool) => ({ pool: pool.pool, encryptedReservesVerified: true })),
     limitOrder: { orderId: order.orderId, status: order.status },
+    market: { oracleAvailable: market.oracleAvailable, ethPriceUsd: market.ethPriceUsd },
+    strategyPlan: strategyPlan ? { provider: strategyPlan.meta.provider, supported: strategyPlan.plan.supported } : null,
     signerBalanceVerified: true,
     writeFlow: writeSummary,
   }, null, 2));

@@ -1,9 +1,19 @@
 {
-  "name": "backend",
+  "name": "noxswap-mcp",
   "version": "1.0.0",
   "description": "NoxSwap Nox/ERC-7984 contracts, deployment scripts and MCP tools",
-  "main": "index.js",
+  "main": "mcp-server.js",
   "type": "module",
+  "files": [
+    "bin",
+    "deployment-sepolia.json",
+    "lib/agent-client.js",
+    "mcp-server.js",
+    "README.md"
+  ],
+  "bin": {
+    "noxswap-mcp": "bin/noxswap-mcp.js"
+  },
   "scripts": {
     "compile": "npx --yes node@24 node_modules/hardhat/dist/src/cli.js compile",
     "test": "npx --yes node@24 --test test/*.test.js",
@@ -11,7 +21,7 @@
     "deploy:sepolia": "npx --yes node@24 scripts/deploy-sepolia.js",
     "test:sepolia": "npx --yes node@24 scripts/test-sepolia-e2e.js",
     "test:mcp": "npx --yes node@24 scripts/test-mcp.js",
-    "test:mcp:write": "npx --yes node@24 scripts/test-mcp.js --write",
+    "test:mcp:write": "MCP_ALLOW_WRITES=true npx --yes node@24 scripts/test-mcp.js --write",
     "keeper": "npx --yes node@24 keeper.js",
     "keeper:once": "npx --yes node@24 keeper.js --once",
     "keeper:dry": "npx --yes node@24 keeper.js --once --dry-run",

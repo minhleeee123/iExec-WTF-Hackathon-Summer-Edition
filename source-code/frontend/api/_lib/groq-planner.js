@@ -63,8 +63,9 @@ export async function createGroqStrategyPlan(
       },
       body: JSON.stringify({
         model,
+        reasoning_effort: 'low',
         temperature: 0.2,
-        max_completion_tokens: 700,
+        max_completion_tokens: 1_200,
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           {

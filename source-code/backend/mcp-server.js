@@ -8,18 +8,17 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { Contract, JsonRpcProvider, Wallet, formatUnits, parseUnits } from 'ethers';
+import { requestStrategyPlan } from './lib/agent-client.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const deployment = JSON.parse(fs.readFileSync(path.join(__dirname, 'deployment-sepolia.json'), 'utf8'));
 const rpcUrl = process.env.SEPOLIA_RPC_URL ?? process.env.SEPOLIA_RPC ?? 'https://ethereum-sepolia-rpc.publicnode.com';
 const privateKey = process.env.PRIVATE_KEY;
-
-if (!privateKey) {
-  throw new Error('Set PRIVATE_KEY in the environment. The MCP server has no embedded signing key.');
-}
+const writesEnabled = process.env.MCP_ALLOW_WRITES === 'true';
+const agentEndpoint = process.env.NOXSWAP_AGENT_API_URL ?? '';
 
 const provider = new JsonRpcProvider(rpcUrl, 11155111, { staticNetwork: true });
-const wallet = new Wallet(privateKey, provider);
+const wallet = privateKey ? new Wallet(privateKey, provider) : null;
 const addresses = deployment.contracts;
 const tokens = {
   cUSDC: { address: addresses.cUSDC, decimals: 6 },
@@ -55,11 +54,44 @@ const tokenAbi = [
   'function isOperator(address holder,address spender) view returns (bool)',
   'function setOperator(address operator,uint48 until)',
 ];
+const feedAbi = [
+  'function decimals() view returns (uint8)',
+  'function latestRoundData() view returns (uint80 roundId,int256 answer,uint256 startedAt,uint256 updatedAt,uint80 answeredInRound)',
+];
 
 let handleClientPromise;
 const getHandleClient = () => {
+  if (!wallet) throw new Error('Set PRIVATE_KEY to use signer-authorized Nox tools.');
   handleClientPromise ??= createEthersHandleClient(wallet);
   return handleClientPromise;
+};
+
+const requireWriteAccess = () => {
+  if (!wallet) throw new Error('Set PRIVATE_KEY to use MCP write tools.');
+  if (!writesEnabled) throw new Error('MCP write tools are disabled. Set MCP_ALLOW_WRITES=true after reviewing the requested transaction.');
+};
+
+const getMarketContext = async () => {
+  const feed = new Contract(deployment.feeds.ethUsd, feedAbi, provider);
+  const [block, decimals, round] = await Promise.all([
+    provider.getBlock('latest'),
+    feed.decimals(),
+    feed.latestRoundData(),
+  ]);
+  if (!block) throw new Error('Latest Sepolia block is unavailable.');
+  const updatedAt = Number(round.updatedAt);
+  const available = round.answer > 0n
+    && round.answeredInRound >= round.roundId
+    && updatedAt <= block.timestamp
+    && block.timestamp - updatedAt <= 3600;
+  return {
+    network: 'ethereum-sepolia',
+    chainId: 11155111,
+    ethPriceUsd: Number(formatUnits(round.answer, decimals)),
+    oracleUpdatedAt: updatedAt,
+    blockTimestamp: Number(block.timestamp),
+    oracleAvailable: available,
+  };
 };
 
 const jsonText = (value) => ({
@@ -92,12 +124,29 @@ const decryptWithRetry = async (client, handle) => {
 };
 
 const server = new Server(
-  { name: 'noxswap-mcp-server', version: '3.0.0' },
+  { name: 'noxswap-mcp-server', version: '4.0.0' },
   { capabilities: { tools: {} } },
 );
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
+    {
+      name: 'nox_get_market_context',
+      description: 'Read the current public Sepolia block time and Chainlink ETH/USD context. No wallet or private data is required.',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    },
+    {
+      name: 'nox_plan_confidential_order',
+      description: 'Send a natural-language intent plus public Chainlink context to the configured NoxSwap Groq planner. Wallet address, balances, handles, proofs, and keys are never sent.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          intent: { type: 'string', minLength: 8, maxLength: 600 },
+        },
+        required: ['intent'],
+        additionalProperties: false,
+      },
+    },
     {
       name: 'nox_confidential_swap',
       description: 'Encrypt an amount with the iExec Nox Handle SDK and execute a real NoxSwap transaction on Ethereum Sepolia.',
@@ -191,7 +240,36 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args = {} } = request.params;
   try {
+    if (name === 'nox_get_market_context') {
+      return jsonText(await getMarketContext());
+    }
+
+    if (name === 'nox_plan_confidential_order') {
+      const market = await getMarketContext();
+      if (!market.oracleAvailable) throw new Error('Chainlink ETH/USD is stale or invalid; strategy planning is unavailable.');
+      const result = await requestStrategyPlan({
+        endpoint: agentEndpoint,
+        intent: args.intent,
+        market: {
+          ethPriceUsd: market.ethPriceUsd,
+          oracleUpdatedAt: market.oracleUpdatedAt,
+          blockTimestamp: market.blockTimestamp,
+        },
+      });
+      return jsonText({
+        ...result,
+        market: {
+          network: market.network,
+          ethPriceUsd: market.ethPriceUsd,
+          oracleUpdatedAt: market.oracleUpdatedAt,
+          blockTimestamp: market.blockTimestamp,
+        },
+        transactionAuthority: 'No transaction was sent. A signer must explicitly invoke a write tool.',
+      });
+    }
+
     if (name === 'nox_confidential_swap') {
+      requireWriteAccess();
       const input = getToken(args.tokenIn);
       const output = getToken(args.tokenOut);
       if (input.address === output.address) throw new Error('Input and output tokens must differ.');
@@ -254,6 +332,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     if (name === 'nox_decrypt_balance') {
+      if (!wallet) throw new Error('Set PRIVATE_KEY to decrypt signer-authorized balances.');
       if (args.address.toLowerCase() !== wallet.address.toLowerCase()) {
         throw new Error(`This MCP signer can only decrypt its own balances (${wallet.address}).`);
       }
@@ -302,6 +381,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     if (name === 'nox_create_limit_order') {
+      requireWriteAccess();
       const inputSymbol = args.side === 'buy-eth' ? 'cUSDC' : 'cETH';
       const outputSymbol = args.side === 'buy-eth' ? 'cETH' : 'cUSDC';
       const input = tokens[inputSymbol];
@@ -373,6 +453,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     if (name === 'nox_manage_limit_order') {
+      requireWriteAccess();
       const orderBook = new Contract(addresses.limitOrderBook, orderAbi, wallet);
       const method = { execute: 'executeOrder', cancel: 'cancelOrder', expire: 'expireOrder' }[args.action];
       if (!method) throw new Error(`Unknown limit order action ${args.action}.`);
@@ -404,4 +485,4 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
-console.error(`NoxSwap MCP v3 connected on stdio as ${wallet.address}`);
+console.error(`NoxSwap MCP v4 connected on stdio as ${wallet?.address ?? 'read-only'}; writes ${writesEnabled ? 'enabled' : 'disabled'}`);
