@@ -9,6 +9,7 @@ npm install
 npm run dev
 npm run lint
 npm run test:unit
+npm run test:agent:live
 npm run test:ui
 npm run build
 ```
@@ -29,14 +30,17 @@ npm run build
 - `src/lib/order-url-state.js`: privacy-safe shareable orderbook URL state.
 - `src/lib/format.js`: handle, token, receipt, and duration formatting.
 - `src/lib/validation.js`: shared amount and faucet cooldown validation.
+- `src/lib/agent-plan.js`: strict Groq plan schema and semantic validation.
+- `src/lib/agent-compile.js`: session-local percentage amount compilation.
+- `api/agent/`: server-only Groq planner and keeper-observer endpoints.
 - `src/deployment.json`: canonical Sepolia addresses synchronized from the backend deployment.
 
 ## Routes
 
 - `/`: standalone product landing page and live deployment evidence. The wallet and
   application navigation are intentionally hidden until the user launches the app.
-- `/app/trade`: protected swaps and confidential limit orders, selected with a
-  URL-backed workflow tab.
+- `/app/trade`: protected swaps, confidential limit orders, and the Strategy
+  Agent, selected with a URL-backed workflow tab.
 - `/app/wallet`: test faucets, wrap/unwrap, and auditor access grants.
 - `/app/activity`: wallet history, execution logs, proofs, and receipt evidence.
 
@@ -58,6 +62,18 @@ Vercel.
 - Wallet-free public orderbook with isolated RPC failures, owner-only reveal, permissionless manual settlement, and optional keeper health.
 - Four faucet/wrap/unwrap asset flows with balance-aware validation.
 - Gateway signature evidence after authorized SDK decryption and measured ETH/USDC execution deviation.
+- Groq strict-schema intent planning with public Chainlink context, local private-balance compilation, and explicit MetaMask review.
+
+## Groq configuration
+
+Copy `.env.example` to the ignored `.env.local` and set `GROQ_API_KEY`. The key is
+read only by Vite's local server middleware and Vercel Functions; it is never
+available through `import.meta.env`. Do not rename it with a `VITE_` prefix.
+
+`POST /api/agent/plan` accepts only `intent` plus public `ethPriceUsd`,
+`oracleUpdatedAt`, and `blockTimestamp`. `POST /api/agent/observe` accepts only
+public keeper decision/result metadata. Neither endpoint accepts a wallet address,
+balance, handle, proof, signature, or private key.
 
 ## Private balances
 

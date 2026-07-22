@@ -24,8 +24,10 @@ Production frontend: [https://frontend-dusky-five-56.vercel.app](https://fronten
 | Swap history | Frontend reads actual `SwapExecuted` logs from the router deployment block | PASS |
 | Proof inspector | Frontend displays actual tx hash, calldata, input/output handles, proof byte length, and block | PASS by build and source test |
 | Price reference | Sepolia Chainlink ETH/USD `latestRoundData` replaces the simulated AI price | PASS |
-| MCP tools | MCP v3 exposes seven real protected-swap, decrypt, pool, ACL, and limit-order tools over stdio | PASS |
-| Responsive UI | Production build plus headless Chrome at `1440x1000` and `390x844`; validates public orderbook/detail, URL persistence, owner/non-owner controls, landing/app separation, desktop sidebar, mobile wallet drawer, and bottom navigation | PASS |
+| Strategy Agent | Groq GPT-OSS strict schema converts natural language and public Chainlink context into a reviewable draft; percentage balance math and Nox encryption stay local | PASS, unit, live provider, and desktop/mobile UI tests |
+| Keeper AI observer | Optional Groq explanation receives public outcomes only and cannot alter deterministic keeper decisions | PASS, failure-isolation and no-private-field tests |
+| MCP tools | MCP v4 exposes nine public planning/read and opt-in protected write/decrypt tools over stdio | PASS, live Chainlink and Groq planning |
+| Responsive UI | Production build plus headless Chrome at `1440x1000` and `390x844`; validates Strategy Agent, public orderbook/detail, URL persistence, owner/non-owner controls, landing/app separation, desktop sidebar, mobile wallet drawer, and bottom navigation | PASS |
 | Public source verification | Sourcify API v2 Standard JSON verification | PASS, exact creation/runtime match for all ten project contracts |
 
 The latest Router V2 live E2E run verified normal settlement, an intentionally impossible minOut with exact confidential refund, both additional pools, permissionless order execution/expiry, owner-only cancellation, double-settlement rejection, ACL sharing, receipt ownership, and release of exactly `0.01 nWETH` during unwrap.
@@ -34,7 +36,7 @@ The latest Router V2 live E2E run verified normal settlement, an intentionally i
 
 | Previous claim | Current status | Reason |
 |---|---|---|
-| AI price guard | Replaced with Chainlink reference price | No AI service, model, endpoint, or verifiable inference existed. |
+| AI price prediction or settlement authority | Intentionally not implemented | The Strategy Agent drafts parameters only; Chainlink and contract logic remain authoritative. |
 | Real-time Intel TDX terminal | Not implemented | The SDK verifies Gateway-signed responses but exposes no authoritative raw hardware telemetry API. |
 | Historical ACL revoke | Not implemented | Installed Nox SDK/contract interface exposes `addViewer` but no `removeViewer`; a new balance handle does not inherit the prior grant. |
 | Fixed MEV-savings calculator | Replaced | UI measures actual execution deviation against Chainlink only for supported ETH/USDC swaps. |
@@ -68,6 +70,7 @@ PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:mcp
 
 cd ../frontend
 npm run test:unit
+npm run test:agent:live
 npm run build
 npm run lint
 npm run test:ui
@@ -78,6 +81,7 @@ npm run test:ui
 - Runtime files contain no embedded private key or fallback signing key.
 - GitHub Actions runs contract compilation/tests, frontend unit/lint/build, deployment consistency, and Gitleaks on pushes and pull requests; live Sepolia E2E is manual and environment-secret protected.
 - Keeper logs, webhook payloads, and health responses exclude private keys, plaintext order terms, decryption output, and encrypted handles.
+- Groq endpoints reject wallet, balance, handle, proof, signature, and key fields; the API key remains server-side and AI cannot submit transactions.
 - `.env` files are ignored by git.
 - This remains hackathon/testnet software and has not received an external smart-contract security audit.
 - Test faucet assets have no monetary value.

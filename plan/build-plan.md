@@ -29,9 +29,10 @@
 | Nox Solidity SDK | `@iexec-nox/nox-protocol-contracts@0.2.4` | Encrypted types, ACL và arithmetic primitives |
 | Contract tooling | Hardhat 3, Solidity 0.8.35, Node 24 | Compile và artifacts |
 | Oracle | Chainlink ETH/USD Sepolia feed | UI reference price, không quyết định settlement |
-| Agent integration | MCP SDK stdio server | Real protected swap/decrypt/pool/ACL/limit-order tools |
+| AI strategy | Groq `openai/gpt-oss-20b` strict JSON schema | Natural-language order drafts from public market context; no signing authority |
+| Agent integration | MCP SDK stdio server | Nine read/decrypt/write/planning tools with explicit write opt-in |
 
-Không có database hoặc authentication server. MCP là một optional local agent adapter và chỉ ký bằng `PRIVATE_KEY` từ environment.
+Không có database hoặc authentication server. Groq keys stay in server-side environment variables. MCP is an optional local adapter, starts read-only, and uses an environment-only `PRIVATE_KEY` only for signer-authorized tools.
 
 ## 4. Kiến trúc
 
@@ -116,6 +117,13 @@ Failure handling:
 - [x] Surface SDK-verified gateway response evidence and measured execution comparison.
 - [x] Keep historical ACL revoke, raw Intel TDX telemetry, and unverifiable AI output out because the installed protocol exposes no authoritative APIs for them.
 
+### Milestone 7: Approved AI extension
+
+- [x] Add a server-side Groq planner with strict structured output, bounded input, and free-tier rate/error handling.
+- [x] Add a Strategy Agent workflow that compiles percentage amounts only from session-local revealed balances and never auto-submits.
+- [x] Extend MCP to nine tools with public market context and confidential-order planning; package a secret-free `noxswap-mcp` CLI.
+- [x] Add an optional fail-open keeper observer whose output cannot alter deterministic execute/expire decisions.
+
 ## 6. Verification matrix
 
 | Flow | Test | Evidence | Status |
@@ -128,7 +136,8 @@ Failure handling:
 | Confidential limit order | Same live E2E | Permissionless execution/expiry, exact cancel/expiry refunds, owner permissions, and double-settlement rejection | Pass |
 | ACL viewer | Same live E2E | ACL subgraph contains granted viewer | Pass |
 | Unwrap | Same live E2E | Exactly `0.01 nWETH` released after proof finalization | Pass |
-| MCP protocol | `npm run test:mcp` and `npm run test:mcp:write` | Seven tools, live reads, real small swap, order create/cancel, receipt/event/status assertions, and sanitized evidence | Pass |
+| MCP protocol | `npm run test:mcp` and `npm run test:mcp:write` | Nine tools, live Chainlink/Groq planning, real small swap, order create/cancel, receipt/event/status assertions, and sanitized evidence | Pass |
+| AI strategy and observer | `npm run test:unit`, `npm run test:agent:live`, backend `npm test` | Strict-schema Groq responses, private-field rejection, local percentage compilation, responsive UI, and observer non-authority | Pass |
 | Frontend static quality | `npm run test:unit && npm run build && npm run lint` | 21 unit tests including positive minOut derivation/validation, incremental event index/cache, production build, and zero lint errors | Pass |
 | Continuous integration | `.github/workflows/ci.yml` | Push/PR compile, tests, lint, build, deployment consistency, and Gitleaks; YAML validated locally | Pass |
 | Responsive layout | Headless Chrome 1440x1000 and 390x844 | Wallet-free live orderbook, responsive detail, URL reload, owner/non-owner controls, landing/app separation, and no horizontal overflow | Pass |
@@ -149,4 +158,4 @@ Failure handling:
 
 ## 8. Scope decisions
 
-The user approved a new extension after remediation. Encrypted `minOut`/deadline, limit orders, and cWBTC/cSOL pools are now active build scope. LP shares/removal, a verifiable AI model, raw hardware telemetry, and fixed MEV-savings claims remain outside implementation until their trust and data dependencies are satisfied.
+The user approved extensions after remediation. Encrypted `minOut`/deadline, limit orders, cWBTC/cSOL pools, and the Groq strategy-drafting layer are active build scope. AI price prediction/custody, LP shares/removal, raw hardware telemetry, and fixed MEV-savings claims remain outside implementation until their trust and data dependencies are satisfied.

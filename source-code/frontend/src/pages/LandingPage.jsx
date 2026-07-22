@@ -1,4 +1,4 @@
-import { ArrowRight, Bot, CheckCircle2, Coins, ExternalLink, Eye, FileKey2, Layers3, LockKeyhole, ShieldCheck, Wallet, Workflow } from 'lucide-react';
+import { ArrowRight, Bot, BrainCircuit, CheckCircle2, Coins, ExternalLink, Eye, FileKey2, Layers3, LockKeyhole, ShieldCheck, Wallet, Workflow } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import deployment from '../deployment.json';
 import hero from '../assets/hero.png';
@@ -20,8 +20,15 @@ const capabilities = [
     to: '/app/trade?mode=orders',
   },
   {
-    icon: FileKey2,
+    icon: BrainCircuit,
     number: '03',
+    title: 'Strategy Agent',
+    text: 'Turn natural language and public Chainlink context into a strict, reviewable order draft while private balance math stays local.',
+    to: '/app/trade?mode=agent',
+  },
+  {
+    icon: FileKey2,
+    number: '04',
     title: 'Selective access',
     text: 'Reveal balances only after wallet authorization or grant an auditor access to a specific current handle.',
     to: '/app/wallet?tab=access',
@@ -83,6 +90,10 @@ const faqs = [
     question: 'What if the automated keeper is offline?',
     answer: 'Order execution remains permissionless. The public orderbook continues to expose manual execute and expiry-refund actions whenever their readiness checks pass. A keeper never needs to decrypt or store confidential terms.',
   },
+  {
+    question: 'What does the Strategy Agent send to Groq, and can AI trade for me?',
+    answer: 'Groq receives only the intent text you enter and public Chainlink price, oracle time, and block time. NoxSwap does not send your wallet address, balance, handles, proofs, or signature. AI only drafts fields; Nox encryption stays local and MetaMask confirmation is always required.',
+  },
 ];
 
 export default function LandingPage({ ethPrice }) {
@@ -116,7 +127,7 @@ export default function LandingPage({ ethPrice }) {
         <div><strong>10</strong><span>Sepolia contracts</span></div>
         <div><strong>3</strong><span>Encrypted pools</span></div>
         <div><strong>4</strong><span>ERC-7984 assets</span></div>
-        <div><strong>7</strong><span>Live MCP tools</span></div>
+        <div><strong>9</strong><span>Live MCP tools</span></div>
       </section>
 
       <section className="landing-onboarding" id="how-it-works" aria-labelledby="how-it-works-title">
@@ -147,7 +158,7 @@ export default function LandingPage({ ethPrice }) {
       <section className="landing-capabilities" id="workflows">
         <div className="landing-section-title">
           <p className="eyebrow">CONFIDENTIAL DEFI, END TO END</p>
-          <h2>One privacy layer. Three real workflows.</h2>
+          <h2>One privacy layer. Four real workflows.</h2>
         </div>
         <div className="capability-list">
           {capabilities.map((item) => (

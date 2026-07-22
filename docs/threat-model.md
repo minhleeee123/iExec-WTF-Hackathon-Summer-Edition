@@ -20,6 +20,8 @@ The system aims to:
 - keep keepers and non-owner executors unable to decrypt another owner's terms or
   settlement values;
 - keep MCP and CI signing keys outside source code, logs, and evidence artifacts.
+- prevent the Groq planning and observation paths from receiving wallet addresses,
+  private balances, Nox handles/proofs, signatures, or signing keys.
 
 ## 2. Assets and visibility
 
@@ -34,6 +36,7 @@ The system aims to:
 | Pool reserve values | Encrypted handles are public; values are confidential | Router contract and, in the current Router V2 deployment, router owner |
 | Underlying wrapper collateral | ERC-20 balances are public | Everyone can inspect; only wrapper rules can release collateral |
 | Keeper decisions and health | Public operational metadata | Everyone with log/health access |
+| Strategy Agent prompt and draft | Prompt is disclosed to Groq; draft remains session-only UI state | User and Groq API service |
 
 The current implementation does **not** hide order strategy completely: token
 pair, direction, trigger, expiry, owner, timing, and lifecycle are public. Repeated
@@ -71,8 +74,23 @@ readiness. The contracts have not received an independent audit.
   stale answers prevent execution.
 - Keepers are untrusted permissionless callers. They can execute ready orders or
   expire overdue orders, but cannot cancel or decrypt them.
-- The MCP process is a hot-wallet client. Anyone who obtains its environment key
-  can spend that test wallet's assets and request decryption as that wallet.
+- MCP starts read-only. When `MCP_ALLOW_WRITES=true`, it becomes a hot-wallet
+  client; anyone who obtains its environment key can spend that test wallet's
+  assets and request decryption as that wallet.
+
+### Groq strategy and keeper observer
+
+- The server-side planner sends only user-entered intent text and public
+  Chainlink/block context to Groq. Percentage amounts are resolved from a
+  session-only revealed balance after the plan returns.
+- Model output is constrained by strict JSON Schema and deterministic semantic
+  validation, then shown as a draft. The model cannot call MetaMask, construct a
+  Nox authorization signature, or submit a transaction.
+- The optional keeper observer receives only public decision/result fields after
+  the deterministic decision has been made. It runs fail-open and cannot approve,
+  reject, or modify `execute`/`expire` behavior.
+- Prompt text is not a confidential channel. A user who types a plaintext amount
+  or other secret into the prompt deliberately sends that text to Groq.
 
 ## 4. Threats and mitigations
 
@@ -87,6 +105,9 @@ readiness. The contracts have not received an independent audit.
 | Stale/manipulated oracle data | Positive, non-future answer and one-hour maximum age | Chainlink/feed compromise affects public trigger decisions |
 | Wrapper insolvency | Underlying collateral remains in the wrapper and unwrap requires a Nox proof | Contract or Nox proof-system failure could violate assumptions |
 | Secret leakage in CI/MCP | Environment-only keys, Gitleaks, sanitized evidence schema | Runner compromise or unsafe external logging remains possible |
+| Prompt or model data leakage | UI disclosure, request-field allowlist, no automatic wallet/balance/handle fields, no prompt logging | Secrets manually typed into the prompt leave the browser |
+| Prompt injection or malformed model output | Fixed system instruction, strict JSON Schema, semantic validation, manual review and wallet confirmation | A plausible but poor strategy can still be drafted |
+| AI influences keeper settlement | Deterministic decision runs independently; observer failures are isolated and never gate writes | Observer latency can delay the next polling cycle when enabled |
 | Router owner decrypts reserves | This capability is documented; reserve ACL is not exposed in normal UI | Current owner is a privileged reserve viewer until a new router is deployed |
 
 ## 5. Compromise impact
@@ -101,6 +122,9 @@ readiness. The contracts have not received an independent audit.
   design.
 - **MCP signer compromise:** equivalent to compromise of that configured wallet;
   it does not grant access to other users' handles.
+- **Groq API key compromise:** attacker can consume the configured Groq quota and
+  view requests available through provider-side access, but cannot sign an
+  Ethereum transaction or decrypt a Nox handle from that key alone.
 - **Gateway/KMS/confidential runtime compromise:** confidentiality and/or
   correctness of encrypted computation may fail for values processed by the
   compromised infrastructure. Contract status and public collateral remain

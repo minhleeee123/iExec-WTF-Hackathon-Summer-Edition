@@ -2,7 +2,7 @@
 
 NoxSwap is a confidential constant-product swap prototype built with the official iExec Nox Solidity packages and Handle SDK. Inputs, balances, pool reserves, and outputs are represented by Nox `bytes32` handles rather than plaintext token amounts.
 
-The working deployment is on Ethereum Sepolia. It supports faucet, wrap/unwrap, protected encrypted swaps across three pools, authorized balance decryption, selective ACL disclosure, Chainlink-triggered confidential limit orders, event history, and ERC-721 receipts.
+The working deployment is on Ethereum Sepolia. It supports faucet, wrap/unwrap, protected encrypted swaps across three pools, authorized balance decryption, selective ACL disclosure, Chainlink-triggered confidential limit orders, a Groq-powered Strategy Agent, event history, and ERC-721 receipts.
 
 The current confidentiality boundaries, privileged roles, public metadata, and
 compromise impact are documented in [`docs/threat-model.md`](docs/threat-model.md).
@@ -71,11 +71,12 @@ The router computes the 0.30% fee and constant-product quote using `Nox.mul`, `N
 - Mint an on-chain ERC-721 SVG receipt for every successful swap.
 - Read actual `SwapExecuted` history, calldata, handles, proof size, and receipt metadata.
 - Read the Sepolia Chainlink ETH/USD feed for a clearly labeled UI reference estimate.
-- Use MCP stdio tools for real protected swaps, balance decryption, three-pool inspection, ACL inspection, and limit-order management.
+- Draft a strict limit-order plan from natural language and public Chainlink context; private percentage math and Nox encryption remain in the browser and every transaction still requires MetaMask.
+- Use nine MCP stdio tools for public market/plan reads, real protected swaps, balance decryption, three-pool inspection, ACL inspection, and limit-order management.
 
 ## Deliberate Limitations
 
-- No AI price model: there is no trustworthy model/data/signature pipeline to verify. The UI uses the live Chainlink ETH/USD feed.
+- AI is not a price oracle or transaction authority. Chainlink and contract rules remain canonical; Groq only drafts reviewable parameters.
 - No raw Intel TDX telemetry: the installed Nox client verifies Gateway signatures but exposes no authoritative hardware telemetry API.
 - No historical ACL revoke button: the installed Nox SDK supports `addViewer` but not `removeViewer`; grants apply to the current handle and do not automatically carry to a new balance handle.
 - No fixed MEV-savings claim. The UI reports measured execution-versus-oracle deviation only for ETH/USDC.
@@ -96,7 +97,9 @@ source-code/
     scripts/test-sepolia-e2e.js
     scripts/test-mcp.js
     mcp-server.js
+    bin/noxswap-mcp.js
     keeper.js
+    lib/agent-client.js
     lib/keeper-decision.js
     lib/keeper-scanner.js
     lib/keeper-notifier.js
@@ -105,6 +108,8 @@ source-code/
     src/App.jsx
     src/components/OrderBook.jsx
     src/components/OrderDetail.jsx
+    src/components/AgentStrategy.jsx
+    src/components/AgentTrade.jsx
     src/hooks/useLimitOrderBook.js
     src/hooks/useLimitOrderActions.js
     src/components/AppSidebar.jsx
@@ -133,6 +138,12 @@ the desktop sidebar or the mobile wallet drawer.
 
 MetaMask must be on Ethereum Sepolia for write operations. Read-only pool and
 Chainlink data load without a wallet.
+
+The Strategy Agent is available at `/app/trade?mode=agent`. For local development,
+place `GROQ_API_KEY` in the ignored `source-code/frontend/.env.local`; on Vercel,
+configure it as a server-side project secret. Never prefix it with `VITE_`, which
+would expose it to browser JavaScript. `GROQ_MODEL` defaults to
+`openai/gpt-oss-20b`.
 
 The limit-order view is also public and URL-addressable. For example,
 `/app/trade?mode=orders&status=executed&order=1` restores its filter and detail
@@ -191,12 +202,15 @@ Polling mode exposes `GET /health` on port `8787` by default and supports an
 optional `NOTIFICATION_WEBHOOK_URL`. See
 [`source-code/backend/.env.example`](./source-code/backend/.env.example) and
 [`source-code/backend/README.md`](./source-code/backend/README.md).
+Set `KEEPER_AI_OBSERVER_URL` to the deployed `/api/agent/observe` endpoint to add
+public structured explanations. Observer output never changes the deterministic
+keeper decision and failures do not block settlement.
 
 ## MCP Server
 
 ```bash
 cd source-code/backend
-PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run mcp
+npm run mcp # public read/planning tools; no signing key required
 ```
 
 Exposed tools:
@@ -205,11 +219,16 @@ Exposed tools:
 - `nox_create_limit_order`
 - `nox_decrypt_balance`
 - `nox_get_limit_order`
+- `nox_get_market_context`
 - `nox_manage_limit_order`
+- `nox_plan_confidential_order`
 - `nox_view_acl`
 - `nox_get_pool_handles`
 
-The signer can only decrypt handles for which it has Nox ACL access. The server does not contain a fallback private key.
+Set `NOXSWAP_AGENT_API_URL` to the deployed `/api/agent/plan` endpoint for the
+planning tool. A signer can only decrypt handles for which it has Nox ACL access.
+Write tools are disabled by default; enabling them requires both `PRIVATE_KEY` and
+`MCP_ALLOW_WRITES=true`. The server contains no fallback private key.
 
 ## Redeploy
 

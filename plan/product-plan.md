@@ -84,7 +84,7 @@
 - [x] Real Sepolia nWBTC/cWBTC and nSOL/cSOL assets with encrypted liquidity pools.
 - [x] Gateway-response attestation evidence derived from successful Nox SDK verification.
 - [x] Measured execution-versus-oracle comparison; no unsupported counterfactual MEV-savings claim.
-- [x] AI guard assessed and deliberately excluded because no real model, input data, or signed/verifiable inference path exists.
+- [x] Groq Strategy Agent converts natural-language ETH/USDC intents and public Chainlink context into strict, reviewable order drafts; private balance math, Nox encryption, and transaction approval remain local.
 
 ## 9. Non-goals
 
@@ -93,6 +93,7 @@ Không xây trong phiên bản hackathon:
 - [ ] Ứng dụng Mobile Native (iOS/Android) độc lập — chỉ phát triển Web App đáp ứng Responsive/PWA.
 - [ ] Cầu nối Cross-chain sang các blockchain L1 khác ngoài Sepolia.
 - [ ] Cross-chain settlement or native Solana custody; nSOL remains an explicitly labeled Sepolia test asset.
+- [ ] AI price prediction, autonomous AI custody, or AI-gated settlement; Chainlink and contract rules remain authoritative.
 
 ## 10. Sponsor technology
 

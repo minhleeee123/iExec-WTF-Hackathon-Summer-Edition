@@ -129,7 +129,7 @@ try {
       assert.equal(await page.getByRole('button', { name: /connect wallet/i }).count(), 0, 'landing must not request a wallet connection');
       assert.equal(await page.locator('.onboarding-flow li').count(), 5, 'landing onboarding must contain five real workflow steps');
       assert.equal(await page.locator('.privacy-matrix > div').count(), 2, 'landing must explain public and encrypted data');
-      assert.equal(await page.locator('.faq-list details').count(), 8, 'landing must contain the complete FAQ set');
+      assert.equal(await page.locator('.faq-list details').count(), 9, 'landing must contain the complete FAQ set');
       await page.locator('.faq-list summary').first().click();
       assert(await page.locator('.faq-list details').first().evaluate((element) => element.open), 'FAQ disclosure must open');
       assert.match(await page.locator('.landing-footer').textContent(), /Testnet only/i);

@@ -40,6 +40,39 @@ address, ETH balance, cycle timestamps, last action, and error count. Set a publ
 optional webhook receives order ID, action, transaction, block, explorer URL, and
 keeper address; webhook failure never changes the on-chain result.
 
+Set `KEEPER_AI_OBSERVER_URL` to the frontend's public `/api/agent/observe`
+endpoint to emit a Groq explanation for actionable/retry outcomes. The observer
+runs after the deterministic decision is fixed, receives only public fields, and
+cannot gate or alter settlement. Leave the variable empty to disable it and avoid
+using Groq quota.
+
+## MCP v4
+
+The stdio server exposes nine tools, including `nox_get_market_context` and
+`nox_plan_confidential_order`. Public reads and planning can start without a
+signing key:
+
+```bash
+NOXSWAP_AGENT_API_URL="https://YOUR_FRONTEND/api/agent/plan" npm run mcp
+```
+
+Decryption requires `PRIVATE_KEY`. Transaction tools additionally require the
+explicit `MCP_ALLOW_WRITES=true` opt-in. The planner endpoint receives only the
+intent and live public Chainlink/block context; it receives no wallet address,
+balance, handle, proof, or signature.
+
+The package includes a `noxswap-mcp` bin and can be tested from a local checkout:
+
+```bash
+npx --yes --package . noxswap-mcp
+```
+
+For Claude Desktop, Cursor, or another MCP stdio client, use that command plus an
+environment block containing `SEPOLIA_RPC_URL` and `NOXSWAP_AGENT_API_URL`.
+Include `PRIVATE_KEY` only when signer-authorized tools are required, and keep
+`MCP_ALLOW_WRITES=false` unless writes are intentionally enabled. The package is
+CLI-ready but has not been published to the public npm registry.
+
 ## Verification
 
 ```bash
