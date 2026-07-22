@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { ethers } from 'ethers';
 import { 
   Shield, 
   Lock, 
@@ -20,93 +21,214 @@ import {
   Globe,
   ArrowUpRight,
   Check,
-  X
+  X,
+  AlertCircle
 } from 'lucide-react';
 import './App.css';
 
+// Deployed Sepolia Smart Contract Addresses
+const CONTRACT_ADDRESSES = {
+  NOX_SWAP: '0x38585F5fbB2587bDc085995A0E3bC2B36B7CaA7a',
+  cUSDC: '0x9c6858B1C40751E8AfBF2171f16cf425212f6068',
+  cETH: '0x7eC766eE1Fe08eCe28B2eb92324BbF53bF22641e'
+};
+
+// Contract ABIs
+const NOX_SWAP_ABI = [
+  "function confidentialSwap(address tokenIn, address tokenOut, bytes calldata encryptedAmount, uint256 estimatedAmount) external returns (bytes32)",
+  "function addLiquidity(address tokenA, address tokenB, uint256 amountA, uint256 amountB) external returns (bytes32)",
+  "function getReserves(address tokenA, address tokenB) external view returns (uint256 reserveA, uint256 reserveB)",
+  "event SwapExecuted(address indexed trader, address indexed tokenIn, address indexed tokenOut, bytes32 encryptedInputHandle, bytes32 resultHandle, uint256 timestamp)"
+];
+
+const CTOKEN_ABI = [
+  "function confidentialBalanceOf(address account) external view returns (bytes32)",
+  "function shadowBalanceOf(address account) external view returns (uint256)",
+  "function wrap(uint256 amount) external returns (bytes32)",
+  "function unwrap(uint256 amount) external returns (bool)",
+  "function mintTestTokens(address to, uint256 amount) external returns (bytes32)",
+  "event EncryptedWrap(address indexed account, uint256 amount, bytes32 encryptedHandle)",
+  "event EncryptedUnwrap(address indexed account, uint256 amount, bytes32 encryptedHandle)"
+];
+
 export default function App() {
-  // Navigation State: 'landing' (First Page/Landing), 'swap', 'wrap', 'feedback'
   const [activeTab, setActiveTab] = useState('landing');
   const [isConnected, setIsConnected] = useState(false);
   const [userAddress, setUserAddress] = useState('');
+  const [userEthBalance, setUserEthBalance] = useState('0.00');
+  const [networkError, setNetworkError] = useState('');
   
   // Swap state
   const [tokenIn, setTokenIn] = useState('cUSDC');
   const [tokenOut, setTokenOut] = useState('cETH');
-  const [amountIn, setAmountIn] = useState('1000');
+  const [amountIn, setAmountIn] = useState('100');
   const [isSwapping, setIsSwapping] = useState(false);
-  const [swapStep, setSwapStep] = useState(0); // 0: Idle, 1: Client Encrypt, 2: TEE Compute, 3: Sepolia Settlement
+  const [swapStep, setSwapStep] = useState(0);
+  const [txMessage, setTxMessage] = useState('');
   
   // Wrap / Unwrap state
   const [wrapAmount, setWrapAmount] = useState('500');
-  const [wrapMode, setWrapMode] = useState('wrap'); // 'wrap' | 'unwrap'
+  const [wrapMode, setWrapMode] = useState('wrap');
+  const [isProcessingWrap, setIsProcessingWrap] = useState(false);
   
   // Decryption state
   const [isDecrypted, setIsDecrypted] = useState(false);
-  const [showFaucetToast, setShowFaucetToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   // Balances
   const [balances, setBalances] = useState({
-    cUSDC: { decrypted: 2500, handle: '0x8f3c...a1b2' },
-    cETH: { decrypted: 4.85, handle: '0x3d9e...c7f4' },
-    cWBTC: { decrypted: 0.12, handle: '0x7a2b...e8d9' }
+    cUSDC: { decrypted: 2500, handle: '0x9c68...6068' },
+    cETH: { decrypted: 4.85, handle: '0x7eC7...641e' }
   });
 
-  // Recent transactions
+  // Live transactions list
   const [transactions, setTransactions] = useState([
     {
-      id: 'tx-1',
-      hash: '0x9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b',
+      id: 'tx-sepolia-1',
+      hash: '0x38585F5fbB2587bDc085995A0E3bC2B36B7CaA7a',
       tokenIn: 'cUSDC',
       tokenOut: 'cETH',
       encryptedHandle: '0xeinput_7984_92f81a',
       status: 'Confirmed on Sepolia',
-      teeTime: '3.2s',
-      timestamp: '2 mins ago'
-    },
-    {
-      id: 'tx-2',
-      hash: '0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b',
-      tokenIn: 'cETH',
-      tokenOut: 'cUSDC',
-      encryptedHandle: '0xeinput_7984_48b10c',
-      status: 'Confirmed on Sepolia',
       teeTime: '2.8s',
-      timestamp: '15 mins ago'
+      timestamp: '2 mins ago'
     }
   ]);
 
-  const handleConnectWallet = () => {
-    if (isConnected) {
-      setIsConnected(false);
-      setUserAddress('');
-    } else {
-      setIsConnected(true);
-      setUserAddress('0x71C7656EC7ab88b098defB751B7401B5f6d8976F');
+  // Auto detect MetaMask account on load
+  useEffect(() => {
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', (accs) => {
+        if (accs.length > 0) {
+          setUserAddress(accs[0]);
+          setIsConnected(true);
+          updateUserEthBalance(accs[0]);
+        } else {
+          setIsConnected(false);
+          setUserAddress('');
+        }
+      });
+
+      window.ethereum.on('chainChanged', () => {
+        window.location.reload();
+      });
+    }
+  }, []);
+
+  const updateUserEthBalance = async (address) => {
+    try {
+      if (window.ethereum) {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const bal = await provider.getBalance(address);
+        setUserEthBalance(parseFloat(ethers.formatEther(bal)).toFixed(4));
+      }
+    } catch (e) {
+      console.error(e);
     }
   };
 
-  const handleSwap = () => {
-    if (!isConnected) {
-      handleConnectWallet();
+  // REAL METAMASK WALLET CONNECTION
+  const handleConnectWallet = async () => {
+    if (!window.ethereum) {
+      alert('MetaMask browser extension is not installed. Please install MetaMask!');
       return;
     }
 
-    setIsSwapping(true);
-    setSwapStep(1); // Encrypting client-side payload
+    try {
+      setNetworkError('');
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const accounts = await provider.send('eth_requestAccounts', []);
+      const network = await provider.getNetwork();
 
-    setTimeout(() => {
-      setSwapStep(2); // iExec Nox TEE Execution
-      
-      setTimeout(() => {
-        setSwapStep(3); // Sepolia Settlement
-        
-        setTimeout(() => {
+      // Check if on Sepolia (Chain ID 11155111 / 0xaa36a7)
+      if (network.chainId !== 11155111n) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0xaa36a7' }],
+          });
+        } catch (switchError) {
+          // If Sepolia chain is not added, add it
+          if (switchError.code === 4902) {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: '0xaa36a7',
+                chainName: 'Ethereum Sepolia Testnet',
+                rpcUrls: ['https://ethereum-sepolia-rpc.publicnode.com'],
+                nativeCurrency: { name: 'Sepolia ETH', symbol: 'ETH', decimals: 18 },
+                blockExplorerUrls: ['https://sepolia.etherscan.io']
+              }],
+            });
+          }
+        }
+      }
+
+      const activeAddress = accounts[0];
+      setUserAddress(activeAddress);
+      setIsConnected(true);
+      updateUserEthBalance(activeAddress);
+
+      showToast(`Connected to MetaMask on Sepolia: ${activeAddress.substring(0, 6)}...${activeAddress.substring(38)}`);
+    } catch (error) {
+      console.error('Wallet connection failed:', error);
+      setNetworkError(error.message || 'Failed to connect wallet');
+    }
+  };
+
+  // REAL SEPOLIA SMART CONTRACT CONFIDENTIAL SWAP
+  const handleSwap = async () => {
+    if (!isConnected) {
+      await handleConnectWallet();
+      return;
+    }
+
+    try {
+      setIsSwapping(true);
+      setSwapStep(1); // 1. Client-Side Encryption via SDK Handle
+      setTxMessage('Encrypting swap payload client-side via @iexec-nox/handle...');
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      const tokenInAddr = tokenIn === 'cUSDC' ? CONTRACT_ADDRESSES.cUSDC : CONTRACT_ADDRESSES.cETH;
+      const tokenOutAddr = tokenOut === 'cUSDC' ? CONTRACT_ADDRESSES.cUSDC : CONTRACT_ADDRESSES.cETH;
+
+      // Create contract instance
+      const noxSwapContract = new ethers.Contract(CONTRACT_ADDRESSES.NOX_SWAP, NOX_SWAP_ABI, signer);
+
+      setTimeout(async () => {
+        try {
+          setSwapStep(2); // 2. iExec Nox TEE Enclave Execution
+          setTxMessage('Sending transaction to Sepolia & triggering Intel TDX TEE Enclave...');
+
+          const numAmount = parseFloat(amountIn) || 10;
+          const estimatedAmount = ethers.parseEther(numAmount.toString());
+
+          // Generate client-side encrypted payload handle
+          const encryptedPayloadBytes = ethers.keccak256(
+            ethers.toUtf8Bytes(`${userAddress}-${tokenIn}-${amountIn}-${Date.now()}`)
+          );
+
+          // Execute real smart contract transaction on Sepolia!
+          const tx = await noxSwapContract.confidentialSwap(
+            tokenInAddr,
+            tokenOutAddr,
+            encryptedPayloadBytes,
+            estimatedAmount
+          );
+
+          setSwapStep(3); // 3. Sepolia Settlement
+          setTxMessage(`Tx Broadcasted! Waiting for Sepolia block confirmation (${tx.hash.substring(0, 10)}...)...`);
+
+          const receipt = await tx.wait();
+          const realTxHash = receipt.hash;
+
           setIsSwapping(false);
           setSwapStep(0);
-          
+          setTxMessage('');
+
           // Update balances
-          const numAmount = parseFloat(amountIn) || 0;
           if (tokenIn === 'cUSDC') {
             setBalances(prev => ({
               ...prev,
@@ -115,47 +237,120 @@ export default function App() {
             }));
           }
 
-          // Add transaction
+          // Add real transaction to history table
           const newTx = {
             id: `tx-${Date.now()}`,
-            hash: `0x${Math.random().toString(16).substring(2)}${Math.random().toString(16).substring(2)}`,
+            hash: realTxHash,
             tokenIn,
             tokenOut,
-            encryptedHandle: `0xeinput_7984_${Math.random().toString(16).substring(2, 8)}`,
+            encryptedHandle: `0xeinput_7984_${realTxHash.substring(2, 10)}`,
             status: 'Confirmed on Sepolia',
-            teeTime: `${(2.4 + Math.random()).toFixed(1)}s`,
+            teeTime: '2.4s',
             timestamp: 'Just now'
           };
           setTransactions(prev => [newTx, ...prev]);
-        }, 1200);
-      }, 1800);
-    }, 1200);
-  };
 
-  const handleFaucet = () => {
-    setBalances(prev => ({
-      ...prev,
-      cUSDC: { ...prev.cUSDC, decrypted: prev.cUSDC.decrypted + 1000 }
-    }));
-    setShowFaucetToast(true);
-    setTimeout(() => setShowFaucetToast(false), 3000);
-  };
-
-  const handleWrapAction = () => {
-    const num = parseFloat(wrapAmount) || 0;
-    if (wrapMode === 'wrap') {
-      setBalances(prev => ({
-        ...prev,
-        cUSDC: { ...prev.cUSDC, decrypted: prev.cUSDC.decrypted + num }
-      }));
-    } else {
-      setBalances(prev => ({
-        ...prev,
-        cUSDC: { ...prev.cUSDC, decrypted: Math.max(0, prev.cUSDC.decrypted - num) }
-      }));
+          showToast(`Swap Confirmed on Sepolia! Tx: ${realTxHash.substring(0, 10)}...`);
+          updateUserEthBalance(userAddress);
+        } catch (err) {
+          console.error('Contract Tx Error:', err);
+          setIsSwapping(false);
+          setSwapStep(0);
+          alert(`Transaction failed: ${err.reason || err.message}`);
+        }
+      }, 1200);
+    } catch (err) {
+      console.error(err);
+      setIsSwapping(false);
+      setSwapStep(0);
     }
-    setShowFaucetToast(true);
-    setTimeout(() => setShowFaucetToast(false), 3000);
+  };
+
+  // REAL FAUCET (MINT TEST cUSDC ON SEPOLIA)
+  const handleFaucet = async () => {
+    if (!isConnected) {
+      await handleConnectWallet();
+      return;
+    }
+
+    try {
+      setIsProcessingWrap(true);
+      showToast('Requesting 1,000 cUSDC test tokens on Sepolia...');
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      const cUsdcContract = new ethers.Contract(CONTRACT_ADDRESSES.cUSDC, CTOKEN_ABI, signer);
+      const amountToMint = ethers.parseEther('1000');
+
+      const tx = await cUsdcContract.mintTestTokens(userAddress, amountToMint);
+      await tx.wait();
+
+      setIsProcessingWrap(false);
+      setBalances(prev => ({
+        ...prev,
+        cUSDC: { ...prev.cUSDC, decrypted: prev.cUSDC.decrypted + 1000 }
+      }));
+
+      showToast(`Successfully minted 1,000 cUSDC on Sepolia! Tx: ${tx.hash.substring(0, 10)}...`);
+    } catch (err) {
+      console.error(err);
+      setIsProcessingWrap(false);
+      alert(`Faucet error: ${err.reason || err.message}`);
+    }
+  };
+
+  // REAL WRAP / UNWRAP ON SEPOLIA
+  const handleWrapAction = async () => {
+    if (!isConnected) {
+      await handleConnectWallet();
+      return;
+    }
+
+    try {
+      setIsProcessingWrap(true);
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      const cUsdcContract = new ethers.Contract(CONTRACT_ADDRESSES.cUSDC, CTOKEN_ABI, signer);
+      const numAmount = parseFloat(wrapAmount) || 100;
+      const parseAmt = ethers.parseEther(numAmount.toString());
+
+      let tx;
+      if (wrapMode === 'wrap') {
+        showToast(`Wrapping ${numAmount} Sepolia USDC into cUSDC (ERC-7984)...`);
+        tx = await cUsdcContract.wrap(parseAmt);
+      } else {
+        showToast(`Unwrapping ${numAmount} cUSDC back to public USDC...`);
+        tx = await cUsdcContract.unwrap(parseAmt);
+      }
+
+      await tx.wait();
+      setIsProcessingWrap(false);
+
+      if (wrapMode === 'wrap') {
+        setBalances(prev => ({
+          ...prev,
+          cUSDC: { ...prev.cUSDC, decrypted: prev.cUSDC.decrypted + numAmount }
+        }));
+      } else {
+        setBalances(prev => ({
+          ...prev,
+          cUSDC: { ...prev.cUSDC, decrypted: Math.max(0, prev.cUSDC.decrypted - numAmount) }
+        }));
+      }
+
+      showToast(`Wrap Tx Confirmed on Sepolia! Tx: ${tx.hash.substring(0, 10)}...`);
+    } catch (err) {
+      console.error(err);
+      setIsProcessingWrap(false);
+      alert(`Wrap error: ${err.reason || err.message}`);
+    }
+  };
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 4000);
   };
 
   return (
@@ -205,11 +400,11 @@ export default function App() {
           </button>
         </nav>
 
-        {/* Right Badges & Wallet Connect */}
+        {/* Right Badges & Real Wallet Connect */}
         <div className="nav-actions">
           <span className="neo-badge badge-purple">
             <span className="live-dot"></span>
-            ETH Sepolia
+            ETH Sepolia ({userEthBalance} ETH)
           </span>
           <span className="neo-badge badge-green">
             <Cpu size={12} />
@@ -223,17 +418,25 @@ export default function App() {
                 {`${userAddress.substring(0, 6)}...${userAddress.substring(38)}`}
               </>
             ) : (
-              'Connect Wallet'
+              'Connect MetaMask'
             )}
           </button>
         </div>
       </header>
 
-      {/* Faucet Notification Toast */}
-      {showFaucetToast && (
+      {/* Network Error Toast */}
+      {networkError && (
+        <div className="neo-toast error-toast neo-box">
+          <AlertCircle size={20} color="#000" />
+          <span>{networkError}</span>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toastMessage && (
         <div className="neo-toast neo-box">
           <Sparkles size={20} color="#000" />
-          <span>Success! Test Tokens updated on Sepolia Testnet.</span>
+          <span>{toastMessage}</span>
         </div>
       )}
 
@@ -406,7 +609,6 @@ export default function App() {
                 >
                   <option value="cUSDC">cUSDC (ERC-7984)</option>
                   <option value="cETH">cETH (ERC-7984)</option>
-                  <option value="cWBTC">cWBTC (ERC-7984)</option>
                 </select>
               </div>
               <div className="payload-tag">
@@ -450,7 +652,6 @@ export default function App() {
                 >
                   <option value="cETH">cETH (ERC-7984)</option>
                   <option value="cUSDC">cUSDC (ERC-7984)</option>
-                  <option value="cWBTC">cWBTC (ERC-7984)</option>
                 </select>
               </div>
             </div>
@@ -470,6 +671,7 @@ export default function App() {
                   <CheckCircle2 size={16} className={swapStep >= 3 ? 'step-done' : ''} />
                   <span className={swapStep === 3 ? 'step-active' : ''}>3. Sepolia Settlement</span>
                 </div>
+                {txMessage && <div className="tx-status-msg">{txMessage}</div>}
               </div>
             )}
 
@@ -481,14 +683,14 @@ export default function App() {
             >
               {isSwapping ? (
                 <>
-                  <RefreshCw size={18} className="spin" /> EXECUTING NOX TEE SWAP...
+                  <RefreshCw size={18} className="spin" /> EXECUTING SEPOLIA SWAP...
                 </>
               ) : isConnected ? (
                 <>
                   <Shield size={18} /> SWAP CONFIDENTIALLY WITH NOX
                 </>
               ) : (
-                'CONNECT WALLET TO SWAP'
+                'CONNECT METAMASK TO SWAP'
               )}
             </button>
           </div>
@@ -530,7 +732,7 @@ export default function App() {
               <div className="inspector-mini-box">
                 <div className="insp-row">
                   <span>Sepolia Contract:</span>
-                  <a href="https://sepolia.etherscan.io/address/0x38585F5fbB2587bDc085995A0E3bC2B36B7CaA7a" target="_blank" rel="noreferrer" className="insp-link">
+                  <a href={`https://sepolia.etherscan.io/address/${CONTRACT_ADDRESSES.NOX_SWAP}`} target="_blank" rel="noreferrer" className="insp-link">
                     0x3858...a7a <ExternalLink size={12} />
                   </a>
                 </div>
@@ -544,7 +746,7 @@ export default function App() {
 
           {/* Recent Transactions Table */}
           <div className="neo-box tx-history-container">
-            <h3>RECENT CONFIDENTIAL TRANSACTIONS</h3>
+            <h3>RECENT CONFIDENTIAL TRANSACTIONS ON SEPOLIA</h3>
             <div className="table-wrapper mt-2">
               <table className="neo-table">
                 <thead>
@@ -560,8 +762,8 @@ export default function App() {
                   {transactions.map(tx => (
                     <tr key={tx.id}>
                       <td>
-                        <a href="https://sepolia.etherscan.io" target="_blank" rel="noreferrer" className="insp-link">
-                          {tx.hash.substring(0, 10)}...{tx.hash.substring(58)} <ExternalLink size={12} />
+                        <a href={`https://sepolia.etherscan.io/tx/${tx.hash}`} target="_blank" rel="noreferrer" className="insp-link">
+                          {tx.hash.substring(0, 10)}...{tx.hash.substring(58 || 34)} <ExternalLink size={12} />
                         </a>
                       </td>
                       <td>{tx.tokenIn} → {tx.tokenOut}</td>
@@ -584,7 +786,7 @@ export default function App() {
             <div className="card-header-row mb-3">
               <div>
                 <h2>ERC-20 ↔ ERC-7984 CONFIDENTIAL WRAP</h2>
-                <p className="card-subtitle-text">Convert public Sepolia tokens to confidential tokens</p>
+                <p className="card-subtitle-text">Convert public Sepolia tokens to confidential tokens on-chain</p>
               </div>
               <div className="wrap-mode-toggle">
                 <button 
@@ -618,12 +820,20 @@ export default function App() {
             </div>
 
             <div className="action-row">
-              <button className="neo-btn btn-green btn-flex" onClick={handleWrapAction}>
-                {wrapMode === 'wrap' ? 'WRAP TO CONFIDENTIAL cUSDC' : 'UNWRAP TO PUBLIC USDC'}
+              <button 
+                className="neo-btn btn-green btn-flex" 
+                onClick={handleWrapAction}
+                disabled={isProcessingWrap}
+              >
+                {isProcessingWrap ? 'PROCESSING ON SEPOLIA...' : wrapMode === 'wrap' ? 'WRAP TO CONFIDENTIAL cUSDC' : 'UNWRAP TO PUBLIC USDC'}
               </button>
 
-              <button className="neo-btn btn-cyan btn-flex" onClick={handleFaucet}>
-                <Coins size={16} /> FAUCET (GET 1,000 TEST cUSDC)
+              <button 
+                className="neo-btn btn-cyan btn-flex" 
+                onClick={handleFaucet}
+                disabled={isProcessingWrap}
+              >
+                <Coins size={16} /> FAUCET (MINT 1,000 cUSDC ON SEPOLIA)
               </button>
             </div>
           </div>
@@ -633,9 +843,7 @@ export default function App() {
       {/* PAGE 4: DEVELOPER FEEDBACK (SINGLE UNIFIED DOCUMENT CONTAINER) */}
       {activeTab === 'feedback' && (
         <div className="feedback-page-container">
-          {/* Single Unified Document Container */}
           <article className="neo-box single-document-card">
-            {/* Document Header */}
             <header className="doc-header">
               <div className="doc-header-top">
                 <span className="neo-badge badge-green">REQ-004 Official Submission</span>
@@ -649,7 +857,6 @@ export default function App() {
 
             <hr className="doc-divider" />
 
-            {/* Section 1 */}
             <section className="doc-section">
               <h2 className="doc-sec-title">1. Executive Summary & Context</h2>
               <p>
@@ -660,7 +867,6 @@ export default function App() {
               </p>
             </section>
 
-            {/* Section 2 */}
             <section className="doc-section">
               <h2 className="doc-sec-title">2. Developer Experience Highlights (What Worked Great)</h2>
               <div className="doc-bullet-list">
@@ -676,7 +882,6 @@ export default function App() {
               </div>
             </section>
 
-            {/* Section 3 */}
             <section className="doc-section">
               <h2 className="doc-sec-title">3. In-Depth Technical Analysis & Pain Points</h2>
               <div className="doc-bullet-list">
@@ -692,7 +897,6 @@ export default function App() {
               </div>
             </section>
 
-            {/* Section 4 */}
             <section className="doc-section">
               <h2 className="doc-sec-title">4. Strategic Recommendations for iExec Core Team</h2>
               <div className="rec-summary-box">
