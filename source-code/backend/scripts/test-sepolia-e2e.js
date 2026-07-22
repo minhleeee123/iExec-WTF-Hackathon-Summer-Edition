@@ -5,11 +5,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createEthersHandleClient } from '@iexec-nox/handle';
-import { Contract, JsonRpcProvider, Wallet, formatUnits, parseUnits } from 'ethers';
+import { Contract, JsonRpcProvider, Wallet, formatEther, parseUnits } from 'ethers';
+import { createLiveEvidence, writeEvidence } from './lib/evidence.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
+const repositoryRoot = path.resolve(rootDir, '../..');
 const rpcUrl = process.env.SEPOLIA_RPC_URL ?? process.env.SEPOLIA_RPC ?? 'https://ethereum-sepolia-rpc.publicnode.com';
+const evidenceFile = process.env.E2E_EVIDENCE_FILE ?? path.join(rootDir, 'artifacts', 'evidence', 'sepolia-e2e.json');
 const privateKey = process.env.PRIVATE_KEY;
 if (!privateKey) throw new Error('Set PRIVATE_KEY in the environment.');
 
@@ -129,7 +132,9 @@ async function main() {
   const wallet = new Wallet(privateKey, provider);
   const network = await provider.getNetwork();
   assert.equal(network.chainId, 11155111n);
-  assert.equal(wallet.address, deployment.deployer);
+  const signerBalance = await provider.getBalance(wallet.address);
+  assert(signerBalance > 0n, 'The E2E signer needs Sepolia ETH for gas');
+  console.log(`E2E signer: ${wallet.address} (${formatEther(signerBalance)} Sepolia ETH)`);
 
   for (const [name, address] of Object.entries(deployment.contracts)) {
     assert.notEqual(await provider.getCode(address), '0x', `${name} must have deployed bytecode`);
@@ -222,11 +227,14 @@ async function main() {
       tokenIn: addresses[asset.symbol],
       tokenOut: addresses.cUSDC,
       amountIn: asset.amount,
-      minOut: 0n,
+      minOut: 1n,
       label: `Protected ${asset.symbol}/cUSDC swap`,
     });
     assert(result.output > 0n, `${asset.symbol} pool must return cUSDC`);
-    assetSwaps.push({ symbol: asset.symbol, input: formatUnits(asset.amount, asset.decimals), output: formatUnits(result.output, 6) });
+    assetSwaps.push({
+      symbol: asset.symbol,
+      transaction: result.receipt.hash,
+    });
   }
 
   await send('Authorize LimitOrderBook for cUSDC', wrappers.cUSDC.setOperator(addresses.limitOrderBook, operatorExpiry));
@@ -272,7 +280,7 @@ async function main() {
 
   const cancelAmount = parseUnits('2', 6);
   const encryptedCancelAmount = await client.encryptInput(cancelAmount, 'uint256', addresses.limitOrderBook);
-  const encryptedCancelMin = await client.encryptInput(0n, 'uint256', addresses.limitOrderBook);
+  const encryptedCancelMin = await client.encryptInput(1n, 'uint256', addresses.limitOrderBook);
   const cancelCreateReceipt = await send(
     'Create cancellable confidential order',
     orderBook.createOrder(
@@ -298,7 +306,7 @@ async function main() {
 
   const expiryAmount = parseUnits('1', 6);
   const encryptedExpiryAmount = await client.encryptInput(expiryAmount, 'uint256', addresses.limitOrderBook);
-  const encryptedExpiryMin = await client.encryptInput(0n, 'uint256', addresses.limitOrderBook);
+  const encryptedExpiryMin = await client.encryptInput(1n, 'uint256', addresses.limitOrderBook);
   const expiry = Number((await provider.getBlock('latest')).timestamp) + 45;
   const expiryCreateReceipt = await send(
     'Create expiring confidential order',
@@ -326,7 +334,7 @@ async function main() {
 
   const auditor = '0x000000000000000000000000000000000000dEaD';
   const currentUsdcHandle = await wrappers.cUSDC.confidentialBalanceOf(wallet.address);
-  await send('Grant cUSDC balance viewer', wrappers.cUSDC.grantBalanceViewer(auditor));
+  const viewerReceipt = await send('Grant cUSDC balance viewer', wrappers.cUSDC.grantBalanceViewer(auditor));
   await waitForAcl(client, currentUsdcHandle, auditor);
 
   const unwrapAmount = parseUnits('0.01', 18);
@@ -344,31 +352,71 @@ async function main() {
   const unwrapEvent = eventFrom(wrappers.cETH, unwrapReceipt, 'UnwrapRequested');
   const publicDecryption = await publicDecryptWithRetry(client, unwrapEvent.args.amount);
   assert.equal(publicDecryption.value, unwrapAmount);
-  await send(
+  const finalizeReceipt = await send(
     'Finalize confidential unwrap',
     wrappers.cETH.finalizeUnwrap(unwrapEvent.args.amount, publicDecryption.decryptionProof),
   );
   assert.equal(await underlying.cETH.balanceOf(wallet.address) - publicWethBefore, unwrapAmount);
+
+  const evidence = await createLiveEvidence({
+    assertions: {
+      deploymentBytecodePresent: true,
+      encryptedPoolsPresent: true,
+      protectedSwapSettled: successful.output >= parseUnits('0.04', 18) && successful.refund === 0n,
+      protectedSwapRejectedAndRefunded: rejected.output === 0n && rejected.refund === parseUnits('1', 6),
+      additionalPoolsSettled: assetSwaps.length === 2,
+      orderExecutedOnce: (await orderBook.getOrder(orderId)).status === 1n,
+      orderCancelledAndRefunded: (await orderBook.getOrder(cancelOrderId)).status === 2n,
+      orderExpiredAndRefunded: (await orderBook.getOrder(expiryOrderId)).status === 3n,
+      selectiveViewerConfirmed: true,
+      unwrapFinalized: true,
+    },
+    deployment,
+    provider,
+    repositoryRoot,
+    runnerAddress: wallet.address,
+    toolchain: {
+      node: process.version,
+      noxSdk: '0.1.0-beta.13',
+      noxProtocolContracts: '0.2.4',
+    },
+    transactions: {
+      protectedSwap: successful.receipt.hash,
+      rejectedSwap: rejected.receipt.hash,
+      wbtcSwap: assetSwaps.find((item) => item.symbol === 'cWBTC').transaction,
+      solSwap: assetSwaps.find((item) => item.symbol === 'cSOL').transaction,
+      orderCreated: createReceipt.hash,
+      orderExecuted: executionReceipt.hash,
+      cancelledOrderCreated: cancelCreateReceipt.hash,
+      orderCancelled: cancelReceipt.hash,
+      expiringOrderCreated: expiryCreateReceipt.hash,
+      orderExpired: expiryReceipt.hash,
+      viewerGrant: viewerReceipt.hash,
+      unwrapRequested: unwrapReceipt.hash,
+      unwrapFinalized: finalizeReceipt.hash,
+    },
+    type: 'sepolia-confidential-e2e',
+  });
+  writeEvidence(evidenceFile, evidence);
+  console.log(`Evidence artifact: ${evidenceFile}`);
 
   console.log(JSON.stringify({
     status: 'PASS',
     chainId: Number(network.chainId),
     protectedSwap: {
       transaction: successful.receipt.hash,
-      output: `${formatUnits(successful.output, 18)} cETH`,
-      refund: formatUnits(successful.refund, 6),
+      settled: true,
     },
     rejectedSwap: {
       transaction: rejected.receipt.hash,
-      output: formatUnits(rejected.output, 18),
-      refund: `${formatUnits(rejected.refund, 6)} cUSDC`,
+      fullyRefunded: true,
     },
-    assetSwaps,
+    assetSwaps: assetSwaps.map(({ symbol, transaction }) => ({ symbol, transaction, settled: true })),
     limitOrder: { orderId: orderId.toString(), transaction: executionReceipt.hash, filled: true },
-    cancelledOrder: { orderId: cancelOrderId.toString(), refunded: `${formatUnits(cancelRefund.value, 6)} cUSDC` },
-    expiredOrder: { orderId: expiryOrderId.toString(), refunded: `${formatUnits(expiryRefund.value, 6)} cUSDC` },
-    selectiveViewerConfirmed: auditor,
-    unwrappedUnderlying: `${formatUnits(unwrapAmount, 18)} nWETH`,
+    cancelledOrder: { orderId: cancelOrderId.toString(), fullyRefunded: true },
+    expiredOrder: { orderId: expiryOrderId.toString(), fullyRefunded: true },
+    selectiveViewerConfirmed: true,
+    unwrapFinalized: true,
   }, null, 2));
 }
 

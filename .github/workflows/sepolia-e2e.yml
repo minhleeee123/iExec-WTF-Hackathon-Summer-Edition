@@ -46,4 +46,12 @@ jobs:
         run: npm run test:sepolia
       - name: Run live MCP checks
         if: ${{ inputs.include_mcp }}
-        run: npm run test:mcp
+        run: npm run test:mcp:write
+      - name: Upload sanitized verification evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: sepolia-evidence-${{ github.run_id }}
+          path: source-code/backend/artifacts/evidence/*.json
+          if-no-files-found: warn
+          retention-days: 30
