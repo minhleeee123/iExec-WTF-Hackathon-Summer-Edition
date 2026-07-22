@@ -240,10 +240,22 @@ export default function App() {
     }
   };
 
-  // REAL SEPOLIA SMART CONTRACT CONFIDENTIAL SWAP
+  // REAL SEPOLIA SMART CONTRACT CONFIDENTIAL SWAP WITH VALIDATION
   const handleSwap = async () => {
     if (!isConnected) {
       await handleConnectWallet();
+      return;
+    }
+
+    const numAmount = parseFloat(amountIn) || 0;
+    if (numAmount <= 0) {
+      alert('Please enter a valid swap amount greater than 0.');
+      return;
+    }
+
+    const availableBal = balances[tokenIn]?.decrypted || 0;
+    if (numAmount > availableBal) {
+      alert(`Insufficient balance! You want to swap ${numAmount} ${tokenIn}, but only have ${availableBal} ${tokenIn} available.`);
       return;
     }
 
@@ -360,10 +372,26 @@ export default function App() {
     }
   };
 
-  // REAL WRAP / UNWRAP ON SEPOLIA
+  // REAL WRAP / UNWRAP ON SEPOLIA WITH VALIDATION
   const handleWrapAction = async () => {
     if (!isConnected) {
       await handleConnectWallet();
+      return;
+    }
+
+    const numAmount = parseFloat(wrapAmount) || 0;
+    if (numAmount <= 0) {
+      alert('Please enter a valid amount greater than 0.');
+      return;
+    }
+
+    if (wrapMode === 'unwrap' && numAmount > (balances.cUSDC?.decrypted || 0)) {
+      alert(`Insufficient balance! You only have ${balances.cUSDC?.decrypted || 0} cUSDC available to unwrap.`);
+      return;
+    }
+
+    if (wrapMode === 'wrap' && numAmount > 10000) {
+      alert('Wrap limit exceeded! Maximum per-transaction wrap limit on testnet is 10,000 USDC.');
       return;
     }
 
@@ -373,7 +401,6 @@ export default function App() {
       const signer = await provider.getSigner();
 
       const cUsdcContract = new ethers.Contract(CONTRACT_ADDRESSES.cUSDC, CTOKEN_ABI, signer);
-      const numAmount = parseFloat(wrapAmount) || 100;
       const parseAmt = ethers.parseEther(numAmount.toString());
 
       let tx;
