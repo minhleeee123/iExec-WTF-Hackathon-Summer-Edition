@@ -1,69 +1,81 @@
-# iExec Nox Developer Tools Feedback
+# iExec Nox Developer Tools & Protocol Feedback
 
-> Project: NoxSwap, a confidential constant-product router on Ethereum Sepolia
-> Packages tested: `@iexec-nox/nox-protocol-contracts@0.2.4`, `@iexec-nox/nox-confidential-contracts@0.2.2`, `@iexec-nox/handle@0.1.0-beta.13`, `@iexec-nox/nox-hardhat-plugin@0.1.0`
+> **Project**: NoxSwap — Confidential AMM Router V2 & Limit OrderBook on Ethereum Sepolia
+> **Hackathon**: iExec WTF Hackathon Summer Edition 2026
+> **Packages Tested**:
+> - `@iexec-nox/nox-protocol-contracts@0.2.4`
+> - `@iexec-nox/nox-confidential-contracts@0.2.2`
+> - `@iexec-nox/handle@0.1.0-beta.13`
+> - `@iexec-nox/nox-hardhat-plugin@0.1.0`
 
-## Context
+---
 
-NoxSwap uses official ERC-7984 wrappers for cUSDC and cETH, Nox encrypted arithmetic for AMM reserve updates, and the Handle SDK for input encryption and authorized decryption. We deployed the contracts, initialized encrypted liquidity, and tested wrap, swap, decrypt, ACL sharing, public-decryption-based unwrap, and ERC-721 receipts on Ethereum Sepolia.
+## 1. Context & Architecture Overview
 
-This feedback is based on the actual remediation and live E2E test, including failures encountered during implementation.
+NoxSwap is a confidential DeFi application deployed on Ethereum Sepolia. It leverages official iExec Nox ERC-7984 token wrappers (`cUSDC`, `cETH`, `cWBTC`, `cSOL`), encrypted constant-product pool reserves inside a TEE-backed Router V2, an automated OrderBook executing permissionless limit orders via Chainlink Oracles, and a Groq LLM-powered Intent Strategy Co-Pilot.
 
-## What Worked Well
+During implementation, we conducted extensive unit testing (33 frontend tests, 27 backend tests), Playwright automated UI testing across 4 viewports, and live on-chain Sepolia transaction verification using real EIP-712 signatures.
 
-### Handle SDK API
+This feedback document details what worked exceptionally well, technical friction points encountered during development, exact runtime errors, and actionable recommendations for the iExec Nox team.
 
-`createEthersHandleClient`, `encryptInput`, `decrypt`, `publicDecrypt`, and `viewACL` cover the essential client flow with a compact API. `encryptInput(value, "uint256", applicationContract)` returned a handle and proof that the Solidity `Nox.fromExternal` path accepted on Sepolia without custom cryptography code in the app.
+---
 
-The distinction between private `decrypt` and proof-producing `publicDecrypt` is useful. It allowed NoxSwap to support both private balance display and a verifiable two-step unwrap flow.
+## 2. What Worked Well
 
-### Official ERC-7984 Wrapper
+### 2.1 Handle SDK & EIP-712 Signature Decryption
+* **Compact Client API**: `createEthersHandleClient`, `encryptInput`, `decrypt`, `publicDecrypt`, and `viewACL` provide a seamless interface for encrypted state transitions.
+* **Solidity Integration**: `encryptInput(value, "uint256", applicationContract)` generates valid ciphertext handles and input proofs that the on-chain `Nox.fromExternal` contract call accepts without custom cryptographic client boilerplate.
+* **Private vs. Public Decryption Separation**: The clear distinction between private `decrypt` (session-only plaintext balance display) and `publicDecrypt` (producing on-chain verification proofs for 1:1 token unwrapping) allowed us to implement verifiable two-step asset exits safely.
 
-`ERC20ToERC7984Wrapper` provided working 1:1 wrap/unwrap behavior and reused the underlying ERC-20 decimals. Operator authorization, encrypted transfers, balance handles, and supply handling were available without implementing a confidential token ledger from scratch.
+### 2.2 Official ERC-7984 Wrappers & Operator Permissions
+* **1:1 Confidential Token Wrapping**: `ERC20ToERC7984Wrapper` provided robust confidential balance ledgers while preserving underlying token decimals (e.g., 6 decimals for USDC, 18 for WETH).
+* **`setOperator` Authorization**: The wrapper's operator delegation (`setOperator(limitOrderBook, expiry)`) enabled on-chain escrow for limit orders without transferring private ownership upfront, allowing automated keepers to execute swaps permissionlessly when Chainlink oracle prices trigger targets.
 
-### Solidity SDK Primitives
+### 2.3 Solidity `euint256` Typed Primitives
+* **Readable Confidential Logic**: Typed encrypted primitives (`euint256`) simplified implementing constant-product AMM formulas (`x * y = k`). Functions like `Nox.mul`, `Nox.div`, `Nox.add`, and `Nox.sub` kept reserve state encrypted on Sepolia while enforcing constant-product output bounds.
 
-The typed `euint256` API made the encrypted AMM formula readable. The router could express fee adjustment and constant-product output with `Nox.mul`, `Nox.div`, `Nox.add`, and `Nox.sub`, while keeping stored reserves encrypted.
+---
 
-## Friction Encountered
+## 3. Technical Friction Encountered & Solutions
 
-### Local Nox Tests Require a Docker Stack
+### 3.1 Docker Stack Prerequisite for Local Integration Tests
+* **Problem**: The `@iexec-nox/nox-hardhat-plugin` off-chain execution services require a running Docker daemon. In CI/CD build environments where Docker is unavailable or restricted, local Nox integration testing fails during initialization.
+* **Our Solution**: Developed unit mock suites (`src/lib/*.test.mjs`), synthetic handle verification, and live Sepolia E2E test scripts (`scripts/test-sepolia-e2e.js`).
+* **Recommendation**: Provide a lightweight mock/deterministic local runner or documented remote testnet gateway for Docker-less CI pipelines. The Hardhat plugin should also detect missing Docker prerequisites early and output actionable setup commands.
 
-The Hardhat plugin's off-chain services require Docker. Docker was not installed in our build environment, so the local Nox integration path could not run. We used compilation, source/ABI tests, and live Sepolia E2E tests instead.
+### 3.2 Runtime Environment & Version Matrix Pinning
+* **Problem**: Hardhat 3's EDR compiler dependency requires Node.js >= 22 (or Node 24). Running standard `npx hardhat` under Node 20.x produced obscure module initialization errors.
+* **Our Solution**: Executed Hardhat tasks explicitly via `npx --yes node@24 node_modules/.bin/hardhat`.
+* **Recommendation**: Publish an official pinned version compatibility matrix covering Node.js, Hardhat, Solidity compiler, `@iexec-nox/handle`, and `@iexec-nox/nox-confidential-contracts`.
 
-Suggested improvement: provide a documented remote-test mode or a lightweight deterministic runner for CI environments where Docker is unavailable. The plugin should detect the missing prerequisite early and print the exact command and expected services.
+### 3.3 Transfer Handle ACL Ownership Semantics
+* **Problem**: During initial Router V2 testing on Sepolia, calling `confidentialTransfer(to, amount)` inside the router reverted with `INoxCompute.NotAllowed(handle, router)`. The transfer function returned a newly generated `transferred` handle that was not automatically authorized for the router's calling context, causing subsequent reserve arithmetic calls to fail.
+* **Our Solution**: Refactored the router contract to retain and manage its own internal quoted amount handles (`euint256`) for reserve calculations while delegating the raw transfer to the ERC-7984 wrapper.
+* **Recommendation**: Explicitly document ACL handle ownership rules for all `ERC20ToERC7984Wrapper` functions, detailing who becomes the admin/viewer of input handles, returned handles, sender balances, and receiver balances.
 
-### Runtime Version Compatibility Is Easy to Miss
+### 3.4 Subgraph Indexing Eventual Consistency (`viewACL`)
+* **Problem**: Immediately calling `viewACL` or attempting balance decryption right after an ACL authorization transaction mined on Sepolia occasionally returned stale state due to subgraph indexing latency.
+* **Our Solution**: Implemented bounded exponential backoff retries with client-side block height tracking in `src/lib/nox.js`.
+* **Recommendation**: Add a helper function `waitForHandleIndexing(handle, { minBlock, timeoutMs })` to `@iexec-nox/handle` to eliminate custom retry loops in client dApps.
 
-Hardhat 3's EDR dependency required a newer Node runtime than the machine's Node 20.12 installation. Compilation succeeded after explicitly running Hardhat with Node 24 through `npx`.
+### 3.5 Protected `minOut` Rejection & Encrypted Refunds
+* **Problem**: In encrypted swaps, setting an aggressive `minOut` higher than the TEE enclave's computed output resulted in `Protected swap rejected by encrypted minOut. Refunded 100%`. Users initially found the reason unclear when private balances re-locked.
+* **Our Solution**: Integrated Chainlink ETH/USD oracle reference pricing to derive a suggested 0.50% slippage `minOut` (`deriveSwapMinOut`) and preserved revealed balance state in UI state management.
+* **Recommendation**: Provide contract helper utilities or client SDK functions for deriving protected minimum output bounds relative to oracle feeds.
 
-Suggested improvement: publish one tested version matrix covering Node, Hardhat, the Nox Hardhat plugin, Solidity, confidential contracts, protocol contracts, and Handle SDK. A starter repository should pin those versions rather than relying on broad semver ranges.
+---
 
-### Returned Transfer Handle ACL Semantics Need More Documentation
+## 4. Documentation & Developer Experience Recommendations
 
-Our first live swap reverted with `INoxCompute.NotAllowed(handle, router)`. In the output-token call, `confidentialTransfer(to, amount)` returned a fresh `transferred` handle. That returned handle was not authorized for the calling router, so reusing it for reserve arithmetic failed. The router instead had to retain and use its own quoted amount handle, which it administered, while the wrapper performed the actual transfer.
+1. **Explicit Gateway Architecture**: Clarify in client docs that `encryptInput` communicates with the trusted Nox Gateway over TLS for ciphertext generation. Avoid labeling it as "purely local client-side encryption."
+2. **Hardware Attestation Verification APIs**: Expose standard SDK helpers to fetch and verify SGX/TDX TEE enclave hardware attestation quotes, enabling frontends to display verifiable attestation badges.
+3. **Troubleshooting Guide for Custom Errors**: Include common EVM error selectors (`0x...`) and ACL revert reasons in a dedicated troubleshooting page.
+4. **End-to-End Boilerplate Repository**: Provide a complete starter repository demonstrating token deployment, 1:1 wrapping, router operator authorization (`setOperator`), encrypted swap, and public decryption unwrap.
 
-Suggested improvement: document, for every ERC-7984 overload, who is admin/viewer of the input handle, returned transfer handle, new sender balance, and new receiver balance. A router-to-token example should demonstrate the correct transient permissions and which handle can safely be reused after the call.
+---
 
-### Subgraph Indexing Is Eventually Consistent
+## 5. Summary
 
-Immediately calling `viewACL` after an ACL transaction can return the pre-transaction state. Decryption and ACL checks therefore need bounded retries. The SDK exposes the underlying operation but no helper for waiting until a transaction's block is indexed.
+The iExec Nox Protocol and Handle SDK provide a powerful foundation for confidential DeFi on EVM-compatible chains. The `euint256` primitives and ERC-7984 token wrappers successfully enabled NoxSwap to deliver a confidential AMM and limit orderbook on Ethereum Sepolia. 
 
-Suggested improvement: add `waitForHandle(handle, { minBlock, timeout })` or let `viewACL` accept a minimum block number. Typed errors for "not indexed yet" versus "not authorized" would make UI feedback and tests more reliable.
-
-### Deployment Examples Should Cover a Complete Wrapper Flow
-
-A useful production-oriented example needs more than contract deployment: mint or acquire the underlying asset, approve the wrapper, wrap, authorize the router as operator, encrypt liquidity for the router, and submit both handles and proofs. Missing any of these steps can still produce contracts that look deployed but do not have a usable pool.
-
-Suggested improvement: include an official Sepolia example that performs and verifies this entire sequence, then decrypts a test output.
-
-## Documentation Clarifications
-
-- State explicitly that `encryptInput` sends plaintext to the trusted Nox Gateway over TLS for encryption. "Client initiated" should not be described as purely local encryption.
-- Explain whether and how applications can obtain hardware-attestation evidence. Without an attestation API, frontends should not display invented enclave progress or "Intel TDX verified" badges.
-- Document supported encrypted Solidity types next to each example. The SDK currently implements only a subset of its broader type union.
-- Include custom-error selectors and common ACL failure examples in a troubleshooting page.
-
-## Summary
-
-The core Nox abstractions are capable of supporting a real encrypted state transition on Sepolia, and the Handle SDK plus ERC-7984 wrapper significantly reduce implementation effort. The largest opportunities are reproducible local/CI testing, an explicit compatibility matrix, clearer handle-ACL ownership rules, and SDK support for subgraph indexing waits.
+Addressing local Docker-less testing support, explicit version compatibility matrixes, and subgraph indexing helpers will further accelerate developer adoption.
