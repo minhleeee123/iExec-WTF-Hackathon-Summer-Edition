@@ -116,8 +116,8 @@ export default function SwapPanel({
               <option value={50}>0.5%</option>
               <option value={100}>1%</option>
               <option value={300}>3%</option>
-              <option value={500}>5% — recommended</option>
-              <option value={1000}>10%</option>
+              <option value={500}>5%</option>
+              <option value={1000}>10% — recommended</option>
             </select>
             <strong>buffer</strong>
           </span>

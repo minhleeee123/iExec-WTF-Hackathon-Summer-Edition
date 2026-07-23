@@ -1,6 +1,6 @@
 const ROUTER_FEE_FACTOR = 0.997;
-export const DEFAULT_SWAP_PROTECTION_BPS = 500;
-export const DEFAULT_LIMIT_ORDER_PROTECTION_BPS = 500;
+export const DEFAULT_SWAP_PROTECTION_BPS = 1_000;
+export const DEFAULT_LIMIT_ORDER_PROTECTION_BPS = 1_000;
 
 function decimalString(value, decimals) {
   if (!Number.isFinite(value) || value <= 0) return '';
