@@ -141,10 +141,15 @@ npm run dev
 ```
 
 Open `http://localhost:5173`. The root URL is a standalone landing page; **Launch
-app** opens the three-workflow application shell. Trade combines swaps and limit
-orders, Wallet combines asset operations and auditor access, and Activity contains
-history plus verification evidence. Private balances and session controls stay in
-the desktop sidebar or the mobile wallet drawer.
+app** opens the four-workspace application shell. Trade combines personal swaps and
+limit orders, Wallet combines personal asset operations and auditor access, Safe
+Treasury provides smart-account-owned balances and allowlisted operations, and
+Activity contains personal history plus verification evidence. Private balances
+and session controls stay in the desktop sidebar or the mobile wallet drawer.
+
+Safe Treasury is available at `/app/safe` with URL-addressable `Overview`,
+`Swap & unwrap`, `Orders & Agent`, `Activity`, and `Access & security` sections.
+The legacy `/app/wallet?tab=safe` URL redirects to the new first-level workspace.
 
 MetaMask must be on Ethereum Sepolia for write operations. Read-only pool and
 Chainlink data load without a wallet.

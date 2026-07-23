@@ -144,7 +144,7 @@ Không xây trong phiên bản hackathon:
 > Landing page triển khai sau khi Core Product hoàn thành.
 
 - Primary experience: Landing page độc lập, không hiển thị wallet hoặc application navigation trước khi người dùng chọn **Launch App**.
-- App information architecture: Ba khu vực `Trade`, `Wallet`, `Activity`; Swap/Limit Orders và Assets/Auditor Access dùng tab con có URL.
+- App information architecture: Bốn workspace cấp cao `Trade`, `Wallet`, `Safe Treasury`, `Activity`; personal custody và Safe custody không dùng chung một tab. Safe có năm section URL-addressable: Overview, Swap & Unwrap, Orders & Agent, Activity, Access & Security.
 - Shared controls: Account, network, refresh, gas và private-balance reveal ở sidebar desktop hoặc wallet drawer mobile.
 - Secondary CTA: Sepolia explorer của router.
 - Hero Message: "Confidential execution for swaps, limit orders, and ERC-7984 assets."

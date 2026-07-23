@@ -38,7 +38,7 @@ Không có database hoặc authentication server. Groq keys stay in server-side 
 
 ```text
 [React / MetaMask]
-  |-- standalone landing --> Launch App --> Trade / Wallet / Activity shell
+  |-- standalone landing --> Launch App --> Trade / Wallet / Safe Treasury / Activity shell
   |-- shared wallet state --> desktop sidebar / mobile wallet drawer
   |-- read --> Sepolia router, wrappers, events, Chainlink
   |-- encryptInput(value, uint256, target) --> Nox Handle Gateway
@@ -93,7 +93,7 @@ Failure handling:
 - [x] Remove fake limit orders, assets, AI price and TEE telemetry.
 - [x] Replace MCP mock responses with real tools.
 - [x] Build, lint and responsive headless-browser checks.
-- [x] Separate landing from the app shell; consolidate workflows into Trade, Wallet, and Activity.
+- [x] Separate landing from the app shell; consolidate personal workflows into Trade, Wallet, and Activity.
 - [x] Keep account, gas, refresh, and private-balance reveal globally available across app workflows.
 - [x] Replace wallet-scoped order cards with a real public orderbook, URL filters, detail drawer, permission-aware actions, and session-only owner reveal.
 - [x] Add the stateless permissionless keeper with dry-run, health, structured logs, optional webhook, and competing-keeper protection.
@@ -132,6 +132,7 @@ Failure handling:
 - [x] Reuse Strategy Agent as a Safe limit-order draft tool without giving it balance, proof, signature, or transaction authority.
 - [x] Add an allowlisted Safe unwrap request restricted to the Safe or its owners, plus recoverable Nox proof finalization.
 - [x] Upgrade only the Safe module on Sepolia, retain the existing orderbook, and validate the full unwrap lifecycle with a one-base-unit live test.
+- [x] Promote Safe Treasury from a Wallet tab to a first-level `/app/safe` workspace with Overview, Swap & Unwrap, Orders & Agent, Activity, and Access & Security sections.
 
 ## 6. Verification matrix
 
