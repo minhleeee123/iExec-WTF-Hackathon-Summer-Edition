@@ -39,11 +39,13 @@
     "noxSafeModuleEnable": "0xed97f4b2c9e526e83df5652310b37d50a46beb12ec5bb49d8a2181a54e2a7ddc",
     "safeLimitOrderBook": "0x736f7be1c615e91f652b99913ce392ae62eaf954b09c0d82259370ca1fd37a08",
     "noxSafeModuleV2": "0x619153306350cb01833e19fb7d9c903b524558baa147ac75b1c25961537164ed",
-    "noxSafeModuleV2Enable": "0x56c6689c90e8663608edd175e7690d521cc740d9b51a94030db75a122506ce49"
+    "noxSafeModuleV2Enable": "0x56c6689c90e8663608edd175e7690d521cc740d9b51a94030db75a122506ce49",
+    "noxSafeModuleV3": "0xcb3aec532031858fc44e3d298ef3f31e6c8aeff2c91121aedecfe163a5eacfe7",
+    "noxSafeModuleV3Enable": "0xcded97cd3a905aab14ec34f80509caddbc2a575b855f5618b133066f94e9206f"
   },
   "gatewayUrl": "https://gateway-testnets.noxprotocol.dev",
   "explorerUrl": "https://sepolia.etherscan.io/address/0x6e8df82d708196e75Fb735120B4817f5c2551015",
-  "deployedAt": "2026-07-23T15:56:43.514Z",
+  "deployedAt": "2026-07-23T17:25:53.509Z",
   "feeds": {
     "ethUsd": "0x694AA1769357215DE4FAC081bf1f309aDC325306"
   },
@@ -79,13 +81,13 @@
     "singleton": "0x41675C099F32341bf84BFc5382aF534df5C7461a",
     "proxyFactory": "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67",
     "address": "0x549585Be4d75b388B4f825E0bCbBaA85B4FbfffF",
-    "module": "0x9233DF9de3f81E7442e3539eC1620Ef9adF0664c",
+    "module": "0xc0c60df5F16196944e466E8bD6BE5220F913b093",
     "owner": "0xE412d04DA2A211F7ADC80311CC0FF9F03440B64E",
     "threshold": 1,
     "moduleEnabled": true,
     "orderBook": "0xd8037cb70163eC52aa774f54590BB266ee0d9908"
   },
   "safeExplorerUrl": "https://sepolia.etherscan.io/address/0x549585Be4d75b388B4f825E0bCbBaA85B4FbfffF",
-  "noxSafeModuleExplorerUrl": "https://sepolia.etherscan.io/address/0x9233DF9de3f81E7442e3539eC1620Ef9adF0664c",
+  "noxSafeModuleExplorerUrl": "https://sepolia.etherscan.io/address/0xc0c60df5F16196944e466E8bD6BE5220F913b093",
   "safeOrderBookExplorerUrl": "https://sepolia.etherscan.io/address/0xd8037cb70163eC52aa774f54590BB266ee0d9908"
 }

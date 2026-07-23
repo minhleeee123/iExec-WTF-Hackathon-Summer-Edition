@@ -47,22 +47,21 @@ async function deploy(name, signer, args = []) {
 
 async function main() {
   const current = readJson(deploymentPath);
-  if (!current.safe?.address || !current.safe.module) throw new Error('Deploy the Safe treasury before upgrading it.');
+  if (!current.safe?.address || !current.safe.module || !current.safe.orderBook) {
+    throw new Error('Deploy the Safe treasury before upgrading it.');
+  }
   const provider = new JsonRpcProvider(rpcUrl, 11155111, { staticNetwork: true });
   const wallet = new Wallet(privateKey, provider);
   const safe = new Contract(current.safe.address, safeArtifact().abi, wallet);
   if (!(await safe.isOwner(wallet.address))) throw new Error('The deployment wallet is not a Safe owner.');
+  if (await provider.getCode(current.safe.orderBook) === '0x') {
+    throw new Error('The configured Safe order book has no deployed bytecode.');
+  }
 
-  const orderBook = await deploy('NoxLimitOrderBook', wallet, [
-    current.contracts.noxSwapRouter,
-    current.feeds.ethUsd,
-    current.contracts.cUSDC,
-    current.contracts.cETH,
-  ]);
   const module = await deploy('NoxSafeModule', wallet, [
     current.safe.address,
     current.contracts.noxSwapRouter,
-    orderBook.address,
+    current.safe.orderBook,
     current.contracts.noxCompute,
     [current.contracts.cUSDC, current.contracts.cETH, current.contracts.cWBTC, current.contracts.cSOL],
   ]);
@@ -91,17 +90,14 @@ async function main() {
     safe: {
       ...current.safe,
       module: module.address,
-      orderBook: orderBook.address,
       moduleEnabled: true,
     },
     deploymentTransactions: {
       ...current.deploymentTransactions,
-      safeLimitOrderBook: orderBook.transactionHash,
-      noxSafeModuleV2: module.transactionHash,
-      noxSafeModuleV2Enable: enableReceipt.hash,
+      noxSafeModuleV3: module.transactionHash,
+      noxSafeModuleV3Enable: enableReceipt.hash,
     },
     noxSafeModuleExplorerUrl: `https://sepolia.etherscan.io/address/${module.address}`,
-    safeOrderBookExplorerUrl: `https://sepolia.etherscan.io/address/${orderBook.address}`,
     deployedAt: new Date().toISOString(),
   };
   fs.writeFileSync(deploymentPath, `${JSON.stringify(next, null, 2)}\n`);

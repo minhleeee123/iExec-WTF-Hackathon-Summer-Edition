@@ -55,12 +55,27 @@ contract NoxSafeModuleMockOrderBook {
 contract NoxSafeModuleMockToken {
     address public lastCaller;
     address public lastOperator;
+    address public lastUnwrapFrom;
+    address public lastUnwrapRecipient;
+    bytes32 public lastUnwrapAmount;
     uint48 public lastUntil;
 
     function setOperator(address operator, uint48 until) external {
         lastCaller = msg.sender;
         lastOperator = operator;
         lastUntil = until;
+    }
+
+    function unwrap(
+        address from,
+        address recipient,
+        bytes32 amount
+    ) external returns (bytes32 unwrapRequestId) {
+        lastCaller = msg.sender;
+        lastUnwrapFrom = from;
+        lastUnwrapRecipient = recipient;
+        lastUnwrapAmount = amount;
+        return bytes32(uint256(0x4444));
     }
 }
 

@@ -188,6 +188,55 @@ test('Safe owner can cancel a confidential limit order through the module', asyn
   assert.equal(await orderBook.lastCancelledOrder(), orderId);
 });
 
+test('Safe owner can request an unwrap to an approved custody recipient', async () => {
+  const fixture = await deployFixture();
+  const { ethers, owner, safe, module, token } = fixture;
+  const tokenAddress = await token.getAddress();
+  const preparedAmount = ethers.zeroPadValue('0x44', 32);
+  const data = module.interface.encodeFunctionData('requestUnwrap', [
+    tokenAddress,
+    preparedAmount,
+    owner.address,
+  ]);
+  const receipt = await safeExec(fixture, await module.getAddress(), data);
+  const event = receipt.logs
+    .map((log) => { try { return module.interface.parseLog(log); } catch { return null; } })
+    .find((parsed) => parsed?.name === 'SafeUnwrapRequested');
+  assert(event);
+  assert.equal(event.args.token, tokenAddress);
+  assert.equal(event.args.recipient, owner.address);
+  assert.equal(event.args.unwrapRequestId, ethers.zeroPadValue('0x4444', 32));
+  assert.equal(await token.lastCaller(), await safe.getAddress());
+  assert.equal(await token.lastUnwrapFrom(), await safe.getAddress());
+  assert.equal(await token.lastUnwrapRecipient(), owner.address);
+  assert.equal(await token.lastUnwrapAmount(), preparedAmount);
+});
+
+test('Safe unwrap rejects unsupported tokens and non-owner recipients', async () => {
+  const fixture = await deployFixture();
+  const { ethers, module } = fixture;
+  const stranger = ethers.getAddress('0x00000000000000000000000000000000000000c3');
+  const preparedAmount = ethers.zeroPadValue('0x45', 32);
+  const invalidRecipient = module.interface.encodeFunctionData('requestUnwrap', [
+    await fixture.token.getAddress(),
+    preparedAmount,
+    stranger,
+  ]);
+  await assert.rejects(
+    safeExec(fixture, await module.getAddress(), invalidRecipient),
+    /revert|GS013/i,
+  );
+  const invalidToken = module.interface.encodeFunctionData('requestUnwrap', [
+    stranger,
+    preparedAmount,
+    fixture.owner.address,
+  ]);
+  await assert.rejects(
+    safeExec(fixture, await module.getAddress(), invalidToken),
+    /revert|GS013/i,
+  );
+});
+
 test('NoxSafeModule grants viewers through Safe custody and cannot be called by an EOA', async () => {
   const fixture = await deployFixture();
   const { ethers, owner, safe, module, compute } = fixture;

@@ -12,11 +12,14 @@ export const TEST_TOKEN_ABI = [
 export const CONFIDENTIAL_TOKEN_ABI = [
   'function confidentialBalanceOf(address account) view returns (bytes32)',
   'function wrap(address to,uint256 amount) returns (bytes32)',
+  'function unwrap(address from,address to,bytes32 amount) returns (bytes32)',
   'function unwrap(address from,address to,bytes32 encryptedAmount,bytes inputProof) returns (bytes32)',
   'function finalizeUnwrap(bytes32 unwrapRequestId,bytes decryptedAmountAndProof)',
+  'function unwrapRequester(bytes32 unwrapRequestId) view returns (address)',
   'function setOperator(address operator,uint48 until)',
   'function isOperator(address holder,address spender) view returns (bool)',
   'function grantBalanceViewer(address viewer)',
+  'event ConfidentialTransfer(address indexed from,address indexed to,bytes32 indexed amount)',
   'event UnwrapRequested(address indexed receiver,bytes32 amount)',
   'event UnwrapFinalized(address indexed receiver,bytes32 encryptedAmount,uint256 plaintextAmount)',
   'event BalanceViewerGranted(address indexed holder,address indexed viewer,bytes32 balance)',
@@ -59,6 +62,7 @@ export const SAFE_MODULE_ABI = [
   'function confidentialSwap(address tokenIn,address tokenOut,bytes32 preparedAmountIn,bytes32 preparedMinOut,address receiptOwner,uint64 deadline) returns (bytes32 encryptedOutput,bytes32 encryptedRefund,uint256 receiptId)',
   'function createLimitOrder(address tokenIn,address tokenOut,bytes32 preparedAmountIn,bytes32 preparedMinOut,address receiptOwner,uint256 triggerPrice,uint64 expiry) returns (uint256 orderId)',
   'function cancelLimitOrder(uint256 orderId) returns (bytes32 encryptedRefund)',
+  'function requestUnwrap(address token,bytes32 preparedAmount,address recipient) returns (bytes32 unwrapRequestId)',
   'function setTokenOperator(address token,address operator,uint48 until)',
   'function addViewer(bytes32 handle,address viewer)',
   'function revoke(address previousModule)',
@@ -68,10 +72,13 @@ export const SAFE_MODULE_ABI = [
   'event SafeOrderCancelled(address indexed safe,uint256 indexed orderId,bytes32 encryptedRefund)',
   'event SafeTokenOperatorUpdated(address indexed safe,address indexed token,address indexed operator,uint48 until)',
   'event SafeViewerAdded(address indexed safe,bytes32 indexed handle,address indexed viewer)',
+  'event SafeUnwrapRequested(address indexed safe,address indexed token,address indexed recipient,bytes32 unwrapRequestId)',
   'event SafeModuleRevoked(address indexed safe,address indexed module)',
 ];
 
 export const SAFE_ABI = [
+  'event EnabledModule(address indexed module)',
+  'event DisabledModule(address indexed module)',
   'function isModuleEnabled(address module) view returns (bool)',
   'function isOwner(address owner) view returns (bool)',
   'function getOwners() view returns (address[])',

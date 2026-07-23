@@ -60,6 +60,7 @@ contract NoxSafeModule {
     error InvalidToken();
     error InvalidOperator();
     error InvalidConsumer();
+    error InvalidRecipient();
     error SafeCallFailed(address target, bytes data);
     error InvalidReturnData();
 
@@ -85,6 +86,12 @@ contract NoxSafeModule {
         uint48 until
     );
     event SafeViewerAdded(address indexed safe, bytes32 indexed handle, address indexed viewer);
+    event SafeUnwrapRequested(
+        address indexed safe,
+        address indexed token,
+        address indexed recipient,
+        bytes32 unwrapRequestId
+    );
     event SafeModuleRevoked(address indexed safe, address indexed module);
 
     address public immutable safe;
@@ -146,7 +153,9 @@ contract NoxSafeModule {
         bytes calldata inputProof,
         address consumer
     ) external onlySafeOwner onlyEnabled returns (bytes32 preparedHandle) {
-        if (consumer != router && consumer != orderBook) revert InvalidConsumer();
+        if (consumer != router && consumer != orderBook && !immutableToken[consumer]) {
+            revert InvalidConsumer();
+        }
         euint256 input = Nox.fromExternal(encryptedInput, inputProof);
         Nox.allow(input, consumer);
         Nox.allow(input, safe);
@@ -235,6 +244,34 @@ contract NoxSafeModule {
         if (returnData.length != 32) revert InvalidReturnData();
         encryptedRefund = abi.decode(returnData, (bytes32));
         emit SafeOrderCancelled(safe, orderId, encryptedRefund);
+    }
+
+    /**
+     * @notice Burn a prepared confidential amount owned by the Safe and create
+     *         a publicly decryptable unwrap request. The recipient is limited
+     *         to the Safe itself or one of its owners; the Safe threshold must
+     *         approve the custody exit before the permissionless finalize step.
+     */
+    function requestUnwrap(
+        address token,
+        bytes32 preparedAmount,
+        address recipient
+    ) external onlySafe onlyEnabled returns (bytes32 unwrapRequestId) {
+        _requireToken(token);
+        if (
+            recipient == address(0) ||
+            (recipient != safe && !INoxSafeHost(safe).isOwner(recipient))
+        ) revert InvalidRecipient();
+        bytes memory data = abi.encodeWithSignature(
+            "unwrap(address,address,bytes32)",
+            safe,
+            recipient,
+            preparedAmount
+        );
+        bytes memory returnData = _safeCallWithReturnData(token, data);
+        if (returnData.length != 32) revert InvalidReturnData();
+        unwrapRequestId = abi.decode(returnData, (bytes32));
+        emit SafeUnwrapRequested(safe, token, recipient, unwrapRequestId);
     }
 
     /**
