@@ -280,6 +280,7 @@ try {
     await walletPage.screenshot({ path: '/tmp/noxswap-wallet.png', fullPage: true });
     await walletPage.goto(`${url}/app/trade?mode=orders&order=${actionableOrderId}`, { waitUntil: 'domcontentloaded' });
     await walletPage.getByRole('dialog', { name: `Order ${actionableOrderId} details` }).waitFor({ timeout: 30_000 });
+    await walletPage.getByRole('button', { name: 'Revoke OrderBook authorization' }).waitFor({ timeout: 30_000 });
     await walletPage.getByRole('button', { name: 'Reveal my order terms' }).waitFor({ timeout: 30_000 });
     await walletPage.getByRole('button', { name: 'Cancel order' }).waitFor();
     await walletPage.screenshot({ path: '/tmp/noxswap-order-owner.png' });

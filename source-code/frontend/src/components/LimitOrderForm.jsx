@@ -25,6 +25,7 @@ export default function LimitOrderForm({ actions, busy, connected, hideHelp = fa
     onUseSuggestedMinOut,
     operatorAuthorized,
     readinessLoading,
+    revokeOrderBook,
     side,
     suggestedMinOut,
     tokenIn,
@@ -75,6 +76,14 @@ export default function LimitOrderForm({ actions, busy, connected, hideHelp = fa
         <button className="secondary-action" onClick={authorizeOrderBook} disabled={Boolean(busy)}>
           {busy === 'authorize-orderbook' ? <LoaderCircle className="spin" size={17} /> : <KeyRound size={17} />} Authorize OrderBook
         </button>
+      )}
+      {connected && operatorAuthorized && (
+        <div className="operator-revoke">
+          <button className="secondary-action" onClick={revokeOrderBook} disabled={Boolean(busy)}>
+            {busy === 'revoke-orderbook' ? <LoaderCircle className="spin" size={17} /> : <KeyRound size={17} />} Revoke OrderBook authorization
+          </button>
+          <p className="field-note">Revoking blocks new escrow transfers for {tokenIn.symbol}. Cancel existing open orders separately to refund their escrow.</p>
+        </div>
       )}
       <button className="primary-action compact" onClick={connected ? createOrder : onConnect} disabled={connected && (Boolean(busy) || !createReady)}>
         {busy === 'create-order' ? <LoaderCircle className="spin" size={18} /> : <ShieldCheck size={18} />}

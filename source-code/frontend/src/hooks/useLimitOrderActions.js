@@ -148,6 +148,29 @@ export default function useLimitOrderActions({
     }
   };
 
+  const revokeOrderBook = async () => {
+    try {
+      setBusy('revoke-orderbook');
+      const wallet = await getWallet();
+      const wrapper = new ethers.Contract(tokenIn.wrapper, CONFIDENTIAL_TOKEN_ABI, wallet.signer);
+      const transaction = await wrapper.setOperator(deployment.contracts.limitOrderBook, 0);
+      onLog(`Revoke order book for ${tokenIn.symbol}`, transaction.hash);
+      await transaction.wait();
+      if (await wrapper.isOperator(wallet.address, deployment.contracts.limitOrderBook)) {
+        throw new Error('OrderBook authorization is still active after confirmation.');
+      }
+      setOperatorAuthorized(false);
+      onNotice({
+        type: 'success',
+        text: `OrderBook authorization revoked for ${tokenIn.symbol}. Existing escrowed orders are unchanged.`,
+      });
+    } catch (error) {
+      onNotice({ type: 'error', text: error.shortMessage ?? error.message ?? 'Authorization revoke failed.' });
+    } finally {
+      setBusy('');
+    }
+  };
+
   const createOrder = async () => {
     if (!createReady) {
       onNotice({ type: 'error', text: formError || 'Resolve the readiness checks before creating this order.' });
@@ -357,6 +380,7 @@ export default function useLimitOrderActions({
     onTriggerChange: setTrigger,
     operatorAuthorized,
     readinessLoading,
+    revokeOrderBook,
     revealOrderTerms,
     revealedTerms,
     suggestedMinOut,
