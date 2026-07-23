@@ -21,7 +21,7 @@ import {
 } from './config';
 import { createHandleClient, retry } from './lib/nox';
 import { queryRecentSwapEvents } from './lib/history';
-import { deriveSwapMinOut } from './lib/min-out';
+import { DEFAULT_SWAP_PROTECTION_BPS, deriveSwapMinOut } from './lib/min-out';
 import { discoverWalletProvider } from './lib/wallet-providers';
 import {
   decodeReceiptImage,
@@ -58,6 +58,7 @@ export default function App() {
   const [minOutAuto, setMinOutAuto] = useState(true);
   const [allowZeroMinOut, setAllowZeroMinOut] = useState(false);
   const [deadlineMinutes, setDeadlineMinutes] = useState('20');
+  const [swapProtectionBps, setSwapProtectionBps] = useState(DEFAULT_SWAP_PROTECTION_BPS);
   const [asset, setAsset] = useState('cUSDC');
   const [assetAmount, setAssetAmount] = useState('100');
   const [assetMode, setAssetMode] = useState('wrap');
@@ -125,9 +126,10 @@ export default function App() {
     amountIn,
     ethPrice,
     outputDecimals: TOKENS[tokenOut].decimals,
+    slippageBps: swapProtectionBps,
     tokenIn,
     tokenOut,
-  }), [amountIn, ethPrice, tokenIn, tokenOut]);
+  }), [amountIn, ethPrice, swapProtectionBps, tokenIn, tokenOut]);
 
   useEffect(() => {
     if (!minOutAuto) return;
@@ -251,6 +253,8 @@ export default function App() {
       setHistory([]);
     }
 
+    return next;
+
   }, [account, walletProvider]);
 
   const refresh = async () => {
@@ -372,6 +376,7 @@ export default function App() {
   };
 
   const manageAsset = async () => {
+    const restorePrivateBalances = privateBalancesVisible;
     try {
       const token = TOKENS[asset];
       if (assetValidation.error) throw new Error(assetValidation.error);
@@ -417,9 +422,13 @@ export default function App() {
       }
 
       setNotice({ type: 'success', text: `${assetMode === 'wrap' ? 'Wrap' : 'Unwrap'} completed on Sepolia.` });
-      await loadAccount(wallet.address);
-      if (privateBalancesVisible) {
-        await decryptBalances();
+      const refreshedBalances = await loadAccount(wallet.address);
+      if (restorePrivateBalances) {
+        try {
+          await decryptBalanceSnapshot(wallet, refreshedBalances);
+        } catch (decryptError) {
+          setNotice({ type: 'info', text: `${assetMode === 'wrap' ? 'Wrap' : 'Unwrap'} confirmed, but refreshed private balances need a manual reveal: ${decryptError.shortMessage ?? decryptError.message}` });
+        }
       }
     } catch (error) {
       fail(error);
@@ -428,14 +437,11 @@ export default function App() {
     }
   };
 
-  const decryptBalances = async () => {
-    try {
-      setBusy('decrypt');
-      const wallet = await getWallet();
+  const decryptBalanceSnapshot = async (wallet, snapshot) => {
       const client = await createHandleClient(wallet.signer);
-      const next = { ...balances };
+      const next = { ...snapshot };
       for (const token of Object.values(TOKENS)) {
-        const current = balances[token.symbol];
+        const current = snapshot[token.symbol];
         if (isHandle(current.handle)) {
           const result = await retry(() => client.decrypt(current.handle), 5, 3000);
           next[token.symbol] = { ...current, decrypted: result.value };
@@ -449,6 +455,15 @@ export default function App() {
         verifiedAt: Date.now(),
         handles: Object.values(next).filter((balance) => isHandle(balance.handle)).length,
       });
+      return next;
+  };
+
+  const decryptBalances = async () => {
+    try {
+      setBusy('decrypt');
+      const wallet = await getWallet();
+      const snapshot = await loadAccount(wallet.address);
+      await decryptBalanceSnapshot(wallet, snapshot);
       setNotice({ type: 'success', text: 'Authorized balances decrypted with an EIP-712 signature.' });
       addLog('Nox Gateway returned authorized balance plaintexts');
     } catch (error) {
@@ -467,6 +482,7 @@ export default function App() {
   };
 
   const swap = async () => {
+    const restorePrivateBalances = privateBalancesVisible;
     try {
       const input = TOKENS[tokenIn];
       const output = TOKENS[tokenOut];
@@ -559,7 +575,18 @@ export default function App() {
       }
       addLog(`Settled output ${outputText}; refund ${refundText}`, transaction.hash);
       setPrivateBalancesVisible(false);
-      await Promise.all([loadAccount(wallet.address), loadMarket()]);
+      const [refreshedBalances] = await Promise.all([loadAccount(wallet.address), loadMarket()]);
+      if (restorePrivateBalances) {
+        try {
+          await decryptBalanceSnapshot(wallet, refreshedBalances);
+          setNotice((current) => current ? { ...current, text: `${current.text} Private balances refreshed.` } : current);
+        } catch (decryptError) {
+          setNotice((current) => ({
+            type: 'info',
+            text: `${current?.text ?? 'Swap confirmed.'} Refreshed balances need a manual reveal: ${decryptError.shortMessage ?? decryptError.message}`,
+          }));
+        }
+      }
     } catch (error) {
       fail(error);
     } finally {
@@ -662,6 +689,11 @@ export default function App() {
     onRefresh: refresh,
     onReveal: decryptBalances,
     onSwap: swap,
+    onSwapProtectionChange: (value) => {
+      setSwapProtectionBps(value);
+      setMinOutAuto(true);
+      setAllowZeroMinOut(false);
+    },
     onTokenChange: (symbol) => {
       setTokenIn(symbol);
       setTokenOut(OUTPUT_TOKENS[symbol][0]);
@@ -679,6 +711,7 @@ export default function App() {
     privateBalancesVisible,
     referenceOutput,
     suggestedMinOut,
+    swapProtectionBps,
     token: TOKENS[tokenIn],
     tokenIn,
     tokenOut,

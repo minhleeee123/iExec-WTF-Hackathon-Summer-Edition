@@ -28,10 +28,12 @@ export default function SwapPanel({
   privateBalancesVisible,
   referenceOutput,
   suggestedMinOut,
+  swapProtectionBps,
   token,
   tokenIn,
   tokenOut,
   tokens,
+  onSwapProtectionChange,
 }) {
   const available = privateBalancesVisible && balance.decrypted !== null
     ? `${formatToken(balance.decrypted, token.decimals)} ${token.symbol}`
@@ -108,11 +110,24 @@ export default function SwapPanel({
           {minOut.trim() === '0' && <span className="zero-protection"><input type="checkbox" onChange={(event) => onAllowZeroMinOutChange(event.target.checked)} /> Allow zero minOut</span>}
         </label>
         <label>
+          <span>Oracle tolerance</span>
+          <span className="protected-input">
+            <select value={swapProtectionBps} onChange={(event) => onSwapProtectionChange(Number(event.target.value))} aria-label="Oracle tolerance">
+              <option value={50}>0.5%</option>
+              <option value={100}>1%</option>
+              <option value={300}>3%</option>
+              <option value={500}>5% — recommended</option>
+              <option value={1000}>10%</option>
+            </select>
+            <strong>buffer</strong>
+          </span>
+        </label>
+        <label>
           <span>Deadline</span>
           <span className="protected-input"><input value={deadlineMinutes} onChange={(event) => onDeadlineChange(event.target.value)} inputMode="numeric" aria-label="Deadline minutes" /><strong>min</strong></span>
         </label>
       </div>
-      <p className="field-note">Suggested minOut is 0.50% below the Chainlink-derived reference. Unsupported pairs require a positive manual minimum.</p>
+      <p className="field-note">Suggested minOut is {Number(swapProtectionBps) / 100}% below the Chainlink reference. Encrypted pool reserves and price impact can still cause a protected refund; increase tolerance or enter a manual minimum when needed.</p>
       {connected && error && <p className="field-error" role="alert">{error}</p>}
 
       <button className="primary-action" onClick={connected ? onSwap : onConnect} disabled={Boolean(busy) || (connected && Boolean(error))}>
