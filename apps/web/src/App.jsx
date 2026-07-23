@@ -27,6 +27,7 @@ import { queryRecentSwapEvents } from './lib/history';
 import { DEFAULT_SWAP_PROTECTION_BPS, deriveSwapMinOut } from './lib/min-out';
 import { discoverWalletProvider } from './lib/wallet-providers';
 import { executeSafeModule, executeSafeTransaction, parseSafeModuleEvent, SAFE_SENTINEL_MODULE } from './lib/safe';
+import { querySafeActivity } from './lib/safe-activity';
 import {
   decodeReceiptImage,
   formatDuration,
@@ -116,6 +117,8 @@ export default function App() {
   const [safeState, setSafeState] = useState({ address: deployment.safe?.address ?? '', moduleAddress: deployment.safe?.module ?? '', orderBook: deployment.safe?.orderBook ?? '', moduleEnabled: false, owners: [], threshold: 0, isOwner: false });
   const [safeBalances, setSafeBalances] = useState(() => createInitialBalances());
   const [safeOrders, setSafeOrders] = useState([]);
+  const [safeActivity, setSafeActivity] = useState([]);
+  const [safePendingUnwraps, setSafePendingUnwraps] = useState([]);
 
   const connected = Boolean(account);
   const correctNetwork = chainId === deployment.chainId;
@@ -347,6 +350,45 @@ export default function App() {
     setSafeState(nextState);
     setSafeBalances(nextBalances);
     setSafeOrders(orders.sort((left, right) => Number(right.id) - Number(left.id)));
+    try {
+      const moduleDeploymentHash = deployment.deploymentTransactions?.noxSafeModuleV3
+        ?? deployment.deploymentTransactions?.noxSafeModuleV2
+        ?? deployment.deploymentTransactions?.noxSafeModule
+        ?? deployment.deploymentTransactions?.safe;
+      const [moduleDeploymentReceipt, latestBlock] = await Promise.all([
+        moduleDeploymentHash ? provider.getTransactionReceipt(moduleDeploymentHash) : null,
+        provider.getBlockNumber(),
+      ]);
+      const activity = await querySafeActivity({
+        provider,
+        safeAddress: configuredSafe.address,
+        moduleAddress: configuredSafe.module,
+        tokens: TOKENS,
+        deploymentBlock: moduleDeploymentReceipt?.blockNumber ?? Math.max(0, latestBlock - 1200),
+        latestBlock,
+      });
+      setSafeActivity(activity);
+      const pendingUnwraps = [];
+      await Promise.all(activity.filter((item) => item.type === 'unwrap-request').map(async (item) => {
+        const token = TOKENS[item.tokenSymbol];
+        if (!token) return;
+        const wrapper = new ethers.Contract(token.wrapper, CONFIDENTIAL_TOKEN_ABI, provider);
+        const recipient = await wrapper.unwrapRequester(item.requestId);
+        if (recipient === ethers.ZeroAddress) return;
+        pendingUnwraps.push({
+          id: item.requestId,
+          recipient,
+          requestedAt: item.timestamp,
+          tokenSymbol: item.tokenSymbol,
+          transactionHash: item.hash,
+        });
+      }));
+      setSafePendingUnwraps(pendingUnwraps.sort((left, right) => right.requestedAt - left.requestedAt));
+    } catch (error) {
+      console.warn('Safe activity is temporarily unavailable.', error);
+      setSafeActivity([]);
+      setSafePendingUnwraps([]);
+    }
     return nextBalances;
   }, [walletProvider]);
 
@@ -453,6 +495,8 @@ export default function App() {
         setSafeState({ address: deployment.safe?.address ?? '', moduleAddress: deployment.safe?.module ?? '', orderBook: deployment.safe?.orderBook ?? '', moduleEnabled: false, owners: [], threshold: 0, isOwner: false });
         setSafeBalances(createInitialBalances());
         setSafeOrders([]);
+        setSafeActivity([]);
+        setSafePendingUnwraps([]);
       }
     };
     sync().catch(fail);
@@ -805,7 +849,99 @@ export default function App() {
     }
   };
 
-  const safeSwap = async ({ tokenIn: tokenInSymbol, tokenOut: tokenOutSymbol, amount, minOut: minimum }) => {
+  const finalizeSafeUnwrapRequest = async ({ wallet, tokenSymbol, requestId }) => {
+    const token = TOKENS[tokenSymbol];
+    if (!token || !isHandle(requestId)) throw new Error('The pending Safe unwrap request is invalid.');
+    const client = await createHandleClient(wallet.signer);
+    const wrapper = new ethers.Contract(token.wrapper, CONFIDENTIAL_TOKEN_ABI, wallet.signer);
+    setNotice({ type: 'info', text: `Waiting for the public ${token.symbol} unwrap proof from Nox Gateway...` });
+    const publicResult = await retry(() => client.publicDecrypt(requestId), 6, 3000);
+    const finalize = await wrapper.finalizeUnwrap(requestId, publicResult.decryptionProof);
+    addLog(`Finalize Safe unwrap: ${formatToken(publicResult.value, token.decimals)} ${token.publicSymbol}`, finalize.hash);
+    await finalize.wait();
+    return publicResult.value;
+  };
+
+  const safeUnwrap = async ({ token: tokenSymbol, amount, recipient }) => {
+    let confirmedRequestId = '';
+    const restoreSafeBalances = Object.values(safeBalances).every((balance) => balance.decrypted !== null && balance.decrypted !== undefined);
+    try {
+      if (!safeState.moduleEnabled || !safeState.isOwner) throw new Error('The connected wallet must be an owner of an enabled Safe module.');
+      if (!ethers.isAddress(recipient)) throw new Error('Choose a valid Safe unwrap recipient.');
+      const approvedRecipient = recipient.toLowerCase() === safeState.address.toLowerCase()
+        || safeState.owners.some((owner) => owner.toLowerCase() === recipient.toLowerCase());
+      if (!approvedRecipient) throw new Error('Safe unwrap recipient must be the Safe itself or one of its owners.');
+      setBusy('safe-unwrap');
+      const wallet = await getWallet();
+      const token = TOKENS[tokenSymbol];
+      const amountValue = ethers.parseUnits(amount, token.decimals);
+      if (amountValue <= 0n) throw new Error('Enter a positive Safe unwrap amount.');
+      const revealedBalance = safeBalances[tokenSymbol]?.decrypted;
+      if (typeof revealedBalance !== 'bigint' || amountValue > revealedBalance) {
+        throw new Error(`Reveal the Safe balance and enter an amount within the available ${tokenSymbol} balance.`);
+      }
+      const wrapper = new ethers.Contract(token.wrapper, CONFIDENTIAL_TOKEN_ABI, wallet.signer);
+      const liveHandle = await wrapper.confidentialBalanceOf(safeState.address);
+      if (liveHandle !== safeBalances[tokenSymbol].handle) {
+        throw new Error('The Safe balance changed. Refresh, reveal the latest balance, and try again.');
+      }
+      const client = await createHandleClient(wallet.signer);
+      const encrypted = await client.encryptInput(amountValue, 'uint256', safeState.moduleAddress);
+      const module = new ethers.Contract(safeState.moduleAddress, SAFE_MODULE_ABI, wallet.signer);
+      const preparation = await module.prepareInput(encrypted.handle, encrypted.handleProof, token.wrapper);
+      addLog(`Prepare Safe ${tokenSymbol} unwrap input`, preparation.hash);
+      await preparation.wait();
+      const execution = await executeSafeModule({
+        signer: wallet.signer,
+        safeAddress: safeState.address,
+        moduleAddress: safeState.moduleAddress,
+        method: 'requestUnwrap',
+        args: [token.wrapper, encrypted.handle, recipient],
+      });
+      addLog(`Request Safe unwrap: ${amount} ${tokenSymbol}`, execution.transaction.hash);
+      const receipt = await execution.transaction.wait();
+      const event = parseSafeModuleEvent(receipt, module, 'SafeUnwrapRequested');
+      if (!event) throw new Error('SafeUnwrapRequested event was not found.');
+      confirmedRequestId = event.args.unwrapRequestId;
+      const released = await finalizeSafeUnwrapRequest({ wallet, tokenSymbol, requestId: confirmedRequestId });
+      setNotice({ type: 'success', text: `Safe unwrap completed. Released ${formatToken(released, token.decimals)} ${token.publicSymbol} to ${shorten(recipient)}.` });
+      const [snapshot] = await Promise.all([loadSafeAccount(), loadAccount(wallet.address)]);
+      if (restoreSafeBalances) {
+        try {
+          await decryptSafeSnapshot(wallet, snapshot);
+        } catch (revealError) {
+          setNotice({ type: 'info', text: `Safe unwrap completed. Refreshed balances need a manual reveal: ${revealError.shortMessage ?? revealError.message}` });
+        }
+      }
+    } catch (error) {
+      if (confirmedRequestId) {
+        console.error(error);
+        setNotice({ type: 'info', text: `Safe unwrap request ${shorten(confirmedRequestId, 12, 10)} is confirmed, but proof finalization needs a retry: ${error.shortMessage ?? error.message}` });
+        await loadSafeAccount().catch(console.error);
+      } else {
+        fail(error);
+      }
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const safeFinalizeUnwrap = async ({ tokenSymbol, requestId }) => {
+    try {
+      setBusy(`safe-finalize-${requestId}`);
+      const wallet = await getWallet();
+      const released = await finalizeSafeUnwrapRequest({ wallet, tokenSymbol, requestId });
+      const token = TOKENS[tokenSymbol];
+      setNotice({ type: 'success', text: `Pending Safe unwrap finalized. Released ${formatToken(released, token.decimals)} ${token.publicSymbol}.` });
+      await Promise.all([loadSafeAccount(), loadAccount(wallet.address)]);
+    } catch (error) {
+      fail(error);
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const safeSwap = async ({ tokenIn: tokenInSymbol, tokenOut: tokenOutSymbol, amount, minOut: minimum, deadlineMinutes: requestedDeadline }) => {
     let confirmedTransactionHash = '';
     try {
       if (!safeState.moduleEnabled || !safeState.isOwner) throw new Error('The connected wallet must be an owner of an enabled Safe module.');
@@ -815,6 +951,10 @@ export default function App() {
       const output = TOKENS[tokenOutSymbol];
       const amountValue = ethers.parseUnits(amount, input.decimals);
       const minimumValue = ethers.parseUnits(minimum, output.decimals);
+      if (!/^\d+$/.test(requestedDeadline ?? '')) throw new Error('Safe swap deadline must be a whole number of minutes.');
+      const deadlineMinutesValue = Number(requestedDeadline);
+      if (deadlineMinutesValue < 1 || deadlineMinutesValue > 1440) throw new Error('Safe swap deadline must be between 1 minute and 24 hours.');
+      const deadline = chainNow + deadlineMinutesValue * 60;
       await ensureSafeOperator(wallet, tokenInSymbol, deployment.contracts.noxSwapRouter, 'safe-swap');
       const client = await createHandleClient(wallet.signer);
       const [encrypted, encryptedMinimum] = await Promise.all([
@@ -832,7 +972,7 @@ export default function App() {
         safeAddress: safeState.address,
         moduleAddress: safeState.moduleAddress,
         method: 'confidentialSwap',
-        args: [input.wrapper, output.wrapper, encrypted.handle, encryptedMinimum.handle, wallet.address, chainNow + 20 * 60],
+        args: [input.wrapper, output.wrapper, encrypted.handle, encryptedMinimum.handle, wallet.address, deadline],
       });
       addLog('Safe confidential swap submitted', execution.transaction.hash);
       const mined = await execution.transaction.wait();
@@ -1184,14 +1324,20 @@ export default function App() {
     onFund: safeFund,
     onGrantViewer: safeGrantViewer,
     onEnable: safeEnable,
+    onFinalizeUnwrap: safeFinalizeUnwrap,
+    onNotice: setNotice,
     onRefresh: refresh,
     onReveal: safeReveal,
     onRevoke: safeRevoke,
     onSetOperator: safeSetOperator,
     onSwap: safeSwap,
+    onUnwrap: safeUnwrap,
     safe: safeState,
+    safeActivity,
     safeBalances,
     safeOrders,
+    safePendingUnwraps,
+    agentMarket: orderContext.agentMarket,
     ethPrice,
     tokens: TOKENS,
   };

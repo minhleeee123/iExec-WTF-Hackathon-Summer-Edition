@@ -262,6 +262,31 @@ try {
 
     const walletPage = await browser.newPage({ viewport: { width: 1280, height: 900 } });
     const walletErrors = [];
+    let safeAgentRequest = null;
+    await walletPage.route('**/api/agent/plan', async (route) => {
+      safeAgentRequest = route.request().postDataJSON();
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          plan: {
+            version: 1,
+            supported: true,
+            unsupportedReason: '',
+            action: 'limit_order',
+            side: 'sell',
+            amountMode: 'exact',
+            amountValue: '0.01',
+            triggerPriceUsd: '2500',
+            slippageBps: 100,
+            expiryMinutes: 360,
+            requiresWrap: false,
+            summary: 'Sell 0.01 cETH if ETH reaches $2,500.',
+            riskNote: 'Execution depends on oracle freshness and encrypted pool liquidity.',
+          },
+          meta: { provider: 'groq', model: 'openai/gpt-oss-20b', requestId: 'safe-ui-test' },
+        }),
+      });
+    });
     walletPage.on('pageerror', (error) => walletErrors.push(error.message));
     walletPage.on('console', recordConsoleError(walletErrors));
     await installReadOnlyWallet(walletPage, testAddress, { mockRecentClaims: true });
@@ -305,6 +330,24 @@ try {
       assert.equal(await walletPage.locator('.safe-status-grid').getByText('Revoked', { exact: true }).count(), 1, 'revoked Safe must expose its module state');
       await walletPage.getByRole('button', { name: 'Enable Nox module' }).waitFor();
     }
+    assert.equal(await walletPage.locator('.safe-operation-tabs [role="tab"]').count(), 4, 'Safe workspace must expose four explicit operation modes');
+    assert.equal(await walletPage.getByLabel('Safe swap oracle tolerance').inputValue(), '1000');
+    assert.equal(await walletPage.getByLabel('Safe swap deadline minutes').inputValue(), '20');
+    await walletPage.locator('.safe-activity-row').first().waitFor({ timeout: 30_000 });
+    assert(await walletPage.locator('.safe-activity-row').count() >= 1, 'Safe Activity must render confirmed on-chain history');
+    await walletPage.getByRole('tab', { name: 'Unwrap', exact: true }).click();
+    await walletPage.getByText('Privacy boundary', { exact: true }).waitFor();
+    assert.equal(await walletPage.getByLabel('Safe unwrap token').inputValue(), 'cUSDC');
+    assert.match(await walletPage.getByLabel('Safe unwrap recipient').inputValue(), /owner/);
+    await walletPage.getByRole('tab', { name: 'Agent draft' }).click();
+    await walletPage.getByLabel('Trading intent').fill('Sell 0.01 cETH when ETH reaches $2,500. Expire in 6 hours.');
+    await walletPage.getByRole('button', { name: 'Generate private strategy draft' }).click();
+    await walletPage.getByText('DRAFT READY').waitFor();
+    assert.deepEqual(Object.keys(safeAgentRequest).sort(), ['intent', 'market']);
+    await walletPage.getByRole('button', { name: 'Apply to Safe order' }).click();
+    assert.equal(await walletPage.getByLabel('Safe order amount').inputValue(), '0.01');
+    assert.equal(await walletPage.getByLabel('Safe order trigger price').inputValue(), '2500');
+    assert.equal(await walletPage.getByLabel('Safe order oracle tolerance').inputValue(), '100');
     const safeLayout = await walletPage.evaluate(() => ({
       clientWidth: document.documentElement.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,
@@ -335,6 +378,11 @@ try {
       privateBalanceRevealAvailable: true,
       safeTreasuryStatus: safeModuleEnabled ? 'enabled-owner' : 'revoked-owner',
       safeRecoveryAvailable: !safeModuleEnabled,
+      safeActivityAvailable: true,
+      safeAgentDraftApplied: true,
+      safeSwapDeadlineDefault: 20,
+      safeSwapToleranceDefaultBps: 1000,
+      safeUnwrapAvailable: true,
       safeMobileLayout,
       screenshot: '/tmp/noxswap-wallet.png',
       safeTreasuryScreenshot: '/tmp/noxswap-safe-treasury.png',

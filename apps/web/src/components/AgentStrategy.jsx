@@ -15,7 +15,13 @@ function readError(payload, status) {
   return payload?.error?.message || 'The strategy agent is temporarily unavailable.';
 }
 
-export default function AgentStrategy({ actions, context, market }) {
+export default function AgentStrategy({
+  actions,
+  applyLabel = 'Apply to order form',
+  context,
+  market,
+  wrapWarningText = 'Wrap the underlying asset in Wallet before creating this order.',
+}) {
   const [intent, setIntent] = useState('');
   const [plan, setPlan] = useState(null);
   const [error, setError] = useState('');
@@ -127,13 +133,13 @@ export default function AgentStrategy({ actions, context, market }) {
                 <div><dt>Wrap first</dt><dd>{plan.requiresWrap ? 'Required' : 'No'}</dd></div>
               </dl>
               <p className="agent-risk"><AlertTriangle size={14} /> {plan.riskNote}</p>
-              {plan.requiresWrap && <p className="agent-wrap-warning">Wrap the underlying asset in Wallet before creating this order.</p>}
+              {plan.requiresWrap && <p className="agent-wrap-warning">{wrapWarningText}</p>}
               {applyIssue && <p className="field-error agent-apply-issue">{applyIssue}</p>}
               {plan.amountMode === 'percent' && !context.privateBalancesVisible && context.account && (
                 <button className="secondary-action" onClick={context.onReveal} disabled={Boolean(context.busy)}><ShieldCheck size={17} /> Reveal balances locally</button>
               )}
               <button className="secondary-action agent-apply" onClick={apply} disabled={Boolean(applyIssue)}>
-                <Check size={17} /> Apply to order form
+                <Check size={17} /> {applyLabel}
               </button>
             </>
           )}
