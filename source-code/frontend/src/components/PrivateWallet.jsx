@@ -1,4 +1,4 @@
-import { Eye, EyeOff, LoaderCircle, RefreshCw } from 'lucide-react';
+import { ExternalLink, Eye, EyeOff, LoaderCircle, RefreshCw } from 'lucide-react';
 import { formatToken, isHandle, shorten } from '../lib/format';
 
 export default function PrivateWallet({
@@ -48,7 +48,21 @@ export default function PrivateWallet({
         );
       })}
       {!compact && <p className="privacy-note">The eye requests an EIP-712 signature before revealing authorized plaintext balances.</p>}
-      <div className="native-balance"><span>Sepolia ETH for gas</span><strong>{formatToken(ethBalance, 18, 4)}</strong></div>
+      <div className="native-balance">
+        <div className="eth-gas-label">
+          <span>Sepolia ETH for gas</span>
+          <a
+            href="https://cloud.google.com/application/web3/faucet/ethereum/sepolia"
+            target="_blank"
+            rel="noreferrer"
+            className="faucet-inline-link"
+            title="Claim free Sepolia ETH for gas from Google Cloud Faucet"
+          >
+            Get ETH <ExternalLink size={11} />
+          </a>
+        </div>
+        <strong>{formatToken(ethBalance, 18, 4)}</strong>
+      </div>
     </aside>
   );
 }

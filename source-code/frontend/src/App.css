@@ -235,7 +235,10 @@ button:disabled { cursor: not-allowed; opacity: .48; box-shadow: none !important
 .balance-row small { overflow: hidden; color: var(--muted); font: 400 10px 'Space Mono', monospace; text-overflow: ellipsis; }
 .privacy-note { margin: 14px 0 0; color: var(--muted); font: 400 10px/1.45 'Space Mono', monospace; }
 .secondary-action { width: 100%; min-height: 42px; margin-top: 18px; background: var(--white); }
-.native-balance { margin-top: 14px; display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 11px; }
+.native-balance { margin-top: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--muted); font-size: 11px; }
+.eth-gas-label { display: flex; align-items: center; gap: 8px; }
+.faucet-inline-link { display: inline-flex; align-items: center; gap: 3px; color: #6941e0; font-size: 10px; font-weight: 700; text-decoration: underline; transition: color 0.15s ease; }
+.faucet-inline-link:hover { color: #4f25c8; }
 
 .section-band { padding: 48px max(20px, calc((100vw - 1200px) / 2)); border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); background: var(--soft-lime); }
 .section-title { margin-bottom: 28px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .7fr); align-items: end; gap: 32px; }
@@ -251,6 +254,9 @@ button:disabled { cursor: not-allowed; opacity: .48; box-shadow: none !important
 .faucet-item small.cooldown { color: var(--red); font-weight: 700; }
 .faucet-item button, .acl-form button, .evidence-actions button { background: var(--yellow); }
 .faucet-item button { min-width: 104px; }
+.outline-faucet-link { min-width: 104px; height: 38px; padding: 0 12px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--ink); background: var(--lime); border: 2px solid var(--ink); border-radius: 6px; box-shadow: 2px 2px 0 var(--ink); font-size: 12px; font-weight: 700; text-decoration: none; transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease; }
+.outline-faucet-link:hover { background: #00e676; transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink); }
+.outline-faucet-link:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--ink); }
 .segmented { width: max-content; max-width: 100%; padding: 3px; display: grid; grid-template-columns: 1fr 1fr; background: #e4e5e8; border: 1px solid var(--ink); border-radius: 7px; }
 .segmented button { min-width: 90px; height: 34px; border: 0; border-radius: 4px; background: transparent; font-weight: 700; cursor: pointer; }
 .segmented button.active { color: white; background: var(--ink); }

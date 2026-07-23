@@ -1,4 +1,4 @@
-import { Droplets, LoaderCircle, RefreshCw } from 'lucide-react';
+import { Droplets, ExternalLink, LoaderCircle, RefreshCw } from 'lucide-react';
 import { formatDuration, formatToken } from '../lib/format';
 import { getCooldownRemaining } from '../lib/validation';
 
@@ -36,6 +36,21 @@ export default function AssetOperations({
       <div className={embedded ? 'embedded-intro' : 'section-title'}><div><p className="eyebrow">ASSET OPERATIONS</p><h2>Fund, wrap, and unwrap</h2></div><p>Test faucets enforce a one-hour cooldown. Wrapping is 1:1; unwrapping finalizes with a Nox public decryption proof.</p></div>
       <div className="asset-layout">
         <div className="faucet-list">
+          <div className="faucet-item eth-faucet-item">
+            <div>
+              <span>Sepolia ETH (Gas Fee)</span>
+              <small>Public L1 Testnet ETH for transaction gas</small>
+            </div>
+            <a
+              href="https://cloud.google.com/application/web3/faucet/ethereum/sepolia"
+              target="_blank"
+              rel="noreferrer"
+              className="outline-faucet-link"
+              title="Get free Sepolia ETH for transaction gas from Google Cloud Faucet"
+            >
+              <ExternalLink size={15} /> Get ETH
+            </a>
+          </div>
           {Object.values(tokens).map((item) => {
             const faucet = faucets[item.symbol];
             const remaining = getCooldownRemaining(faucet.nextClaimAt, chainNow);
