@@ -5,12 +5,12 @@
 
 ## 1. Trạng thái hiện tại
 
-- Giai đoạn hiện tại: Phase 6 — Safe composability extension validation
+- Giai đoạn hiện tại: Phase 6 — Safe Treasury parity extension
 - Trạng thái: Waiting for approval
-- Bước tiếp theo: User runs the final MetaMask Safe Treasury confirmation on the deployed frontend; after confirmation, mark Phase 6 completed and start submission recording.
-- Blocker hiện tại: Không có engineering blocker. Contracts, Safe module, protected swap, balance viewer, revoke/re-enable and Safe limit-order create/cancel have live Sepolia evidence. Formal UI completion requires one user-owned MetaMask pass of the Safe Treasury tab.
+- Bước tiếp theo: User reviews the completed Safe Treasury extension locally, then decides when to publish the updated frontend; production frontend deployment remains deferred by the user's earlier instruction.
+- Blocker hiện tại: Không có blocker kỹ thuật. Direct Safe faucet, owner execute-order, and browser multisig remain explicitly out of scope.
 - Đang chờ phê duyệt từ: User.
-- Cập nhật lần cuối: 2026-07-23T23:40:00+07:00
+- Cập nhật lần cuối: 2026-07-24T12:32:00+07:00
 
 Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for approval`, `Blocked`, `Completed`, `Skipped`.
 
@@ -47,6 +47,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 | Product Plan | Approved | User | 2026-07-22T10:56:00+07:00 | Người dùng đã xem xét và đồng ý thực hiện Product Plan cho NoxSwap. |
 | Build Plan | Approved | User | 2026-07-22T10:56:30+07:00 | Phê duyệt Build Plan cho ứng dụng NoxSwap. |
 | Core Development & Sepolia Deploy | Reopened | User | 2026-07-22 | Audit xác định deployment cũ không dùng Nox SDK/TEE thật; người dùng yêu cầu remediation và cho phép redeploy bằng ví test. |
+| Safe Treasury parity extension | Approved | User | 2026-07-24T00:10:25+07:00 | Implement in order: configurable Safe swap tolerance/deadline, Safe activity, draft-only Safe Strategy Agent, and Safe unwrap; keep direct Safe faucet, owner execute-order, and browser multisig out of scope. |
 | Final submission | Pending |  |  |  |
 
 ## 5. Blockers và câu hỏi mở
@@ -58,8 +59,9 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 
 ## 6. Bước tiếp theo
 
-1. User confirms the final MetaMask Safe Treasury path on the newly deployed production URL.
-2. Mark Phase 6 completed, then record the demo and write the X submission post.
+1. User reviews the completed Safe Treasury parity extension.
+2. Deploy the updated frontend when the user lifts the existing deployment deferral, then confirm the final MetaMask flow on the production URL.
+3. Mark Phase 6 completed, then record the demo and write the X submission post.
 
 ## 7. Quy tắc cập nhật PLAN.md
 
@@ -87,6 +89,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 - [x] Server-side Groq secret is configured on Vercel; public planner/observer endpoints and the `/app/trade?mode=agent` route pass production smoke tests.
 - [x] Frontend production đã deploy và public read-only smoke test đã pass tại `https://noxswap-iexec.vercel.app`.
 - [x] Safe v1.4.1 treasury, allowlisted Nox module, private swap, selective viewer, module revoke/re-enable and confidential order create/cancel have live Sepolia evidence.
+- [x] Safe swap tolerance/deadline, on-chain Activity, draft-only Strategy Agent, and recoverable Safe unwrap have unit, responsive, contract, and live Sepolia evidence.
 - [x] Đã tạo file README.md chính thức và feedback.md ở root repository.
 - [ ] Submission checklist canonical đã hoàn thành.
 - [ ] Bài nộp đã được final review.

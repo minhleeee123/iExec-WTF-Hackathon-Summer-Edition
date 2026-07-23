@@ -85,6 +85,7 @@
 - [x] Gateway-response attestation evidence derived from successful Nox SDK verification.
 - [x] Measured execution-versus-oracle comparison; no unsupported counterfactual MEV-savings claim.
 - [x] Groq Strategy Agent converts natural-language ETH/USDC intents and public Chainlink context into strict, reviewable order drafts; private balance math, Nox encryption, and transaction approval remain local.
+- [x] Safe Treasury adds configurable swap tolerance/deadline, event-derived Activity, a draft-only Strategy Agent, and recoverable Safe-to-owner/Safe unwrap without granting the module arbitrary execution.
 
 ## 9. Non-goals
 
@@ -94,6 +95,7 @@ Không xây trong phiên bản hackathon:
 - [ ] Cầu nối Cross-chain sang các blockchain L1 khác ngoài Sepolia.
 - [ ] Cross-chain settlement or native Solana custody; nSOL remains an explicitly labeled Sepolia test asset.
 - [ ] AI price prediction, autonomous AI custody, or AI-gated settlement; Chainlink and contract rules remain authoritative.
+- [ ] Direct Safe faucet, owner-only execute-order UI, or browser multi-owner signature orchestration; Safe funding reuses the personal faucet/wrap path, order execution remains permissionless, and multi-owner signing remains in Safe Wallet.
 
 ## 10. Sponsor technology
 

@@ -61,8 +61,10 @@
 ## 8. Safe composability validation
 
 - Canonical Sepolia Safe: `0x549585Be4d75b388B4f825E0bCbBaA85B4FbfffF` (Safe v1.4.1, threshold 1).
-- Canonical allowlisted Nox module and Safe orderbook are recorded in `packages/contracts/deployment-sepolia.json`.
+- Canonical allowlisted Nox module `0xc0c60df5F16196944e466E8bD6BE5220F913b093` and Safe orderbook `0xd8037cb70163eC52aa774f54590BB266ee0d9908` are recorded in `packages/contracts/deployment-sepolia.json`.
 - Live protected swap receipt #29 settled 1,000 cUSDC with the 10% default oracle tolerance; Safe balance reveal returned `0.496401483047806904 cETH`.
 - Safe confidential order #1 was created and cancelled through the module; the encrypted input was refunded.
 - Module revoke and owner-controlled re-enable were both confirmed on Sepolia; the canonical module is enabled after the test.
 - Auditor access is per-handle Nox viewer access only and does not grant token operator or Safe signing authority.
+- Safe module V3 was deployed in transaction `0xcb3aec532031858fc44e3d298ef3f31e6c8aeff2c91121aedecfe163a5eacfe7`, then enabled after the legacy module was disabled; the existing Safe orderbook was intentionally retained.
+- Live Safe unwrap prepared its ciphertext ACL in `0x5d2e2f4ce6675a6d07e39bf112f071238d0894e2d6065de1107f881545104a57`, created request `0x0000aa36a7230112e2da3a5cacbbb742b709eda9b615a3524b7ad30046cd0857` through Safe transaction `0x9751ef8c8f998a3796183c8f03a6168fabae1541293a495307a7cccecd9f5cf7`, and finalized the exact one-base-unit public release in `0x146b9e2d482b137297b6a3ccb806afcddb8736387e9a3f76915df0473f8cde2e`.

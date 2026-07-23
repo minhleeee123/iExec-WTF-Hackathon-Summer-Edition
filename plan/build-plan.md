@@ -125,6 +125,14 @@ Failure handling:
 - [x] Extend MCP to nine tools with public market context and confidential-order planning; package a secret-free `noxswap-mcp` CLI.
 - [x] Add an optional fail-open keeper observer whose output cannot alter deterministic execute/expire decisions.
 
+### Milestone 8: Safe Treasury parity extension
+
+- [x] Add configurable Chainlink-reference tolerance and a 1–1,440 minute public deadline to Safe swaps.
+- [x] Reconstruct privacy-safe Safe Activity from confirmed module, Safe, and wrapper events.
+- [x] Reuse Strategy Agent as a Safe limit-order draft tool without giving it balance, proof, signature, or transaction authority.
+- [x] Add an allowlisted Safe unwrap request restricted to the Safe or its owners, plus recoverable Nox proof finalization.
+- [x] Upgrade only the Safe module on Sepolia, retain the existing orderbook, and validate the full unwrap lifecycle with a one-base-unit live test.
+
 ## 6. Verification matrix
 
 | Flow | Test | Evidence | Status |
@@ -137,11 +145,12 @@ Failure handling:
 | Confidential limit order | Same live E2E | Permissionless execution/expiry, exact cancel/expiry refunds, owner permissions, and double-settlement rejection | Pass |
 | ACL viewer | Same live E2E | ACL subgraph contains granted viewer | Pass |
 | Unwrap | Same live E2E | Exactly `0.01 nWETH` released after proof finalization | Pass |
+| Safe Treasury parity | `npm run test:safe:sepolia` and `npm run test:safe:unwrap:sepolia` | Module configuration plus live Safe request, Nox public proof, exact underlying delta, and cleared pending request | Pass |
 | MCP protocol | `npm run test:mcp` and `npm run test:mcp:write` | Nine tools, live Chainlink/Groq planning, real small swap, order create/cancel, receipt/event/status assertions, and sanitized evidence | Pass |
 | AI strategy and observer | `npm run test:unit`, `npm run test:agent:live`, backend `npm test` | Strict-schema Groq responses, private-field rejection, local percentage compilation, responsive UI, and observer non-authority | Pass |
-| Frontend static quality | `npm run test:unit && npm run build && npm run lint` | 41 unit tests including wallet-provider selection, configurable positive minOut regression, incremental event index/cache, observer auth/rate/body guards, production build, and zero lint errors | Pass |
+| Frontend static quality | `npm run test:unit && npm run build && npm run lint` | 46 unit tests including wallet-provider selection, configurable positive minOut regression, Safe activity normalization, incremental event index/cache, observer auth/rate/body guards, production build, and zero lint errors | Pass |
 | Continuous integration | `.github/workflows/ci.yml` | Push/PR compile, tests, lint, build, deployment consistency, and Gitleaks; YAML validated locally | Pass |
-| Responsive layout | Headless Chrome 1440x1000 and 390x844 | Wallet-free live orderbook, responsive detail, URL reload, owner/non-owner controls, landing/app separation, and no horizontal overflow | Pass |
+| Responsive layout | Headless Chrome 1440x1000, 1280x900, and 390x844 | Wallet-free live orderbook, Safe tolerance/deadline/Activity/Agent/unwrap controls, responsive detail, URL reload, owner/non-owner controls, landing/app separation, and no horizontal overflow | Pass |
 | Public dApp accessibility | Headless external URL test | Latest UI-audit build is live at `https://noxswap-iexec.vercel.app`; landing, trade, wallet, activity, desktop/mobile layout, dialog keyboard behavior, and 10 live orders passed | Pass |
 | MetaMask UI happy path (local/preview) | Manual browser wallet test | User confirmed provider selection, reveal, swap, refreshed reveal, operator revoke/authorize, and order create/cancel | Pass |
 | MetaMask UI happy path (production) | Manual browser wallet test | Latest frontend audit build must be deployed first | Deferred by user |
