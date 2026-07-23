@@ -5,8 +5,8 @@ import PrivateWallet from './PrivateWallet';
 import { shorten } from '../lib/format';
 
 const navigation = [
-  { to: '/app/trade', label: 'Trade', description: 'Swap and orders', icon: ArrowLeftRight },
   { to: '/app/wallet', label: 'Wallet', description: 'Assets and access', icon: Boxes },
+  { to: '/app/trade', label: 'Trade', description: 'Swap and orders', icon: ArrowLeftRight },
   { to: '/app/activity', label: 'Activity', description: 'History and proofs', icon: Activity },
 ];
 

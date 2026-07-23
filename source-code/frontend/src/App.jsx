@@ -400,8 +400,10 @@ export default function App() {
       }
 
       setNotice({ type: 'success', text: `${assetMode === 'wrap' ? 'Wrap' : 'Unwrap'} completed on Sepolia.` });
-      setPrivateBalancesVisible(false);
       await loadAccount(wallet.address);
+      if (privateBalancesVisible) {
+        await decryptBalances();
+      }
     } catch (error) {
       fail(error);
     } finally {

@@ -1,4 +1,4 @@
-import { ArrowDown, LoaderCircle, RefreshCw, ShieldCheck } from 'lucide-react';
+import { ArrowDown, LoaderCircle, ShieldCheck } from 'lucide-react';
 import deployment from '../deployment.json';
 import { formatToken, shorten } from '../lib/format';
 
@@ -17,7 +17,6 @@ export default function SwapPanel({
   onMax,
   onAllowZeroMinOutChange,
   onMinOutChange,
-  onRefresh,
   onReveal,
   onSwap,
   onTokenChange,
@@ -38,13 +37,15 @@ export default function SwapPanel({
     : 'Private balance hidden';
   const hasOracleReference = referenceOutput !== '--';
 
+  const handleSwitchTokens = () => {
+    onTokenChange(tokenOut);
+    onTokenOutChange(tokenIn);
+  };
+
   return (
     <div className="swap-panel">
       <div className="section-heading">
         <div><p className="eyebrow">LIVE ROUTER V2</p><h2>Protected confidential swap</h2></div>
-        <button className="icon-button" onClick={onRefresh} disabled={busy === 'refresh'} aria-label="Refresh chain data" title="Refresh chain data">
-          <RefreshCw className={busy === 'refresh' ? 'spin' : ''} size={18} />
-        </button>
       </div>
 
       <div className="amount-box">
@@ -64,7 +65,17 @@ export default function SwapPanel({
           </select>
         </div>
       </div>
-      <div className="direction"><ArrowDown size={18} /></div>
+      <div className="direction-row">
+        <button
+          type="button"
+          className="direction-btn"
+          onClick={handleSwitchTokens}
+          aria-label="Switch input and output tokens"
+          title="Switch tokens"
+        >
+          <ArrowDown className="direction-icon" size={18} />
+        </button>
+      </div>
       <div className="amount-box output">
         <div className="amount-meta">
           <span>Oracle reference output</span>
