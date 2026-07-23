@@ -15,7 +15,7 @@
 - Wallet/RPC: Ethers v6 `BrowserProvider`, MetaMask và Ethereum Sepolia.
 - Core flow: Connect -> Faucet -> Wrap -> SDK encrypt -> Confidential swap -> SDK decrypt -> Receipt/history.
 - Supporting real flows: Unwrap với public decryption proof, ACL viewer, Chainlink reference price, MCP stdio.
-- Public frontend deployment: `https://frontend-dusky-five-56.vercel.app`; external mobile smoke test and eight-order public read passed locally against live Sepolia data.
+- Public frontend deployment: `https://noxswap-iexec.vercel.app`; external desktop/mobile smoke tests and a ten-order public read passed against live Sepolia data.
 - Contract deployment: Live on Ethereum Sepolia, addresses canonical trong `source-code/backend/deployment-sepolia.json`.
 
 ## 3. Tech stack
@@ -142,7 +142,7 @@ Failure handling:
 | Frontend static quality | `npm run test:unit && npm run build && npm run lint` | 41 unit tests including wallet-provider selection, configurable positive minOut regression, incremental event index/cache, observer auth/rate/body guards, production build, and zero lint errors | Pass |
 | Continuous integration | `.github/workflows/ci.yml` | Push/PR compile, tests, lint, build, deployment consistency, and Gitleaks; YAML validated locally | Pass |
 | Responsive layout | Headless Chrome 1440x1000 and 390x844 | Wallet-free live orderbook, responsive detail, URL reload, owner/non-owner controls, landing/app separation, and no horizontal overflow | Pass |
-| Public dApp accessibility | Headless external URL test | Latest UI-audit build is live at `https://frontend-dusky-five-56.vercel.app`; landing, trade, wallet, activity, desktop/mobile layout, dialog keyboard behavior, and 10 live orders passed | Pass |
+| Public dApp accessibility | Headless external URL test | Latest UI-audit build is live at `https://noxswap-iexec.vercel.app`; landing, trade, wallet, activity, desktop/mobile layout, dialog keyboard behavior, and 10 live orders passed | Pass |
 | MetaMask UI happy path (local/preview) | Manual browser wallet test | User confirmed provider selection, reveal, swap, refreshed reveal, operator revoke/authorize, and order create/cancel | Pass |
 | MetaMask UI happy path (production) | Manual browser wallet test | Latest frontend audit build must be deployed first | Deferred by user |
 

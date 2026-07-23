@@ -7,7 +7,7 @@
 
 - Giai đoạn hiện tại: Phase 6 — Development validation and public deployment
 - Trạng thái: Waiting for approval
-- Bước tiếp theo: User runs the final MetaMask write confirmation on `https://frontend-dusky-five-56.vercel.app`; after confirmation, mark Phase 6 completed and start submission recording.
+- Bước tiếp theo: User runs the final MetaMask write confirmation on `https://noxswap-iexec.vercel.app`; after confirmation, mark Phase 6 completed and start submission recording.
 - Blocker hiện tại: Không có engineering blocker. Formal completion requires a user-owned MetaMask confirmation on the newly deployed production build; local Docker-backed Nox runtime remains unavailable but is covered by live Sepolia and CI evidence.
 - Đang chờ phê duyệt từ: User.
 - Cập nhật lần cuối: 2026-07-23T18:43:00+07:00
@@ -85,7 +85,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 - [x] Docker-backed Nox runtime integration suite và nightly/manual workflow đã được thêm; local execution được skip vì workspace không có Docker.
 - [x] Groq Strategy Agent, nine-tool MCP v4 adapter, and fail-open keeper observer have unit, responsive, and live provider evidence without granting AI transaction authority.
 - [x] Server-side Groq secret is configured on Vercel; public planner/observer endpoints and the `/app/trade?mode=agent` route pass production smoke tests.
-- [x] Frontend production đã deploy và public read-only smoke test đã pass tại `https://frontend-dusky-five-56.vercel.app`.
+- [x] Frontend production đã deploy và public read-only smoke test đã pass tại `https://noxswap-iexec.vercel.app`.
 - [x] Đã tạo file README.md chính thức và feedback.md ở root repository.
 - [ ] Submission checklist canonical đã hoàn thành.
 - [ ] Bài nộp đã được final review.

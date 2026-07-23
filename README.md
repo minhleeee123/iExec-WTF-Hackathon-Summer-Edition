@@ -9,7 +9,7 @@ compromise impact are documented in [`docs/threat-model.md`](docs/threat-model.m
 
 ## Live Deployment
 
-Web application: [https://frontend-dusky-five-56.vercel.app](https://frontend-dusky-five-56.vercel.app)
+Web application: [https://noxswap-iexec.vercel.app](https://noxswap-iexec.vercel.app)
 
 | Contract | Sepolia address |
 |---|---|

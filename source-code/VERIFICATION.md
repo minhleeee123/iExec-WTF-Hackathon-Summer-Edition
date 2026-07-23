@@ -2,7 +2,7 @@
 
 Date: 2026-07-23
 
-Production frontend: [https://frontend-dusky-five-56.vercel.app](https://frontend-dusky-five-56.vercel.app)
+Production frontend: [https://noxswap-iexec.vercel.app](https://noxswap-iexec.vercel.app)
 
 ## Converted to Real Features
 
