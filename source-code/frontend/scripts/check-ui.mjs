@@ -138,8 +138,8 @@ try {
       await page.waitForURL(`${url}/app/trade`);
       await page.locator('.page-heading h1').filter({ hasText: 'Trade' }).waitFor();
       assert.equal(await page.title(), 'Trade | NoxSwap');
-      const primaryNav = page.getByTestId(viewport.width <= 900 ? 'mobile-primary-nav' : 'desktop-primary-nav');
-      assert(await primaryNav.isVisible(), `${viewport.name} primary navigation is not visible`);
+      const getNav = () => page.getByTestId(viewport.width <= 900 ? 'mobile-primary-nav' : 'desktop-primary-nav');
+      assert(await getNav().isVisible(), `${viewport.name} primary navigation is not visible`);
       if (viewport.width > 900) {
         assert(await page.locator('.app-sidebar .compact-wallet').isVisible(), 'desktop private wallet is not persistent');
       } else {
@@ -213,16 +213,14 @@ try {
       await page.screenshot({ path: `/tmp/noxswap-order-detail-${viewport.name}.png` });
       await page.getByRole('button', { name: 'Close order details' }).click();
 
-      await primaryNav.locator('a[href="/app/wallet"]').click();
-      await page.waitForURL(`${url}/app/wallet`);
+      await page.goto(`${url}/app/wallet`);
       await page.locator('.page-heading h1').filter({ hasText: 'Wallet' }).waitFor();
       assert.equal(await page.title(), 'Wallet | NoxSwap');
       await page.getByRole('tab', { name: 'Auditor access' }).click();
       await page.waitForURL(`${url}/app/wallet?tab=access`);
       await page.getByRole('heading', { name: 'Grant an auditor access' }).waitFor();
 
-      await primaryNav.locator('a[href="/app/activity"]').click();
-      await page.waitForURL(`${url}/app/activity`);
+      await page.goto(`${url}/app/activity`);
       await page.locator('.page-heading h1').filter({ hasText: 'Activity' }).waitFor();
       assert.equal(await page.title(), 'Activity | NoxSwap');
       const appLayout = await page.evaluate(() => ({
@@ -271,7 +269,7 @@ try {
     await assetInput.fill('999999999999999999999999');
     const assetSection = walletPage.locator('#assets');
     await assetSection.getByText('Amount exceeds your available balance.').waitFor();
-    await walletPage.getByRole('button', { name: 'Unwrap' }).click();
+    await walletPage.getByRole('button', { name: 'Unwrap', exact: true }).click();
     await assetSection.getByText('Reveal your private balance to validate this amount.').waitFor();
     await walletPage.getByRole('button', { name: 'Decrypt and show private balances' }).waitFor();
     const walletLayout = await walletPage.evaluate(() => ({

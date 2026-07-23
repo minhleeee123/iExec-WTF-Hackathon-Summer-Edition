@@ -707,10 +707,7 @@ export default function App() {
     onFaucet: faucet,
     onManage: manageAsset,
     onMax: () => setAssetAmount(formatInputAmount(assetAvailable, assetToken.decimals)),
-    onModeChange: (nextMode) => {
-      setAssetMode(nextMode);
-      setAssetAmount('');
-    },
+    onModeChange: setAssetMode,
     onReveal: decryptBalances,
     privateBalancesVisible,
     tokens: TOKENS,
@@ -726,6 +723,7 @@ export default function App() {
   };
   const activityProps = {
     history,
+    logs,
     onRefreshHistory: refresh,
   };
   const evidenceProps = {

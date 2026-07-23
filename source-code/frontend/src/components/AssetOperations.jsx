@@ -37,8 +37,8 @@ export default function AssetOperations({
       <div className={embedded ? 'embedded-intro' : 'section-title'}>
         <div><p className="eyebrow">ASSET OPERATIONS</p><h2>Fund, wrap, and unwrap</h2></div>
         <CardHelpButton
-          category="ASSET OPERATIONS GUIDE"
-          title="Faucet, Wrap, and Unwrap"
+          category="ASSET FAUCET GUIDE"
+          title="Token Faucets & Wrappers"
           description="Claim test tokens, wrap public ERC-20 into confidential ERC-7984 tokens 1:1, or unwrap back to public form."
           steps={[
             { heading: 'Step 1 - Gas Fee', detail: 'Claims, wrapping, and unwrapping require Sepolia ETH for gas. Click "Get ETH" if your ETH balance is low.' },

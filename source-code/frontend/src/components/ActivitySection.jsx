@@ -1,7 +1,7 @@
 import { Activity, ArrowUpRight, ExternalLink, FileKey2, History } from 'lucide-react';
 import { shorten } from '../lib/format';
 
-export default function ActivitySection({ history, logs, onOpenReceipt }) {
+export default function ActivitySection({ history = [], logs = [], onOpenReceipt }) {
   return (
     <section id="activity" className="activity-grid">
       <div className="history-panel">
