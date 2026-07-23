@@ -43,11 +43,11 @@ import WalletConnectModal from './components/WalletConnectModal';
 import LandingFooter from './components/LandingFooter';
 import LandingHeader from './components/LandingHeader';
 import NoticeBanner from './components/NoticeBanner';
+import DocsPage from './pages/DocsPage';
+import LandingPage from './pages/LandingPage';
 import './App.css';
 
 const ActivityPage = lazy(() => import('./pages/ActivityPage'));
-const DocsPage = lazy(() => import('./pages/DocsPage'));
-const LandingPage = lazy(() => import('./pages/LandingPage'));
 const SafePage = lazy(() => import('./pages/SafePage'));
 const TradePage = lazy(() => import('./pages/TradePage'));
 const WalletPage = lazy(() => import('./pages/WalletPage'));

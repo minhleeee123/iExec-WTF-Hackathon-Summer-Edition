@@ -69,6 +69,10 @@ const recordConsoleError = (errors) => (message) => {
 };
 try {
   await waitForServer();
+  const robots = await (await fetch(`${url}/robots.txt`)).text();
+  const sitemap = await (await fetch(`${url}/sitemap.xml`)).text();
+  assert.match(robots, /^User-agent: \*/m, 'robots.txt must be served as crawler directives instead of the SPA fallback');
+  assert.match(sitemap, /<loc>https:\/\/noxswap-iexec\.vercel\.app\/app\/safe<\/loc>/, 'sitemap must expose the Safe workspace');
   const browser = await chromium.launch({
     executablePath: '/usr/bin/google-chrome',
     headless: true,

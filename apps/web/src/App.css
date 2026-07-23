@@ -161,6 +161,7 @@ button:disabled { cursor: not-allowed; opacity: .48; box-shadow: none !important
 .faq-list details[open] summary::after { content: '\2212'; }
 .faq-list details p { max-width: 900px; margin: 0 0 20px 54px; color: var(--muted); font: 400 11px/1.7 'Space Mono', monospace; }
 .landing-cta { padding: 60px max(24px, calc((100vw - 1180px) / 2)); display: flex; align-items: center; justify-content: space-between; gap: 32px; background: var(--purple); border-bottom: 2px solid var(--ink); }
+.landing-cta .eyebrow { color: white; }
 .landing-cta h2 { max-width: 720px; color: white; }
 .landing-footer { min-height: 96px; }
 .landing-footer > div { display: grid; gap: 4px; }
