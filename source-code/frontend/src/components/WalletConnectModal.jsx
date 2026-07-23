@@ -23,13 +23,6 @@ const WALLET_OPTIONS = [
     description: 'Connect using Coinbase Wallet extension or app.',
   },
   {
-    id: 'walletconnect',
-    name: 'WalletConnect / Rainbow',
-    badge: 'Mobile QR',
-    icon: '🌈',
-    description: 'Scan QR code using Rainbow, Trust, or mobile wallets.',
-  },
-  {
     id: 'injected',
     name: 'Browser Injected Provider',
     badge: 'Auto-detect',
@@ -57,7 +50,7 @@ export default function WalletConnectModal({
       >
         <div className="section-heading">
           <div>
-            <p className="eyebrow">MULTI-WALLET CONNECTOR</p>
+            <p className="eyebrow">INJECTED WALLET CONNECTOR</p>
             <h2>Connect your wallet</h2>
           </div>
           <button className="icon-button" onClick={onClose} aria-label="Close wallet modal">

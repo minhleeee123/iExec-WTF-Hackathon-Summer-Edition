@@ -28,6 +28,7 @@ export default function useLimitOrderActions({
   oracle,
   privateBalancesVisible,
   setBusy,
+  walletProvider,
 }) {
   const [side, setSide] = useState('buy');
   const [amount, setAmount] = useState('5');
@@ -94,7 +95,7 @@ export default function useLimitOrderActions({
       }
       setReadinessLoading(true);
       try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
+        const provider = new ethers.BrowserProvider(walletProvider);
         const wrapper = new ethers.Contract(tokenIn.wrapper, CONFIDENTIAL_TOKEN_ABI, provider);
         const [authorized, handle] = await Promise.all([
           wrapper.isOperator(account, deployment.contracts.limitOrderBook),
@@ -115,7 +116,7 @@ export default function useLimitOrderActions({
     };
     check();
     return () => { active = false; };
-  }, [account, chainId, tokenIn.wrapper]);
+  }, [account, chainId, tokenIn.wrapper, walletProvider]);
 
   const handleCurrent = Boolean(liveBalanceHandle && liveBalanceHandle === balances[tokenIn.symbol].handle);
   const createChecks = [

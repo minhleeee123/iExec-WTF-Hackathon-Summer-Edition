@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { ethers } from 'ethers';
 import { LoaderCircle } from 'lucide-react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
@@ -22,6 +22,7 @@ import {
 import { createHandleClient, retry } from './lib/nox';
 import { queryRecentSwapEvents } from './lib/history';
 import { deriveSwapMinOut } from './lib/min-out';
+import { discoverWalletProvider } from './lib/wallet-providers';
 import {
   decodeReceiptImage,
   formatDuration,
@@ -80,6 +81,7 @@ export default function App() {
   const [chainTimeOffset, setChainTimeOffset] = useState(0);
   const [gatewayEvidence, setGatewayEvidence] = useState(null);
   const [executionComparison, setExecutionComparison] = useState(null);
+  const [walletProvider, setWalletProvider] = useState(null);
 
   const connected = Boolean(account);
   const correctNetwork = chainId === deployment.chainId;
@@ -142,26 +144,29 @@ export default function App() {
     setNotice({ type: 'error', text: error.shortMessage ?? error.reason ?? error.message ?? 'Transaction failed.' });
   };
 
-  const getWallet = async () => {
-    if (!window.ethereum) throw new Error('MetaMask is required for write operations.');
-    let browserProvider = new ethers.BrowserProvider(window.ethereum);
+  const getWallet = async (providerOverride = walletProvider) => {
+    if (!providerOverride) throw new Error('Connect an injected wallet before using write operations.');
+    let browserProvider = new ethers.BrowserProvider(providerOverride);
     let network = await browserProvider.getNetwork();
     if (network.chainId !== BigInt(deployment.chainId)) {
-      await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: SEPOLIA_HEX }] });
-      browserProvider = new ethers.BrowserProvider(window.ethereum);
+      await providerOverride.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: SEPOLIA_HEX }] });
+      browserProvider = new ethers.BrowserProvider(providerOverride);
       network = await browserProvider.getNetwork();
     }
     const signer = await browserProvider.getSigner();
     return { provider: browserProvider, signer, address: await signer.getAddress() };
   };
 
-  const connect = async () => {
+  const connect = async (walletId) => {
     try {
       setBusy('connect');
-      await window.ethereum?.request({ method: 'eth_requestAccounts' });
-      const wallet = await getWallet();
+      const selectedProvider = await discoverWalletProvider(walletId);
+      await selectedProvider.request({ method: 'eth_requestAccounts' });
+      const wallet = await getWallet(selectedProvider);
+      setWalletProvider(selectedProvider);
       setAccount(wallet.address);
       setChainId(Number((await wallet.provider.getNetwork()).chainId));
+      setShowWalletModal(false);
       setNotice({ type: 'success', text: 'Wallet connected to Ethereum Sepolia.' });
       addLog(`Wallet connected: ${shorten(wallet.address)}`);
     } catch (error) {
@@ -189,9 +194,9 @@ export default function App() {
     setPriceUpdatedAt(Number(round.updatedAt));
   };
 
-  const loadAccount = async (address = account) => {
-    if (!address || !window.ethereum) return;
-    const provider = new ethers.BrowserProvider(window.ethereum);
+  const loadAccount = useCallback(async (address = account) => {
+    if (!address || !walletProvider) return;
+    const provider = new ethers.BrowserProvider(walletProvider);
     const next = {};
     const nextFaucets = {};
     await Promise.all(Object.values(TOKENS).map(async (token) => {
@@ -246,7 +251,7 @@ export default function App() {
       setHistory([]);
     }
 
-  };
+  }, [account, walletProvider]);
 
   const refresh = async () => {
     try {
@@ -277,10 +282,20 @@ export default function App() {
 
   useEffect(() => {
     loadMarket().catch(fail);
-    if (!window.ethereum) return undefined;
+    if (!walletProvider && window.ethereum) {
+      window.ethereum.request({ method: 'eth_accounts' })
+        .then((accounts) => {
+          if (accounts.length > 0) setWalletProvider(window.ethereum);
+        })
+        .catch(() => {});
+    }
+  }, [walletProvider]);
+
+  useEffect(() => {
+    if (!walletProvider) return undefined;
     const sync = async () => {
-      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-      const chain = await window.ethereum.request({ method: 'eth_chainId' });
+      const accounts = await walletProvider.request({ method: 'eth_accounts' });
+      const chain = await walletProvider.request({ method: 'eth_chainId' });
       setAccount(accounts[0] ?? '');
       setChainId(Number(BigInt(chain)));
     };
@@ -309,17 +324,17 @@ export default function App() {
       }
     };
     sync().catch(fail);
-    window.ethereum.on('accountsChanged', onAccounts);
-    window.ethereum.on('chainChanged', onChain);
+    walletProvider.on?.('accountsChanged', onAccounts);
+    walletProvider.on?.('chainChanged', onChain);
     return () => {
-      window.ethereum.removeListener('accountsChanged', onAccounts);
-      window.ethereum.removeListener('chainChanged', onChain);
+      walletProvider.removeListener?.('accountsChanged', onAccounts);
+      walletProvider.removeListener?.('chainChanged', onChain);
     };
-  }, []);
+  }, [walletProvider]);
 
   useEffect(() => {
     if (account && correctNetwork) loadAccount(account).catch(fail);
-  }, [account, correctNetwork]);
+  }, [account, correctNetwork, loadAccount]);
 
   const faucet = async (symbol) => {
     try {
@@ -583,7 +598,7 @@ export default function App() {
   const openHistoryReceipt = async (item) => {
     try {
       setBusy(`receipt-${item.receiptId}`);
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.JsonRpcProvider(RPC_URL, deployment.chainId, { staticNetwork: true });
       const router = new ethers.Contract(deployment.contracts.noxSwapRouter, NOX_SWAP_ABI, provider);
       const tokenUri = await router.tokenURI(item.receiptId);
       setReceipt({
@@ -690,6 +705,7 @@ export default function App() {
     onRefreshAccount: loadAccount,
     onReveal: decryptBalances,
     privateBalancesVisible,
+    walletProvider,
     setBusy,
   };
   const assetProps = {
@@ -754,7 +770,7 @@ export default function App() {
           <div className="product-main">
             <div className="global-notices">
               <NoticeBanner notice={notice} onDismiss={() => setNotice(null)} />
-              {!window.ethereum && <NoticeBanner notice={{ type: 'error', text: 'MetaMask is not installed. Read-only market data remains available.' }} />}
+              {!window.ethereum && <NoticeBanner notice={{ type: 'error', text: 'No injected wallet was detected. Read-only market data remains available.' }} />}
               {connected && !correctNetwork && <NoticeBanner notice={{ type: 'error', text: 'Switch MetaMask to Ethereum Sepolia to use NoxSwap.' }} />}
             </div>
             <Suspense fallback={<div className="route-loading"><LoaderCircle className="spin" size={24} /><span>Loading NoxSwap</span></div>}>
@@ -774,7 +790,7 @@ export default function App() {
         </div>
       )}
       <AppModals lastProof={lastProof} onCloseProof={() => setShowProof(false)} onCloseReceipt={() => setShowReceipt(false)} receipt={receipt} showProof={showProof} showReceipt={showReceipt} />
-      <WalletConnectModal busy={busy} show={showWalletModal} onClose={() => setShowWalletModal(false)} onSelectWallet={() => connect()} />
+      <WalletConnectModal busy={busy} show={showWalletModal} onClose={() => setShowWalletModal(false)} onSelectWallet={connect} />
     </div>
   );
 }
