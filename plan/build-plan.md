@@ -142,7 +142,7 @@ Failure handling:
 | Frontend static quality | `npm run test:unit && npm run build && npm run lint` | 41 unit tests including wallet-provider selection, configurable positive minOut regression, incremental event index/cache, observer auth/rate/body guards, production build, and zero lint errors | Pass |
 | Continuous integration | `.github/workflows/ci.yml` | Push/PR compile, tests, lint, build, deployment consistency, and Gitleaks; YAML validated locally | Pass |
 | Responsive layout | Headless Chrome 1440x1000 and 390x844 | Wallet-free live orderbook, responsive detail, URL reload, owner/non-owner controls, landing/app separation, and no horizontal overflow | Pass |
-| Public dApp accessibility | Headless external URL test | Production route loads the live public orderbook at `https://frontend-dusky-five-56.vercel.app` | Pass |
+| Public dApp accessibility | Headless external URL test | Latest UI-audit build is live at `https://frontend-dusky-five-56.vercel.app`; landing, trade, wallet, activity, desktop/mobile layout, dialog keyboard behavior, and 10 live orders passed | Pass |
 | MetaMask UI happy path (local/preview) | Manual browser wallet test | User confirmed provider selection, reveal, swap, refreshed reveal, operator revoke/authorize, and order create/cancel | Pass |
 | MetaMask UI happy path (production) | Manual browser wallet test | Latest frontend audit build must be deployed first | Deferred by user |
 

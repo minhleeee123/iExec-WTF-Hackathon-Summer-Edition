@@ -6,11 +6,11 @@
 ## 1. Trạng thái hiện tại
 
 - Giai đoạn hiện tại: Phase 6 — Development validation and public deployment
-- Trạng thái: In progress
-- Bước tiếp theo: Production rollout is intentionally deferred by the user. When resumed, deploy the latest reliability/UI audit commits, run the final MetaMask production smoke test, then record the demo.
-- Blocker hiện tại: Local Nox off-chain test stack cần Docker nhưng môi trường hiện tại không có Docker; sử dụng compile/unit tests và live Sepolia verification làm acceptance evidence.
-- Đang chờ phê duyệt từ: Không.
-- Cập nhật lần cuối: 2026-07-23T18:40:03+07:00
+- Trạng thái: Waiting for approval
+- Bước tiếp theo: User runs the final MetaMask write confirmation on `https://frontend-dusky-five-56.vercel.app`; after confirmation, mark Phase 6 completed and start submission recording.
+- Blocker hiện tại: Không có engineering blocker. Formal completion requires a user-owned MetaMask confirmation on the newly deployed production build; local Docker-backed Nox runtime remains unavailable but is covered by live Sepolia and CI evidence.
+- Đang chờ phê duyệt từ: User.
+- Cập nhật lần cuối: 2026-07-23T18:43:00+07:00
 
 Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for approval`, `Blocked`, `Completed`, `Skipped`.
 
@@ -34,7 +34,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 | 3. Brainstorm | Research output | Hard gate, rubric scoring và shortlist | Ý tưởng được chọn | Người dùng chọn ý tưởng | Completed |
 | 4. Product Plan | Ý tưởng được chọn | Hoàn thiện `plan/product-plan.md` | MVP, non-goals và demo scenario | Người dùng phê duyệt | Completed |
 | 5. Build Plan | Product Plan đã duyệt | Hoàn thiện `plan/build-plan.md` | Stack, kiến trúc, timeline và backlog | Người dùng phê duyệt | Completed |
-| 6. Development | Build Plan đã duyệt | Hoàn thiện core product, vượt Core Product Ready Gate, triển khai Sepolia | Demo-ready application và landing page | Milestone verification | In progress |
+| 6. Development | Build Plan đã duyệt | Hoàn thiện core product, vượt Core Product Ready Gate, triển khai Sepolia | Demo-ready application và landing page | Milestone verification | Waiting for approval |
 | 7. Submission | Demo-ready application và landing page | Hoàn thiện mọi deliverable bắt buộc | Bài nộp hoàn chỉnh | Người dùng final review | Todo |
 
 ## 4. Approval Log
@@ -58,8 +58,8 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 
 ## 6. Bước tiếp theo
 
-1. Deploy các frontend fix mới nhất rồi chạy manual MetaMask happy path trên URL production; lưu tx evidence.
-2. Chạy lại Core Product Ready Gate rồi mới quay video và viết bài X.
+1. User confirms the final MetaMask write path on the newly deployed production URL.
+2. Mark Phase 6 completed, then record the demo and write the X submission post.
 
 ## 7. Quy tắc cập nhật PLAN.md
 
