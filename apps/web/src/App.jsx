@@ -26,7 +26,7 @@ import { createHandleClient, retry } from './lib/nox';
 import { queryRecentSwapEvents } from './lib/history';
 import { DEFAULT_SWAP_PROTECTION_BPS, deriveSwapMinOut } from './lib/min-out';
 import { discoverWalletProvider } from './lib/wallet-providers';
-import { executeSafeModule, parseSafeModuleEvent, SAFE_SENTINEL_MODULE } from './lib/safe';
+import { executeSafeModule, executeSafeTransaction, parseSafeModuleEvent, SAFE_SENTINEL_MODULE } from './lib/safe';
 import {
   decodeReceiptImage,
   formatDuration,
@@ -957,6 +957,31 @@ export default function App() {
     }
   };
 
+  const safeEnable = async () => {
+    try {
+      if (!safeState.address || !safeState.moduleAddress) throw new Error('The Safe module is not configured on this network.');
+      if (!safeState.isOwner) throw new Error('The connected wallet must be a Safe owner to enable this module.');
+      setBusy('safe-enable');
+      const wallet = await getWallet();
+      const safe = new ethers.Contract(safeState.address, SAFE_ABI, wallet.signer);
+      if (await safe.isModuleEnabled(safeState.moduleAddress)) {
+        await loadSafeAccount();
+        setNotice({ type: 'info', text: 'Nox Safe module is already enabled.' });
+        return;
+      }
+      const data = safe.interface.encodeFunctionData('enableModule', [safeState.moduleAddress]);
+      const execution = await executeSafeTransaction({ signer: wallet.signer, safeAddress: safeState.address, to: safeState.address, data });
+      addLog('Enable Nox Safe module', execution.transaction.hash);
+      await execution.transaction.wait();
+      setNotice({ type: 'success', text: 'Nox Safe module enabled. Safe Treasury operations are available again.' });
+      await loadSafeAccount();
+    } catch (error) {
+      fail(error);
+    } finally {
+      setBusy('');
+    }
+  };
+
   const safeRevoke = async (previousModule = SAFE_SENTINEL_MODULE) => {
     try {
       setBusy('safe-revoke');
@@ -1158,6 +1183,7 @@ export default function App() {
     onCreateOrder: safeCreateOrder,
     onFund: safeFund,
     onGrantViewer: safeGrantViewer,
+    onEnable: safeEnable,
     onRefresh: refresh,
     onReveal: safeReveal,
     onRevoke: safeRevoke,

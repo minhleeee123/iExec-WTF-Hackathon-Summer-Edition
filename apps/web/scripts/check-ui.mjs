@@ -296,14 +296,29 @@ try {
     await walletPage.screenshot({ path: '/tmp/noxswap-wallet.png', fullPage: true });
     await walletPage.getByRole('tab', { name: 'Safe treasury' }).click();
     await walletPage.getByRole('heading', { name: 'Private operations under Safe control' }).waitFor({ timeout: 30_000 });
-    await walletPage.locator('.safe-status-grid').getByText('Enabled', { exact: true }).waitFor();
+    await walletPage.locator('.safe-status-grid').getByText(/Enabled|Revoked/, { exact: true }).waitFor();
     await walletPage.locator('.safe-status-grid').getByText('Safe owner', { exact: true }).waitFor();
+    const safeModuleEnabled = await walletPage.locator('.safe-status-grid').getByText('Enabled', { exact: true }).count() > 0;
+    if (safeModuleEnabled) {
+      assert.equal(await walletPage.getByRole('button', { name: 'Enable Nox module' }).count(), 0, 'enabled Safe must not show recovery action');
+    } else {
+      assert.equal(await walletPage.locator('.safe-status-grid').getByText('Revoked', { exact: true }).count(), 1, 'revoked Safe must expose its module state');
+      await walletPage.getByRole('button', { name: 'Enable Nox module' }).waitFor();
+    }
     const safeLayout = await walletPage.evaluate(() => ({
       clientWidth: document.documentElement.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,
     }));
     assert(safeLayout.scrollWidth <= safeLayout.clientWidth, 'Safe treasury view has horizontal overflow');
     await walletPage.screenshot({ path: '/tmp/noxswap-safe-treasury.png', fullPage: true });
+    await walletPage.setViewportSize({ width: 390, height: 844 });
+    const safeMobileLayout = await walletPage.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }));
+    assert(safeMobileLayout.scrollWidth <= safeMobileLayout.clientWidth, 'Mobile Safe treasury view has horizontal overflow');
+    await walletPage.screenshot({ path: '/tmp/noxswap-safe-treasury-mobile.png', fullPage: true });
+    await walletPage.setViewportSize({ width: 1280, height: 900 });
     await walletPage.goto(`${url}/app/trade?mode=orders&order=${actionableOrderId}`, { waitUntil: 'domcontentloaded' });
     await walletPage.getByRole('dialog', { name: `Order ${actionableOrderId} details` }).waitFor({ timeout: 30_000 });
     await walletPage.getByRole('button', { name: 'Revoke OrderBook authorization' }).waitFor({ timeout: 30_000 });
@@ -318,9 +333,12 @@ try {
       cooldownNotice,
       excessAmountBlocked: true,
       privateBalanceRevealAvailable: true,
-      safeTreasuryStatus: 'enabled-owner',
+      safeTreasuryStatus: safeModuleEnabled ? 'enabled-owner' : 'revoked-owner',
+      safeRecoveryAvailable: !safeModuleEnabled,
+      safeMobileLayout,
       screenshot: '/tmp/noxswap-wallet.png',
       safeTreasuryScreenshot: '/tmp/noxswap-safe-treasury.png',
+      safeTreasuryMobileScreenshot: '/tmp/noxswap-safe-treasury-mobile.png',
       ownerOrderScreenshot: '/tmp/noxswap-order-owner.png',
     });
     await walletPage.close();
