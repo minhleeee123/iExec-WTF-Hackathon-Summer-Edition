@@ -8,6 +8,7 @@
 | Source ID | Tên nguồn | Loại nguồn | File/URL | Đơn vị phát hành | Thời điểm truy cập | Cấp ưu tiên |
 |---|---|---|---|---|---|---:|
 | SRC-001 | User-provided challenge brief for iExec WTF Hackathon Summer Edition | User-provided | `docs/original/user-provided-challenge-brief.md` | User-provided | 2026-07-21T21:34:36+07:00 | 7 |
+| SRC-002 | Safe Smart Account concepts and module architecture | Official technical documentation | `https://docs.safe.global/advanced/smart-account-concepts` | Safe | 2026-07-23 | 4 |
 
 ## 2. Deadline
 
@@ -35,6 +36,8 @@
 | Frontend chưa có URL production đã smoke-test | Internal implementation audit, 2026-07-22 | High | Deploy build hiện tại, kiểm tra MetaMask happy path từ mạng ngoài và ghi URL canonical trước submission. |
 | Local Nox integration stack không chạy vì môi trường thiếu Docker | Nox Hardhat plugin runtime check, 2026-07-22 | Low | Dùng compile/unit + live Sepolia E2E; chạy lại local integration trong CI có Docker nếu có. |
 | Docker-backed Nox integration workflow chưa có run evidence | Internal implementation validation, 2026-07-23 | Low | Workflow nightly/manual đã được thêm; chạy trên GitHub và giữ tách khỏi required PR checks cho đến khi ổn định. |
+| Safe input proofs cannot use a Safe contract as the EOA gateway owner | Live Sepolia smoke test, 2026-07-23 | Closed | Safe owner prepares persistent Nox ACLs in the allowlisted module; only the Safe threshold can trigger settlement and spend treasury balances. |
+| Standard Safe cannot receive the router's ERC-721 receipt callback | Live Sepolia smoke test, 2026-07-23 | Closed | Assets and refunds remain in Safe custody; receipt owner is constrained to a verified Safe owner EOA. |
 
 ## 5. Thông tin chưa xác minh
 
@@ -54,3 +57,12 @@
 |---|---|---|---|
 | Web/mobile app là phù hợp | Inference | Brief yêu cầu functional front-end, UX và end-to-end accessibility | Không, đã được fit gate chấp nhận |
 | Official website tạm dùng linktr.ee iExec tech | Inference | Link được nhắc trong brief, chưa kiểm chứng riêng | Có |
+
+## 8. Safe composability validation
+
+- Canonical Sepolia Safe: `0x549585Be4d75b388B4f825E0bCbBaA85B4FbfffF` (Safe v1.4.1, threshold 1).
+- Canonical allowlisted Nox module and Safe orderbook are recorded in `packages/contracts/deployment-sepolia.json`.
+- Live protected swap receipt #29 settled 1,000 cUSDC with the 10% default oracle tolerance; Safe balance reveal returned `0.496401483047806904 cETH`.
+- Safe confidential order #1 was created and cancelled through the module; the encrypted input was refunded.
+- Module revoke and owner-controlled re-enable were both confirmed on Sepolia; the canonical module is enabled after the test.
+- Auditor access is per-handle Nox viewer access only and does not grant token operator or Safe signing authority.

@@ -21,6 +21,9 @@ const contractRows = [
   ['NoxSwap Router V2', deployment.contracts.noxSwapRouter],
   ['Confidential OrderBook', deployment.contracts.limitOrderBook],
   ['NoxCompute', deployment.contracts.noxCompute],
+  ['Safe Treasury', deployment.safe.address],
+  ['Nox Safe Module', deployment.safe.module],
+  ['Safe Confidential OrderBook', deployment.safe.orderBook],
   ['cUSDC', deployment.contracts.cUSDC],
   ['cETH', deployment.contracts.cETH],
   ['cWBTC', deployment.contracts.cWBTC],
@@ -34,9 +37,10 @@ const tocItems = [
   ['swaps', '03 / Protected swaps'],
   ['orders', '04 / Limit orders'],
   ['privacy', '05 / Privacy model'],
-  ['agent', '06 / Strategy Agent'],
-  ['troubleshooting', '07 / Troubleshooting'],
-  ['contracts', '08 / Contracts'],
+  ['safe', '06 / Safe treasury'],
+  ['agent', '07 / Strategy Agent'],
+  ['troubleshooting', '08 / Troubleshooting'],
+  ['contracts', '09 / Contracts'],
 ];
 
 function ContractAddress({ address }) {
@@ -133,14 +137,14 @@ export default function DocsPage() {
           <section className="docs-section" id="swaps">
             <p className="eyebrow">03 / PROTECTED SWAPS</p>
             <h2>Use the default protection first, then tune it with intent.</h2>
-            <p className="docs-lead">The swap form derives a suggested encrypted minimum received from the Chainlink ETH/USD reference, the selected pair, router fee, and the chosen tolerance. The default tolerance is 5%.</p>
+            <p className="docs-lead">The swap form derives a suggested encrypted minimum received from the Chainlink ETH/USD reference, the selected pair, router fee, and the chosen tolerance. The default tolerance is 10% to absorb the current Sepolia pool/reference basis and normal price impact.</p>
             <div className="docs-rule-list">
               <div><CheckCircle2 size={18} /><p><strong>Positive protection is the default.</strong> The suggested minimum is encrypted before settlement and prevents an output below the accepted threshold.</p></div>
               <div><CheckCircle2 size={18} /><p><strong>It is not a confidential pool quote.</strong> Pool reserves and price impact remain encrypted, so the Chainlink-derived suggestion can still be stricter than the executable pool result.</p></div>
               <div><CheckCircle2 size={18} /><p><strong>A failed minimum refunds the input.</strong> If encrypted minOut rejects settlement, the router performs the protected refund path. The receipt records the attempt and the returned refund handle.</p></div>
               <div><CheckCircle2 size={18} /><p><strong>Zero protection is explicit.</strong> Entering zero requires the separate confirmation control. Use it only when accepting any positive output is intentional.</p></div>
             </div>
-            <div className="docs-callout docs-callout-info"><ShieldCheck size={18} /><p><strong>Recommended test flow:</strong> reveal the input balance, leave the suggested minOut and 5% tolerance unchanged, review the encrypted swap in MetaMask, then reveal the refreshed balance after settlement.</p></div>
+            <div className="docs-callout docs-callout-info"><ShieldCheck size={18} /><p><strong>Recommended test flow:</strong> reveal the input balance, leave the suggested minOut and 10% tolerance unchanged, review the encrypted swap in MetaMask, then reveal the refreshed balance after settlement.</p></div>
           </section>
 
           <section className="docs-section docs-section-soft" id="orders">
@@ -164,8 +168,22 @@ export default function DocsPage() {
             <p className="docs-footnote">Privacy here means sensitive values are represented by encrypted handles and processed through the Nox confidential execution flow. Wallet addresses, transaction metadata, and the public coordination state remain visible on Sepolia.</p>
           </section>
 
-          <section className="docs-section docs-section-soft" id="agent">
-            <p className="eyebrow">06 / STRATEGY AGENT</p>
+          <section className="docs-section docs-section-soft" id="safe">
+            <p className="eyebrow">06 / SAFE TREASURY</p>
+            <h2>Safe custody controls settlement; Nox protects the terms.</h2>
+            <p className="docs-lead">The Sepolia demo composes a Safe v1.4.1 smart account with an allowlisted NoxSafeModule. The module cannot execute arbitrary calls or delegatecalls: it can only prepare Nox inputs, route supported swaps and orders, manage the router/orderbook operator, grant handle viewers, and revoke itself.</p>
+            <div className="docs-rule-list">
+              <div><CheckCircle2 size={18} /><p><strong>Fund the Safe.</strong> The Safe Treasury tab can wrap public test assets directly to the Safe address. The resulting ERC-7984 balance is owned by the Safe, not by the connected EOA.</p></div>
+              <div><CheckCircle2 size={18} /><p><strong>Prepare, then settle.</strong> A Safe owner validates encrypted amount and minOut proofs for the module. This preparation cannot move funds. Spending occurs only when the Safe executes the module transaction under its configured threshold.</p></div>
+              <div><CheckCircle2 size={18} /><p><strong>Reveal selectively.</strong> The Safe grants the connected owner or an auditor viewer access to a specific Nox handle. Viewer access permits decryption only; it does not grant spend or Safe signing authority.</p></div>
+              <div><CheckCircle2 size={18} /><p><strong>Receipts remain deliverable.</strong> Confidential assets and refunds return to the Safe, while the non-fungible swap receipt is minted to an approved Safe owner because a standard Safe does not implement the ERC-721 receiver callback.</p></div>
+              <div><CheckCircle2 size={18} /><p><strong>Emergency revoke is recoverable.</strong> Revoke removes the module from the Safe linked list without changing owners, threshold, or balances. Safe owners can later review and enable an approved module again.</p></div>
+            </div>
+            <div className="docs-callout docs-callout-warning"><ShieldCheck size={18} /><p>The built-in browser transaction flow is intentionally limited to the deployed 1-of-1 demo Safe. A higher-threshold Safe must collect its signatures through the Safe Wallet interface before execution.</p></div>
+          </section>
+
+          <section className="docs-section" id="agent">
+            <p className="eyebrow">07 / STRATEGY AGENT</p>
             <h2>A planning assistant, never an autonomous signer.</h2>
             <p className="docs-lead">The Strategy Agent converts an intent into a strict, reviewable limit-order draft. It does not hold keys, submit transactions, reveal balances, or receive private handles.</p>
             <div className="docs-agent-flow"><span>Intent text</span><ArrowRight size={17} /><span>Public market context</span><ArrowRight size={17} /><span>Draft fields</span><ArrowRight size={17} /><span>Local review + MetaMask</span></div>
@@ -173,7 +191,7 @@ export default function DocsPage() {
           </section>
 
           <section className="docs-section" id="troubleshooting">
-            <p className="eyebrow">07 / TROUBLESHOOTING</p>
+            <p className="eyebrow">08 / TROUBLESHOOTING</p>
             <h2>Common issues and the safest next step.</h2>
             <div className="docs-faq-list">
               <details><summary>The wrong wallet provider appears.</summary><p>Disconnect or close competing injected wallets, reopen the wallet picker, and select the intended provider explicitly. NoxSwap remembers your provider preference for the browser.</p></details>
@@ -185,7 +203,7 @@ export default function DocsPage() {
           </section>
 
           <section className="docs-section docs-section-dark" id="contracts">
-            <p className="eyebrow">08 / CONTRACTS</p>
+            <p className="eyebrow">09 / CONTRACTS</p>
             <h2>Live deployment references.</h2>
             <p className="docs-lead">These addresses are the canonical NoxSwap Sepolia deployment used by the frontend. Every link opens the public Sepolia explorer.</p>
             <div className="docs-contract-table" role="table" aria-label="NoxSwap Sepolia contracts">

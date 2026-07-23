@@ -5,12 +5,12 @@
 
 ## 1. Trạng thái hiện tại
 
-- Giai đoạn hiện tại: Phase 6 — Development validation and public deployment
+- Giai đoạn hiện tại: Phase 6 — Safe composability extension validation
 - Trạng thái: Waiting for approval
-- Bước tiếp theo: User runs the final MetaMask write confirmation on `https://noxswap-iexec.vercel.app`; after confirmation, mark Phase 6 completed and start submission recording.
-- Blocker hiện tại: Không có engineering blocker. Formal completion requires a user-owned MetaMask confirmation on the newly deployed production build; local Docker-backed Nox runtime remains unavailable but is covered by live Sepolia and CI evidence.
+- Bước tiếp theo: User runs the final MetaMask Safe Treasury confirmation on the deployed frontend; after confirmation, mark Phase 6 completed and start submission recording.
+- Blocker hiện tại: Không có engineering blocker. Contracts, Safe module, protected swap, balance viewer, revoke/re-enable and Safe limit-order create/cancel have live Sepolia evidence. Formal UI completion requires one user-owned MetaMask pass of the Safe Treasury tab.
 - Đang chờ phê duyệt từ: User.
-- Cập nhật lần cuối: 2026-07-23T18:43:00+07:00
+- Cập nhật lần cuối: 2026-07-23T23:40:00+07:00
 
 Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for approval`, `Blocked`, `Completed`, `Skipped`.
 
@@ -58,7 +58,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 
 ## 6. Bước tiếp theo
 
-1. User confirms the final MetaMask write path on the newly deployed production URL.
+1. User confirms the final MetaMask Safe Treasury path on the newly deployed production URL.
 2. Mark Phase 6 completed, then record the demo and write the X submission post.
 
 ## 7. Quy tắc cập nhật PLAN.md
@@ -86,6 +86,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 - [x] Groq Strategy Agent, nine-tool MCP v4 adapter, and fail-open keeper observer have unit, responsive, and live provider evidence without granting AI transaction authority.
 - [x] Server-side Groq secret is configured on Vercel; public planner/observer endpoints and the `/app/trade?mode=agent` route pass production smoke tests.
 - [x] Frontend production đã deploy và public read-only smoke test đã pass tại `https://noxswap-iexec.vercel.app`.
+- [x] Safe v1.4.1 treasury, allowlisted Nox module, private swap, selective viewer, module revoke/re-enable and confidential order create/cancel have live Sepolia evidence.
 - [x] Đã tạo file README.md chính thức và feedback.md ở root repository.
 - [ ] Submission checklist canonical đã hoàn thành.
 - [ ] Bài nộp đã được final review.

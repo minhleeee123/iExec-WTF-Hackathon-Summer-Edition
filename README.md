@@ -17,6 +17,9 @@ User documentation: [https://noxswap-iexec.vercel.app/docs](https://noxswap-iexe
 |---|---|
 | NoxSwap Router V2 and receipt NFT | [`0x6e8d...1015`](https://sepolia.etherscan.io/address/0x6e8df82d708196e75Fb735120B4817f5c2551015) |
 | Confidential limit order book | [`0xab90...96fb`](https://sepolia.etherscan.io/address/0xab903F78edEAF96faE78c0BF46810122fC9896fb) |
+| Safe v1.4.1 treasury | [`0x5495...fffF`](https://sepolia.etherscan.io/address/0x549585Be4d75b388B4f825E0bCbBaA85B4FbfffF) |
+| Allowlisted Nox Safe module | [`0x9233...664c`](https://sepolia.etherscan.io/address/0x9233DF9de3f81E7442e3539eC1620Ef9adF0664c) |
+| Safe confidential order book | [`0xd803...9908`](https://sepolia.etherscan.io/address/0xd8037cb70163eC52aa774f54590BB266ee0d9908) |
 | cUSDC ERC-7984 wrapper | [`0x6932...28fE`](https://sepolia.etherscan.io/address/0x6932075FBfd847E453992A8A1EEefB6C6cb328fE) |
 | cETH ERC-7984 wrapper | [`0x04Dc...D4a4`](https://sepolia.etherscan.io/address/0x04Dc3bebDc4E1dfcB423bB7C38Ed280144B5D4a4) |
 | cWBTC ERC-7984 wrapper | [`0x1b8f...8375`](https://sepolia.etherscan.io/address/0x1b8fa85acB318A8599EB2382638020b458028375) |
@@ -29,7 +32,7 @@ User documentation: [https://noxswap-iexec.vercel.app/docs](https://noxswap-iexe
 
 The three encrypted pools were initialized in transactions [`0xb509...6ae87`](https://sepolia.etherscan.io/tx/0xb50926c8d71c293e5f13b0f79c46d0f4260b5c4a4301c78fbb34eac96f6ae87b), [`0xdd08...3c72`](https://sepolia.etherscan.io/tx/0xdd08e2eff23401b32b682090162f84dff01e06b3639c37a2bf137d495c3c3c72), and [`0xa650...1f5e`](https://sepolia.etherscan.io/tx/0xa650ae996f1faa9c5d1449154a0c378d6f089f505ec5f53700f0a4f620351f5e). Full addresses and transactions are in [`packages/contracts/deployment-sepolia.json`](./packages/contracts/deployment-sepolia.json).
 
-All ten project contracts have exact creation/runtime source matches on Sourcify. [Inspect the verified Router V2 source](https://repo.sourcify.dev/11155111/0x6e8df82d708196e75Fb735120B4817f5c2551015).
+The original ten NoxSwap deployment contracts have exact creation/runtime source matches on Sourcify. [Inspect the verified Router V2 source](https://repo.sourcify.dev/11155111/0x6e8df82d708196e75Fb735120B4817f5c2551015). The Safe extension addresses and deployment transactions are recorded in the canonical deployment JSON.
 
 All `n*` assets are faucet-backed Sepolia test assets deployed for this demo. They do not represent assets with monetary value or native Solana custody.
 
@@ -75,8 +78,11 @@ The router computes the 0.30% fee and constant-product quote using `Nox.mul`, `N
 - Read the Sepolia Chainlink ETH/USD feed for a clearly labeled UI reference estimate.
 - Draft a strict limit-order plan from natural language and public Chainlink context; private percentage math and Nox encryption remain in the browser and every transaction still requires MetaMask.
 - Select MetaMask, Coinbase Wallet, or Rabby through EIP-6963 provider discovery without falling back to a different injected wallet.
-- Configure a 0.5%-10% Chainlink-reference tolerance for swap `minOut` (5% default for the test pools), then refresh and re-decrypt new balance handles after settlement.
+- Configure a 0.5%-10% Chainlink-reference tolerance for swap `minOut` (10% default for the current test-pool/reference basis), then refresh and re-decrypt new balance handles after settlement.
 - Revoke an ERC-7984 OrderBook operator authorization for the selected input token; already escrowed orders remain active until settlement or cancellation.
+- Fund a Safe-owned ERC-7984 treasury, prepare Nox ciphertext ACLs without spend authority, and settle protected swaps only through the Safe threshold.
+- Reveal Safe balance handles to a selected owner/auditor, manage allowlisted token operators, and revoke the Nox module without changing Safe owners or balances.
+- Create and cancel confidential limit orders owned by the Safe while minting non-fungible settlement receipts to a verified Safe owner.
 - Use nine MCP stdio tools for public market/plan reads, real protected swaps, balance decryption, three-pool inspection, ACL inspection, and limit-order management.
 
 ## Deliberate Limitations
@@ -86,6 +92,7 @@ The router computes the 0.30% fee and constant-product quote using `Nox.mul`, `N
 - No historical ACL revoke button: the installed Nox SDK supports `addViewer` but not `removeViewer`; grants apply to the current handle and do not automatically carry to a new balance handle.
 - No fixed MEV-savings claim. The UI reports measured execution-versus-oracle deviation only for ETH/USDC.
 - No LP share/removal lifecycle. Pools are deployer-funded test liquidity.
+- The built-in Safe browser signer supports the deployed 1-of-1 demo Safe. Higher-threshold Safes must collect signatures in the Safe Wallet interface.
 
 See [`docs/verification.md`](./docs/verification.md) for the remediation and test record.
 
@@ -113,6 +120,7 @@ packages/
     contracts/NoxConfidentialToken.sol
     contracts/NoxSwap.sol
     contracts/NoxLimitOrderBook.sol
+    contracts/NoxSafeModule.sol
     client/abis.js
     scripts/deploy-sepolia.js
     scripts/test-sepolia-e2e.js
