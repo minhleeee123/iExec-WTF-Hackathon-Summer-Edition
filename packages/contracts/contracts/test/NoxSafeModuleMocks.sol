@@ -7,13 +7,14 @@ contract NoxSafeModuleMockRouter {
     address public lastTokenOut;
     uint256 public swapCalls;
 
-    function confidentialSwap(
+    function confidentialSwapAuthorized(
         address tokenIn,
         address tokenOut,
         bytes32,
-        bytes calldata,
         bytes32,
-        bytes calldata,
+        address,
+        address,
+        address,
         uint64
     ) external returns (bytes32 encryptedOutput, bytes32 encryptedRefund, uint256 receiptId) {
         lastCaller = msg.sender;
@@ -30,13 +31,12 @@ contract NoxSafeModuleMockOrderBook {
     uint256 public cancelCalls;
     uint256 public lastCancelledOrder;
 
-    function createOrder(
+    function createOrderAuthorized(
         address,
         address,
         bytes32,
-        bytes calldata,
         bytes32,
-        bytes calldata,
+        address,
         uint256,
         uint64
     ) external returns (uint256 orderId) {

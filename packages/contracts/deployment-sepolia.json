@@ -36,11 +36,14 @@
     "limitOrderBook": "0x2a70c567a2e463a58f64c9bf7ae851cab86777aabfafec6aae7eba350b450447",
     "safe": "0xaefc09b4202d2fe3ac1033ac024895712030a4585096191a485bf8064ad9d9b6",
     "noxSafeModule": "0x0bcce205190da0d3168e39e742a942319c142e5627264e0798964fdf7696a409",
-    "noxSafeModuleEnable": "0xed97f4b2c9e526e83df5652310b37d50a46beb12ec5bb49d8a2181a54e2a7ddc"
+    "noxSafeModuleEnable": "0xed97f4b2c9e526e83df5652310b37d50a46beb12ec5bb49d8a2181a54e2a7ddc",
+    "safeLimitOrderBook": "0x736f7be1c615e91f652b99913ce392ae62eaf954b09c0d82259370ca1fd37a08",
+    "noxSafeModuleV2": "0x619153306350cb01833e19fb7d9c903b524558baa147ac75b1c25961537164ed",
+    "noxSafeModuleV2Enable": "0x56c6689c90e8663608edd175e7690d521cc740d9b51a94030db75a122506ce49"
   },
   "gatewayUrl": "https://gateway-testnets.noxprotocol.dev",
   "explorerUrl": "https://sepolia.etherscan.io/address/0x6e8df82d708196e75Fb735120B4817f5c2551015",
-  "deployedAt": "2026-07-23T15:36:44.406Z",
+  "deployedAt": "2026-07-23T15:56:43.514Z",
   "feeds": {
     "ethUsd": "0x694AA1769357215DE4FAC081bf1f309aDC325306"
   },
@@ -76,11 +79,13 @@
     "singleton": "0x41675C099F32341bf84BFc5382aF534df5C7461a",
     "proxyFactory": "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67",
     "address": "0x549585Be4d75b388B4f825E0bCbBaA85B4FbfffF",
-    "module": "0xBfDf83d6D5c5F2b62Ac8a610276fc0dFE762E7cA",
+    "module": "0x9233DF9de3f81E7442e3539eC1620Ef9adF0664c",
     "owner": "0xE412d04DA2A211F7ADC80311CC0FF9F03440B64E",
     "threshold": 1,
-    "moduleEnabled": true
+    "moduleEnabled": true,
+    "orderBook": "0xd8037cb70163eC52aa774f54590BB266ee0d9908"
   },
   "safeExplorerUrl": "https://sepolia.etherscan.io/address/0x549585Be4d75b388B4f825E0bCbBaA85B4FbfffF",
-  "noxSafeModuleExplorerUrl": "https://sepolia.etherscan.io/address/0xBfDf83d6D5c5F2b62Ac8a610276fc0dFE762E7cA"
+  "noxSafeModuleExplorerUrl": "https://sepolia.etherscan.io/address/0x9233DF9de3f81E7442e3539eC1620Ef9adF0664c",
+  "safeOrderBookExplorerUrl": "https://sepolia.etherscan.io/address/0xd8037cb70163eC52aa774f54590BB266ee0d9908"
 }

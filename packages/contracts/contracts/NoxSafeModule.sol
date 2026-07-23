@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.35;
 
+import {
+    Nox,
+    euint256,
+    externalEuint256
+} from "@iexec-nox/nox-protocol-contracts/contracts/sdk/Nox.sol";
+
 enum SafeOperation {
     Call,
     DelegateCall
@@ -24,6 +30,8 @@ interface INoxSafeHost {
     ) external returns (bool success, bytes memory returnData);
 
     function disableModule(address prevModule, address module) external;
+
+    function isOwner(address owner) external view returns (bool);
 }
 
 interface INoxSafeOperator {
@@ -46,10 +54,12 @@ interface INoxSafeCompute {
  */
 contract NoxSafeModule {
     error OnlySafe();
+    error OnlySafeOwner();
     error ModuleNotEnabled();
     error InvalidAddress();
     error InvalidToken();
     error InvalidOperator();
+    error InvalidConsumer();
     error SafeCallFailed(address target, bytes data);
     error InvalidReturnData();
 
@@ -62,6 +72,11 @@ contract NoxSafeModule {
         uint256 receiptId
     );
     event SafeOrderCreated(address indexed safe, uint256 indexed orderId);
+    event SafeInputPrepared(
+        address indexed owner,
+        address indexed consumer,
+        bytes32 indexed handle
+    );
     event SafeOrderCancelled(address indexed safe, uint256 indexed orderId, bytes32 encryptedRefund);
     event SafeTokenOperatorUpdated(
         address indexed safe,
@@ -85,6 +100,11 @@ contract NoxSafeModule {
 
     modifier onlyEnabled() {
         if (!INoxSafeHost(safe).isModuleEnabled(address(this))) revert ModuleNotEnabled();
+        _;
+    }
+
+    modifier onlySafeOwner() {
+        if (!INoxSafeHost(safe).isOwner(msg.sender)) revert OnlySafeOwner();
         _;
     }
 
@@ -117,6 +137,24 @@ contract NoxSafeModule {
     }
 
     /**
+     * @notice Validate an EOA-owner input proof and persistently authorize the
+     *         intended Nox consumer. Preparing a handle cannot move Safe funds;
+     *         settlement still requires the Safe threshold to call this module.
+     */
+    function prepareInput(
+        externalEuint256 encryptedInput,
+        bytes calldata inputProof,
+        address consumer
+    ) external onlySafeOwner onlyEnabled returns (bytes32 preparedHandle) {
+        if (consumer != router && consumer != orderBook) revert InvalidConsumer();
+        euint256 input = Nox.fromExternal(encryptedInput, inputProof);
+        Nox.allow(input, consumer);
+        Nox.allow(input, safe);
+        preparedHandle = euint256.unwrap(input);
+        emit SafeInputPrepared(msg.sender, consumer, preparedHandle);
+    }
+
+    /**
      * @notice Execute a protected swap using the Safe as payer and recipient.
      *         This function must be called by Safe.execTransaction, not by an
      *         EOA. The nested module call makes the router observe the Safe as
@@ -125,22 +163,23 @@ contract NoxSafeModule {
     function confidentialSwap(
         address tokenIn,
         address tokenOut,
-        bytes32 encryptedAmountIn,
-        bytes calldata inputProof,
-        bytes32 encryptedMinOut,
-        bytes calldata minOutProof,
+        bytes32 preparedAmountIn,
+        bytes32 preparedMinOut,
+        address receiptOwner,
         uint64 deadline
     ) external onlySafe onlyEnabled returns (bytes32 encryptedOutput, bytes32 encryptedRefund, uint256 receiptId) {
         _requireToken(tokenIn);
         _requireToken(tokenOut);
+        if (!INoxSafeHost(safe).isOwner(receiptOwner)) revert OnlySafeOwner();
         bytes memory data = abi.encodeWithSignature(
-            "confidentialSwap(address,address,bytes32,bytes,bytes32,bytes,uint64)",
+            "confidentialSwapAuthorized(address,address,bytes32,bytes32,address,address,address,uint64)",
             tokenIn,
             tokenOut,
-            encryptedAmountIn,
-            inputProof,
-            encryptedMinOut,
-            minOutProof,
+            preparedAmountIn,
+            preparedMinOut,
+            safe,
+            safe,
+            receiptOwner,
             deadline
         );
         bytes memory returnData = _safeCallWithReturnData(router, data);
@@ -155,23 +194,22 @@ contract NoxSafeModule {
     function createLimitOrder(
         address tokenIn,
         address tokenOut,
-        bytes32 encryptedAmountIn,
-        bytes calldata amountProof,
-        bytes32 encryptedMinOut,
-        bytes calldata minOutProof,
+        bytes32 preparedAmountIn,
+        bytes32 preparedMinOut,
+        address receiptOwner,
         uint256 triggerPrice,
         uint64 expiry
     ) external onlySafe onlyEnabled returns (uint256 orderId) {
         _requireToken(tokenIn);
         _requireToken(tokenOut);
+        if (!INoxSafeHost(safe).isOwner(receiptOwner)) revert OnlySafeOwner();
         bytes memory data = abi.encodeWithSignature(
-            "createOrder(address,address,bytes32,bytes,bytes32,bytes,uint256,uint64)",
+            "createOrderAuthorized(address,address,bytes32,bytes32,address,uint256,uint64)",
             tokenIn,
             tokenOut,
-            encryptedAmountIn,
-            amountProof,
-            encryptedMinOut,
-            minOutProof,
+            preparedAmountIn,
+            preparedMinOut,
+            receiptOwner,
             triggerPrice,
             expiry
         );

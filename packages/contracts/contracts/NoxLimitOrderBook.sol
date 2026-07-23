@@ -49,6 +49,7 @@ contract NoxLimitOrderBook is ReentrancyGuard {
         address tokenOut;
         euint256 encryptedAmountIn;
         euint256 encryptedMinOut;
+        address receiptOwner;
         uint256 triggerPrice;
         uint64 expiry;
         OrderStatus status;
@@ -137,12 +138,41 @@ contract NoxLimitOrderBook is ReentrancyGuard {
         uint256 triggerPrice,
         uint64 expiry
     ) external nonReentrant returns (uint256 orderId) {
+        euint256 requestedAmount = Nox.fromExternal(encryptedAmountIn, amountProof);
+        euint256 minimumOutput = Nox.fromExternal(encryptedMinOut, minOutProof);
+        return _createOrder(tokenIn, tokenOut, requestedAmount, minimumOutput, msg.sender, triggerPrice, expiry);
+    }
+
+    /// @notice Compose with contracts that have already validated and authorized
+    ///         persistent Nox handles for this order book.
+    function createOrderAuthorized(
+        address tokenIn,
+        address tokenOut,
+        euint256 preparedAmountIn,
+        euint256 preparedMinOut,
+        address receiptOwner,
+        uint256 triggerPrice,
+        uint64 expiry
+    ) external nonReentrant returns (uint256 orderId) {
+        require(Nox.isAllowed(preparedAmountIn, address(this)), "NoxOrders: amount not authorized");
+        require(Nox.isAllowed(preparedMinOut, address(this)), "NoxOrders: minOut not authorized");
+        require(receiptOwner != address(0), "NoxOrders: zero receipt owner");
+        return _createOrder(tokenIn, tokenOut, preparedAmountIn, preparedMinOut, receiptOwner, triggerPrice, expiry);
+    }
+
+    function _createOrder(
+        address tokenIn,
+        address tokenOut,
+        euint256 requestedAmount,
+        euint256 minimumOutput,
+        address receiptOwner,
+        uint256 triggerPrice,
+        uint64 expiry
+    ) private returns (uint256 orderId) {
         require(_isSupportedPair(tokenIn, tokenOut), "NoxOrders: unsupported pair");
         require(triggerPrice > 0, "NoxOrders: zero trigger");
         require(expiry > block.timestamp, "NoxOrders: expired");
 
-        euint256 requestedAmount = Nox.fromExternal(encryptedAmountIn, amountProof);
-        euint256 minimumOutput = Nox.fromExternal(encryptedMinOut, minOutProof);
         Nox.allowTransient(requestedAmount, tokenIn);
         euint256 escrowedAmount = IERC7984(tokenIn).confidentialTransferFrom(
             msg.sender,
@@ -163,6 +193,7 @@ contract NoxLimitOrderBook is ReentrancyGuard {
             tokenOut: tokenOut,
             encryptedAmountIn: escrowedAmount,
             encryptedMinOut: minimumOutput,
+            receiptOwner: receiptOwner,
             triggerPrice: triggerPrice,
             expiry: expiry,
             status: OrderStatus.Open
@@ -201,7 +232,7 @@ contract NoxLimitOrderBook is ReentrancyGuard {
             order.encryptedMinOut,
             order.owner,
             order.owner,
-            order.owner,
+            order.receiptOwner,
             order.expiry
         );
         updatedAt;

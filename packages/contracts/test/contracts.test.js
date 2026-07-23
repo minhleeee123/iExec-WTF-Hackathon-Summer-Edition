@@ -46,11 +46,12 @@ test('compiled limit order ABI supports create, execute, cancel, and expiry refu
     assert(orderArtifact.abi.some((entry) => entry.type === 'function' && entry.name === name), `${name} missing`);
   }
   assert(orderArtifact.abi.some((entry) => entry.type === 'event' && entry.name === 'OrderExecuted'));
+  assert(orderArtifact.abi.some((entry) => entry.type === 'function' && entry.name === 'createOrderAuthorized'));
 });
 
 test('compiled Safe module exposes only allowlisted Nox treasury operations', () => {
   const moduleArtifact = artifact('NoxSafeModule');
-  for (const name of ['confidentialSwap', 'createLimitOrder', 'cancelLimitOrder', 'setTokenOperator', 'addViewer', 'revoke', 'isEnabled']) {
+  for (const name of ['prepareInput', 'confidentialSwap', 'createLimitOrder', 'cancelLimitOrder', 'setTokenOperator', 'addViewer', 'revoke', 'isEnabled']) {
     assert(moduleArtifact.abi.some((entry) => entry.type === 'function' && entry.name === name), `${name} missing`);
   }
   assert(moduleArtifact.abi.some((entry) => entry.type === 'event' && entry.name === 'SafeSwapExecuted'));

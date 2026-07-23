@@ -120,16 +120,15 @@ async function deployFixture() {
 
 test('NoxSafeModule executes a private swap through the Safe and preserves Safe custody', async () => {
   const fixture = await deployFixture();
-  const { ethers, safe, module, router } = fixture;
+  const { ethers, owner, safe, module, router } = fixture;
   const tokenIn = await fixture.token.getAddress();
   const tokenOut = await fixture.tokenOut.getAddress();
   const data = module.interface.encodeFunctionData('confidentialSwap', [
     tokenIn,
     tokenOut,
     ethers.zeroPadValue('0x01', 32),
-    '0x1234',
     ethers.zeroPadValue('0x02', 32),
-    '0x5678',
+    owner.address,
     4_000_000_000n,
   ]);
   const receipt = await safeExec(fixture, await module.getAddress(), data);
@@ -145,16 +144,15 @@ test('NoxSafeModule executes a private swap through the Safe and preserves Safe 
 
 test('NoxSafeModule routes order creation and operator authorization with Safe as msg.sender', async () => {
   const fixture = await deployFixture();
-  const { ethers, safe, module, orderBook, token } = fixture;
+  const { ethers, owner, safe, module, orderBook, token } = fixture;
   const tokenIn = await token.getAddress();
   const tokenOut = await fixture.tokenOut.getAddress();
   const orderData = module.interface.encodeFunctionData('createLimitOrder', [
     tokenIn,
     tokenOut,
     ethers.zeroPadValue('0x03', 32),
-    '0x12',
     ethers.zeroPadValue('0x04', 32),
-    '0x34',
+    owner.address,
     2_000_000_000n,
     4_000_000_000n,
   ]);
@@ -206,9 +204,8 @@ test('NoxSafeModule grants viewers through Safe custody and cannot be called by 
       await fixture.token.getAddress(),
       viewer,
       handle,
-      '0x',
       handle,
-      '0x',
+      owner.address,
       4_000_000_000n,
     ),
     /OnlySafe|revert/i,
@@ -231,4 +228,30 @@ test('Safe owner can revoke the module and all later module writes are blocked',
     /revert|GS013|GS modules/i,
   );
   assert.equal(await router.swapCalls(), 0n);
+});
+
+test('Safe v1.4 accepts a browser personal-sign signature normalized to v=31/32', async () => {
+  const fixture = await deployFixture();
+  const { ethers, owner, safe, module, router } = fixture;
+  const data = module.interface.encodeFunctionData('confidentialSwap', [
+    await fixture.token.getAddress(),
+    await fixture.tokenOut.getAddress(),
+    ethers.zeroPadValue('0x06', 32),
+    ethers.zeroPadValue('0x07', 32),
+    owner.address,
+    4_000_000_000n,
+  ]);
+  const nonce = await safe.nonce();
+  const hash = await safe.getTransactionHash(
+    await module.getAddress(), 0, data, 0, 0, 0, 0,
+    ethers.ZeroAddress, ethers.ZeroAddress, nonce,
+  );
+  const personal = ethers.Signature.from(await owner.signMessage(ethers.getBytes(hash)));
+  const safeSignature = ethers.concat([personal.r, personal.s, ethers.toBeHex(Number(personal.v) + 4, 1)]);
+  const transaction = await safe.connect(owner).execTransaction(
+    await module.getAddress(), 0, data, 0, 0, 0, 0,
+    ethers.ZeroAddress, ethers.ZeroAddress, safeSignature,
+  );
+  await transaction.wait();
+  assert.equal(await router.swapCalls(), 1n);
 });
