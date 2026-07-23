@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Clock3, Copy, ExternalLink, LoaderCircle, RefreshCw, SlidersHorizontal } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Clock3, Copy, ExternalLink, LoaderCircle, RefreshCw, SlidersHorizontal } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { ethers } from 'ethers';
 import { useSearchParams } from 'react-router-dom';
@@ -12,6 +12,7 @@ import OrderDetail from './OrderDetail';
 export default function OrderBook({ account, actions, blockFetchedAt, blockTimestamp, book, busy, onConnect }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [clock, setClock] = useState(() => Date.now());
+  const [copiedOrderId, setCopiedOrderId] = useState(null);
   const filters = useMemo(() => parseOrderUrlState(searchParams), [searchParams]);
   const selected = filters.order ? book.orders.find((order) => Number(order.id) === filters.order) : null;
   const selectedOrders = useMemo(() => selectOrders(book.orders, filters, account), [account, book.orders, filters]);
@@ -23,7 +24,9 @@ export default function OrderBook({ account, actions, blockFetchedAt, blockTimes
   }, []);
 
   const updateFilters = (patch, options) => {
-    setSearchParams(serializeOrderUrlState(updateOrderUrlState(filters, patch)), options);
+    const shouldResetPage = patch.page === undefined && patch.order === undefined;
+    const nextPatch = shouldResetPage ? { ...patch, page: 1 } : patch;
+    setSearchParams(serializeOrderUrlState(updateOrderUrlState(filters, nextPatch)), options);
   };
 
   const orderLink = (order) => {
@@ -33,7 +36,11 @@ export default function OrderBook({ account, actions, blockFetchedAt, blockTimes
 
   const copyOrder = async (order) => {
     const link = orderLink(order);
-    try { await navigator.clipboard.writeText(link); } catch { /* The detail URL remains visible after selection. */ }
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiedOrderId(Number(order.id));
+      window.setTimeout(() => setCopiedOrderId((current) => current === Number(order.id) ? null : current), 1800);
+    } catch { /* The detail URL remains visible after selection. */ }
   };
 
   return (
@@ -78,7 +85,7 @@ export default function OrderBook({ account, actions, blockFetchedAt, blockTimes
                 <code title={`${order.amountHandle} / ${order.minOutHandle}`}>{shorten(order.amountHandle, 9, 7)}</code>
                 <span className={`order-status status-${order.state}`}>{order.stateLabel}</span>
                 <span className="order-row-links">
-                  <button onClick={() => copyOrder(order)} aria-label={`Copy link for order ${order.id}`} title="Copy order link"><Copy size={15} /></button>
+                  <button onClick={() => copyOrder(order)} aria-label={copiedOrderId === Number(order.id) ? `Order ${order.id} link copied` : `Copy link for order ${order.id}`} title={copiedOrderId === Number(order.id) ? 'Copied' : 'Copy order link'}>{copiedOrderId === Number(order.id) ? <Check size={15} /> : <Copy size={15} />}</button>
                   {order.createdTransactionHash && <a href={`https://sepolia.etherscan.io/tx/${order.createdTransactionHash}`} target="_blank" rel="noreferrer" aria-label={`Open order ${order.id} creation transaction`}><ExternalLink size={15} /></a>}
                 </span>
               </div>
