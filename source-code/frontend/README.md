@@ -77,4 +77,8 @@ balance, handle, proof, signature, or private key.
 
 ## Private balances
 
-The client never substitutes plaintext or mock balances for an encrypted balance. The eye control asks the connected wallet for the EIP-712 authorization required by the Nox Handle Gateway, then displays the returned plaintext only in local React state. Changing account/network or completing a balance-changing transaction hides and clears stale private balance state.
+The client never substitutes plaintext or mock balances for an encrypted balance. The eye control asks the selected EIP-6963 wallet provider for the EIP-712 authorization required by the Nox Handle Gateway, then displays the returned plaintext only in local React state. Changing account/network clears stale private balance state. When a user starts a balance-changing operation with balances revealed, the client reads the newly confirmed handles and requests fresh decryption instead of retaining stale plaintext.
+
+Swap suggestions use a configurable Chainlink-reference tolerance from 0.5% to 10%, defaulting to 5% for the deployed test pools. This is not a pool quote: reserves and price impact remain confidential, so the UI explicitly warns that a stricter minimum can still produce a full protected refund.
+
+Limit-order authorization can be revoked per input token with `setOperator(orderBook, 0)`. Revocation prevents new escrow transfers and does not cancel or refund an existing order.

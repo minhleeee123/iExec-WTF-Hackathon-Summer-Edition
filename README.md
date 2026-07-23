@@ -72,6 +72,9 @@ The router computes the 0.30% fee and constant-product quote using `Nox.mul`, `N
 - Read actual `SwapExecuted` history, calldata, handles, proof size, and receipt metadata.
 - Read the Sepolia Chainlink ETH/USD feed for a clearly labeled UI reference estimate.
 - Draft a strict limit-order plan from natural language and public Chainlink context; private percentage math and Nox encryption remain in the browser and every transaction still requires MetaMask.
+- Select MetaMask, Coinbase Wallet, or Rabby through EIP-6963 provider discovery without falling back to a different injected wallet.
+- Configure a 0.5%-10% Chainlink-reference tolerance for swap `minOut` (5% default for the test pools), then refresh and re-decrypt new balance handles after settlement.
+- Revoke an ERC-7984 OrderBook operator authorization for the selected input token; already escrowed orders remain active until settlement or cancellation.
 - Use nine MCP stdio tools for public market/plan reads, real protected swaps, balance decryption, three-pool inspection, ACL inspection, and limit-order management.
 
 ## Deliberate Limitations

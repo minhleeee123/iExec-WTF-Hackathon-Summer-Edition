@@ -14,7 +14,7 @@
 
 NoxSwap is a confidential DeFi application deployed on Ethereum Sepolia. It leverages official iExec Nox ERC-7984 token wrappers (`cUSDC`, `cETH`, `cWBTC`, `cSOL`), encrypted constant-product pool reserves inside a TEE-backed Router V2, an automated OrderBook executing permissionless limit orders via Chainlink Oracles, and a Groq LLM-powered Intent Strategy Co-Pilot.
 
-During implementation, we conducted extensive unit testing (33 frontend tests, 27 backend tests), Playwright automated UI testing across 4 viewports, and live on-chain Sepolia transaction verification using real EIP-712 signatures.
+During implementation, we conducted extensive unit testing (37 frontend tests, 27 backend tests), Playwright automated UI testing across 4 viewports, and live on-chain Sepolia transaction verification using real EIP-712 signatures.
 
 This feedback document details what worked exceptionally well, technical friction points encountered during development, exact runtime errors, and actionable recommendations for the iExec Nox team.
 
@@ -60,7 +60,7 @@ This feedback document details what worked exceptionally well, technical frictio
 
 ### 3.5 Protected `minOut` Rejection & Encrypted Refunds
 * **Problem**: In encrypted swaps, setting an aggressive `minOut` higher than the TEE enclave's computed output resulted in `Protected swap rejected by encrypted minOut. Refunded 100%`. Users initially found the reason unclear when private balances re-locked.
-* **Our Solution**: Integrated Chainlink ETH/USD oracle reference pricing to derive a suggested 0.50% slippage `minOut` (`deriveSwapMinOut`) and preserved revealed balance state in UI state management.
+* **Our Solution**: Integrated Chainlink ETH/USD oracle reference pricing with a user-selectable 0.5%-10% tolerance and a 5% test-pool default (`deriveSwapMinOut`). After settlement, the client reloads the new confidential balance handles and requests fresh decryption instead of displaying stale plaintext.
 * **Recommendation**: Provide contract helper utilities or client SDK functions for deriving protected minimum output bounds relative to oracle feeds.
 
 ---

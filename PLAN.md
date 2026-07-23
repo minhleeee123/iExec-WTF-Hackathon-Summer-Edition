@@ -7,10 +7,10 @@
 
 - Giai đoạn hiện tại: Phase 6 — Development validation and public deployment
 - Trạng thái: In progress
-- Bước tiếp theo: Smoke-test the final MetaMask write confirmation on production, then record the demo.
+- Bước tiếp theo: Deploy the latest wallet/minOut/reveal/operator fixes, smoke-test the final MetaMask write confirmation on production, then record the demo.
 - Blocker hiện tại: Local Nox off-chain test stack cần Docker nhưng môi trường hiện tại không có Docker; sử dụng compile/unit tests và live Sepolia verification làm acceptance evidence.
 - Đang chờ phê duyệt từ: Không.
-- Cập nhật lần cuối: 2026-07-23T02:10:26+07:00
+- Cập nhật lần cuối: 2026-07-23T16:35:05+07:00
 
 Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for approval`, `Blocked`, `Completed`, `Skipped`.
 
@@ -58,7 +58,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 
 ## 6. Bước tiếp theo
 
-1. Chạy manual MetaMask happy path trên URL production; lưu tx evidence.
+1. Deploy các frontend fix mới nhất rồi chạy manual MetaMask happy path trên URL production; lưu tx evidence.
 2. Chạy lại Core Product Ready Gate rồi mới quay video và viết bài X.
 
 ## 7. Quy tắc cập nhật PLAN.md

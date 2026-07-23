@@ -138,7 +138,7 @@ Failure handling:
 | Unwrap | Same live E2E | Exactly `0.01 nWETH` released after proof finalization | Pass |
 | MCP protocol | `npm run test:mcp` and `npm run test:mcp:write` | Nine tools, live Chainlink/Groq planning, real small swap, order create/cancel, receipt/event/status assertions, and sanitized evidence | Pass |
 | AI strategy and observer | `npm run test:unit`, `npm run test:agent:live`, backend `npm test` | Strict-schema Groq responses, private-field rejection, local percentage compilation, responsive UI, and observer non-authority | Pass |
-| Frontend static quality | `npm run test:unit && npm run build && npm run lint` | 21 unit tests including positive minOut derivation/validation, incremental event index/cache, production build, and zero lint errors | Pass |
+| Frontend static quality | `npm run test:unit && npm run build && npm run lint` | 37 unit tests including wallet-provider selection, configurable positive minOut regression, incremental event index/cache, production build, and zero lint errors | Pass |
 | Continuous integration | `.github/workflows/ci.yml` | Push/PR compile, tests, lint, build, deployment consistency, and Gitleaks; YAML validated locally | Pass |
 | Responsive layout | Headless Chrome 1440x1000 and 390x844 | Wallet-free live orderbook, responsive detail, URL reload, owner/non-owner controls, landing/app separation, and no horizontal overflow | Pass |
 | Public dApp accessibility | Headless external URL test | Production route loads the live public orderbook at `https://frontend-dusky-five-56.vercel.app` | Pass |
