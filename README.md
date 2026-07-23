@@ -11,6 +11,8 @@ compromise impact are documented in [`docs/threat-model.md`](docs/threat-model.m
 
 Web application: [https://noxswap-iexec.vercel.app](https://noxswap-iexec.vercel.app)
 
+User documentation: [https://noxswap-iexec.vercel.app/docs](https://noxswap-iexec.vercel.app/docs)
+
 | Contract | Sepolia address |
 |---|---|
 | NoxSwap Router V2 and receipt NFT | [`0x6e8d...1015`](https://sepolia.etherscan.io/address/0x6e8df82d708196e75Fb735120B4817f5c2551015) |

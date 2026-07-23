@@ -39,6 +39,9 @@ npm run build
 
 - `/`: standalone product landing page and live deployment evidence. The wallet and
   application navigation are intentionally hidden until the user launches the app.
+- `/docs`: public user documentation for onboarding, encrypted balances, protected
+  swaps, confidential limit orders, privacy boundaries, troubleshooting, and the
+  deployed Sepolia contract addresses.
 - `/app/trade`: protected swaps, confidential limit orders, and the Strategy
   Agent, selected with a URL-backed workflow tab.
 - `/app/wallet`: test faucets, wrap/unwrap, and auditor access grants.

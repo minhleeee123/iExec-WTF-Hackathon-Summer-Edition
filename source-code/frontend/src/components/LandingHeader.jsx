@@ -1,7 +1,10 @@
 import { ArrowRight, LockKeyhole } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 export default function LandingHeader() {
+  const location = useLocation();
+  const landingAnchor = (section) => location.pathname === '/' ? `#${section}` : `/#${section}`;
+
   return (
     <header className="landing-header">
       <Link className="brand" to="/" aria-label="NoxSwap home">
@@ -10,9 +13,10 @@ export default function LandingHeader() {
         <span className="network-chip">Sepolia</span>
       </Link>
       <nav className="landing-header-nav" aria-label="Landing page navigation">
-        <a href="#how-it-works">How it works</a>
-        <a href="#privacy">Privacy</a>
-        <a href="#faq">FAQ</a>
+        <a href={landingAnchor('how-it-works')}>How it works</a>
+        <a href={landingAnchor('privacy')}>Privacy</a>
+        <a href={landingAnchor('faq')}>FAQ</a>
+        <Link className="landing-header-docs" to="/docs" aria-current={location.pathname === '/docs' ? 'page' : undefined}>Docs</Link>
         <Link className="landing-header-launch" to="/app/trade">Launch app <ArrowRight size={17} /></Link>
       </nav>
     </header>

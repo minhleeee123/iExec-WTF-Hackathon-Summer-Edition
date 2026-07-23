@@ -41,6 +41,7 @@ import NoticeBanner from './components/NoticeBanner';
 import './App.css';
 
 const ActivityPage = lazy(() => import('./pages/ActivityPage'));
+const DocsPage = lazy(() => import('./pages/DocsPage'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const TradePage = lazy(() => import('./pages/TradePage'));
 const WalletPage = lazy(() => import('./pages/WalletPage'));
@@ -837,15 +838,18 @@ export default function App() {
     pool,
     receipt,
   };
-  const onLanding = location.pathname === '/';
+  const onPublicPage = location.pathname === '/' || location.pathname === '/docs';
 
   return (
-    <div className={`app-shell${onLanding ? ' landing-shell' : ' product-shell'}`}>
-      {onLanding ? (
+    <div className={`app-shell${onPublicPage ? ' landing-shell' : ' product-shell'}`}>
+      {onPublicPage ? (
         <>
           <LandingHeader />
           <Suspense fallback={<div className="route-loading"><LoaderCircle className="spin" size={24} /><span>Loading NoxSwap</span></div>}>
-            <Routes><Route path="/" element={<LandingPage ethPrice={ethPrice} />} /></Routes>
+            <Routes>
+              <Route path="/" element={<LandingPage ethPrice={ethPrice} />} />
+              <Route path="/docs" element={<DocsPage />} />
+            </Routes>
           </Suspense>
           <LandingFooter />
         </>

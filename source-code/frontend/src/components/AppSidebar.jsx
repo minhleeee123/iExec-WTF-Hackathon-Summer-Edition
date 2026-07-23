@@ -1,4 +1,4 @@
-import { Activity, ArrowLeft, ArrowLeftRight, Boxes, Copy, ExternalLink, LoaderCircle, LockKeyhole, Wallet, X } from 'lucide-react';
+import { Activity, ArrowLeft, ArrowLeftRight, BookOpen, Boxes, Copy, ExternalLink, LoaderCircle, LockKeyhole, Wallet, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import PrivateWallet from './PrivateWallet';
@@ -67,6 +67,7 @@ export default function AppSidebar({ account, busy, onAccountAction, onChangeWal
 
         <div className="sidebar-footer">
           <Link to="/"><ArrowLeft size={15} /> Landing page</Link>
+          <Link to="/docs"><BookOpen size={15} /> Docs</Link>
           {account && (
             <a href={`https://sepolia.etherscan.io/address/${account}`} target="_blank" rel="noreferrer">
               Explorer <ExternalLink size={14} />
