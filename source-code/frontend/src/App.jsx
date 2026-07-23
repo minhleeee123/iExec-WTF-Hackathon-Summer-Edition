@@ -33,6 +33,7 @@ import {
 import { getCooldownRemaining, validateMinimumOutput, validateTokenAmount } from './lib/validation';
 import AppSidebar from './components/AppSidebar';
 import AppModals from './components/AppModals';
+import WalletConnectModal from './components/WalletConnectModal';
 import LandingFooter from './components/LandingFooter';
 import LandingHeader from './components/LandingHeader';
 import NoticeBanner from './components/NoticeBanner';
@@ -73,6 +74,7 @@ export default function App() {
   const [receipt, setReceipt] = useState(null);
   const [showProof, setShowProof] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
   const [privateBalancesVisible, setPrivateBalancesVisible] = useState(false);
   const [clockTick, setClockTick] = useState(() => Math.floor(Date.now() / 1000));
   const [chainTimeOffset, setChainTimeOffset] = useState(0);
@@ -600,7 +602,7 @@ export default function App() {
 
   const handleAccountAction = async () => {
     if (!account) {
-      await connect();
+      setShowWalletModal(true);
       return;
     }
     try {
@@ -610,6 +612,8 @@ export default function App() {
       setNotice({ type: 'info', text: account });
     }
   };
+
+  const openWalletModal = () => setShowWalletModal(true);
 
   const walletProps = {
     account,
@@ -631,7 +635,7 @@ export default function App() {
     minOut,
     minOutAuto,
     onAmountChange: setAmountIn,
-    onConnect: connect,
+    onConnect: openWalletModal,
     onDeadlineChange: setDeadlineMinutes,
     onMax: () => setAmountIn(formatInputAmount(balances[tokenIn].decrypted, TOKENS[tokenIn].decimals)),
     onAllowZeroMinOutChange: setAllowZeroMinOut,
@@ -678,7 +682,7 @@ export default function App() {
     chainId,
     ethBalance,
     getWallet,
-    onConnect: connect,
+    onConnect: openWalletModal,
     onGatewayEvidence: setGatewayEvidence,
     onLog: addLog,
     onNotice: setNotice,
@@ -703,14 +707,27 @@ export default function App() {
     onFaucet: faucet,
     onManage: manageAsset,
     onMax: () => setAssetAmount(formatInputAmount(assetAvailable, assetToken.decimals)),
-    onModeChange: setAssetMode,
+    onModeChange: (nextMode) => {
+      setAssetMode(nextMode);
+      setAssetAmount('');
+    },
     onReveal: decryptBalances,
     privateBalancesVisible,
     tokens: TOKENS,
     validation: assetValidation,
   };
-  const aclProps = { aclResult, auditor, busy, connected, onAuditorChange: setAuditor, onGrant: grantAuditor };
-  const activityProps = { history, logs, onOpenReceipt: openHistoryReceipt };
+  const aclProps = {
+    aclResult,
+    auditor,
+    busy,
+    connected,
+    onAuditorChange: setAuditor,
+    onGrant: grantAuditor,
+  };
+  const activityProps = {
+    history,
+    onRefreshHistory: refresh,
+  };
   const evidenceProps = {
     attestation: gatewayEvidence,
     comparison: executionComparison,
@@ -758,6 +775,7 @@ export default function App() {
         </div>
       )}
       <AppModals lastProof={lastProof} onCloseProof={() => setShowProof(false)} onCloseReceipt={() => setShowReceipt(false)} receipt={receipt} showProof={showProof} showReceipt={showReceipt} />
+      <WalletConnectModal busy={busy} show={showWalletModal} onClose={() => setShowWalletModal(false)} onSelectWallet={() => connect()} />
     </div>
   );
 }

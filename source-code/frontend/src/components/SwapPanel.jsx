@@ -1,6 +1,7 @@
 import { ArrowDown, LoaderCircle, ShieldCheck } from 'lucide-react';
 import deployment from '../deployment.json';
 import { formatToken, shorten } from '../lib/format';
+import { CardHelpButton } from './CardHelpModal';
 
 export default function SwapPanel({
   amountIn,
@@ -46,6 +47,17 @@ export default function SwapPanel({
     <div className="swap-panel">
       <div className="section-heading">
         <div><p className="eyebrow">LIVE ROUTER V2</p><h2>Protected confidential swap</h2></div>
+        <CardHelpButton
+          category="PROTECTED SWAP GUIDE"
+          title="Protected Confidential Swap"
+          description="Exchange confidential ERC-7984 tokens using iExec Nox encrypted handles and Chainlink oracle price references."
+          steps={[
+            { heading: 'Step 1 - Gas Fee', detail: 'Ensure your wallet has Sepolia ETH for transaction gas (claim free Sepolia ETH if balance is low).' },
+            { heading: 'Step 2 - Reveal Private Balance', detail: 'Click Reveal and sign EIP-712 to decrypt your private balance state.' },
+            { heading: 'Step 3 - Set MinOut', detail: 'Click "Use suggested" to set a protected minimum output derived from Chainlink. Avoid setting minOut higher than pool rate to prevent refund rejection.' },
+            { heading: 'Step 4 - Execute Swap', detail: 'Click "Encrypt protected swap" and confirm the transaction in your wallet.' },
+          ]}
+        />
       </div>
 
       <div className="amount-box">

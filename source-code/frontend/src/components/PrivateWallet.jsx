@@ -1,5 +1,6 @@
 import { ExternalLink, Eye, EyeOff, LoaderCircle, RefreshCw } from 'lucide-react';
 import { formatToken, isHandle, shorten } from '../lib/format';
+import { CardHelpButton } from './CardHelpModal';
 
 export default function PrivateWallet({
   account,
@@ -17,6 +18,16 @@ export default function PrivateWallet({
       <div className="section-heading">
         <div><p className="eyebrow">PRIVATE WALLET</p><h2>Encrypted balances</h2></div>
         <div className="wallet-actions">
+          <CardHelpButton
+            category="PRIVATE WALLET GUIDE"
+            title="Encrypted Balances & Privacy"
+            description="Your balances are stored on Sepolia as encrypted ciphertext handles protected by iExec Nox TEE."
+            steps={[
+              { heading: 'Step 1 - Gas Fee', detail: 'Ensure your wallet has Sepolia ETH for transaction gas (click "Get ETH" if low).' },
+              { heading: 'Step 2 - Reveal Balances', detail: 'Click the Eye icon to sign EIP-712 and decrypt your plaintext balances in your browser.' },
+              { heading: 'Step 3 - Refresh State', detail: 'Click the Refresh icon to re-query the latest Sepolia blockchain state.' },
+            ]}
+          />
           {onRefresh && <button className="icon-button" onClick={onRefresh} disabled={!account || Boolean(busy)} aria-label="Refresh wallet balances" title="Refresh wallet balances"><RefreshCw className={busy === 'refresh' ? 'spin' : ''} size={17} /></button>}
           <button
             className="icon-button"

@@ -1,6 +1,7 @@
 import { Droplets, ExternalLink, LoaderCircle, RefreshCw } from 'lucide-react';
 import { formatDuration, formatToken } from '../lib/format';
 import { getCooldownRemaining } from '../lib/validation';
+import { CardHelpButton } from './CardHelpModal';
 
 export default function AssetOperations({
   asset,
@@ -33,7 +34,20 @@ export default function AssetOperations({
 
   return (
     <section id="assets" className={`section-band${embedded ? ' embedded-workflow' : ''}`}>
-      <div className={embedded ? 'embedded-intro' : 'section-title'}><div><p className="eyebrow">ASSET OPERATIONS</p><h2>Fund, wrap, and unwrap</h2></div><p>Test faucets enforce a one-hour cooldown. Wrapping is 1:1; unwrapping finalizes with a Nox public decryption proof.</p></div>
+      <div className={embedded ? 'embedded-intro' : 'section-title'}>
+        <div><p className="eyebrow">ASSET OPERATIONS</p><h2>Fund, wrap, and unwrap</h2></div>
+        <CardHelpButton
+          category="ASSET OPERATIONS GUIDE"
+          title="Faucet, Wrap, and Unwrap"
+          description="Claim test tokens, wrap public ERC-20 into confidential ERC-7984 tokens 1:1, or unwrap back to public form."
+          steps={[
+            { heading: 'Step 1 - Gas Fee', detail: 'Claims, wrapping, and unwrapping require Sepolia ETH for gas. Click "Get ETH" if your ETH balance is low.' },
+            { heading: 'Step 2 - Test Faucets', detail: 'Claim nUSDC, nWETH, nWBTC, nSOL test tokens (1-hour cooldown).' },
+            { heading: 'Step 3 - Wrap & Unwrap', detail: 'Approve and wrap 1:1 into confidential form, or request unwrap with Nox public decryption proof.' },
+          ]}
+        />
+        <p>Test faucets enforce a one-hour cooldown. Wrapping is 1:1; unwrapping finalizes with a Nox public decryption proof.</p>
+      </div>
       <div className="asset-layout">
         <div className="faucet-list">
           <div className="faucet-item eth-faucet-item">
