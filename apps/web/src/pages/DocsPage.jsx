@@ -180,7 +180,7 @@ export default function DocsPage() {
               <div><span className="docs-index">CONTROL</span><p>Activity reconstructs confirmed public lifecycle metadata. Access &amp; Security contains viewers, token operators, recovery, and emergency revoke.</p></div>
             </div>
             <div className="docs-rule-list">
-              <div><CheckCircle2 size={18} /><p><strong>Fund the Safe.</strong> The Safe Treasury Overview can wrap public test assets directly to the Safe address. The resulting ERC-7984 balance is owned by the Safe, not by the connected EOA.</p></div>
+              <div><CheckCircle2 size={18} /><p><strong>Fund the Safe.</strong> The compact Safe Treasury header can wrap public test assets directly to the Safe address. The resulting ERC-7984 balance is owned by the Safe, not by the connected EOA.</p></div>
               <div><CheckCircle2 size={18} /><p><strong>Protect each swap.</strong> The Safe form derives encrypted minOut from the Chainlink reference and a configurable 0.5%–10% tolerance, with 10% recommended for the current test pools. Its public deadline is configurable from 1 minute to 24 hours.</p></div>
               <div><CheckCircle2 size={18} /><p><strong>Prepare, then settle.</strong> A Safe owner validates encrypted amount and minOut proofs for the module. This preparation cannot move funds. Spending occurs only when the Safe executes the module transaction under its configured threshold.</p></div>
               <div><CheckCircle2 size={18} /><p><strong>Draft, never delegate authority.</strong> Strategy Agent receives only intent and public market context, then fills the Safe order form for owner review. It cannot reveal a Safe balance, sign, or submit a transaction.</p></div>

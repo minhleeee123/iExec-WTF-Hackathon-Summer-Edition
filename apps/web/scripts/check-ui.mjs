@@ -350,20 +350,24 @@ try {
     await walletPage.getByTestId('desktop-primary-nav').getByRole('link', { name: /Safe Treasury/ }).click();
     await walletPage.waitForURL(`${url}/app/safe`);
     await walletPage.getByRole('heading', { name: 'Safe Treasury', exact: true }).waitFor();
-    await walletPage.getByRole('heading', { name: 'Safe execution context' }).waitFor({ timeout: 30_000 });
-    await walletPage.locator('.safe-status-grid').getByText(/Enabled|Revoked/, { exact: true }).waitFor();
-    await walletPage.locator('.safe-status-grid').getByText('Safe owner', { exact: true }).waitFor();
-    const safeModuleEnabled = await walletPage.locator('.safe-status-grid').getByText('Enabled', { exact: true }).count() > 0;
+    const safeMeta = walletPage.locator('.safe-page-meta');
+    await safeMeta.getByText(/Enabled|Paused/, { exact: true }).waitFor({ timeout: 30_000 });
+    await safeMeta.getByText('Safe owner', { exact: true }).waitFor();
+    const safeModuleEnabled = await safeMeta.getByText('Enabled', { exact: true }).count() > 0;
     if (safeModuleEnabled) {
       assert.equal(await walletPage.getByRole('button', { name: 'Enable Nox module' }).count(), 0, 'enabled Safe must not show recovery action');
     } else {
-      assert.equal(await walletPage.locator('.safe-status-grid').getByText('Revoked', { exact: true }).count(), 1, 'revoked Safe must expose its module state');
+      assert.equal(await safeMeta.getByText('Paused', { exact: true }).count(), 1, 'revoked Safe must expose its paused module state');
       await walletPage.getByRole('button', { name: 'Enable Nox module' }).waitFor();
     }
-    assert.equal(await walletPage.locator('.safe-workflow-tabs [role="tab"]').count(), 5, 'Safe workspace must expose five first-level sections');
-    assert.equal(await walletPage.locator('.safe-overview-actions > button').count(), 4, 'Safe overview must expose all core quick actions');
-    await walletPage.getByRole('tab', { name: 'Swap & unwrap' }).click();
-    await walletPage.waitForURL(`${url}/app/safe?section=swap`);
+    assert.equal(await walletPage.getByRole('heading', { name: 'Safe execution context' }).count(), 0, 'Safe workspace must not duplicate its execution context');
+    assert.equal(await walletPage.locator('.safe-status-grid').count(), 0, 'Safe workspace must not render the removed status grid');
+    assert.equal(await walletPage.locator('.safe-workflow-tabs [role="tab"]').count(), 4, 'Safe workspace must expose four first-level sections');
+    assert.equal(await walletPage.getByRole('tab', { name: 'Overview' }).count(), 0, 'Safe workspace must not retain a redundant Overview section');
+    assert.equal(await walletPage.locator('.safe-page-balance-strip > span').count(), 4, 'compact Safe header must preserve all confidential balances');
+    await walletPage.getByRole('button', { name: 'Reveal', exact: true }).waitFor();
+    assert.equal(await walletPage.getByLabel('Safe funding amount').inputValue(), '1000');
+    assert.equal(await walletPage.getByLabel('Safe funding token').inputValue(), 'cUSDC');
     await walletPage.locator('.safe-operation-tabs').waitFor();
     assert.equal(await walletPage.locator('.safe-operation-tabs [role="tab"]').count(), 2, 'Safe movement must separate swap and unwrap');
     assert.equal(await walletPage.getByLabel('Safe swap oracle tolerance').inputValue(), '1000');

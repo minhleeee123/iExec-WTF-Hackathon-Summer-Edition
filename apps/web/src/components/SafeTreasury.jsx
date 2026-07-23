@@ -1,7 +1,6 @@
 import {
   Activity,
   Ban,
-  Eye,
   ExternalLink,
   KeyRound,
   LoaderCircle,
@@ -13,7 +12,7 @@ import {
 import { ethers } from 'ethers';
 import { useEffect, useMemo, useState } from 'react';
 import AgentStrategy from './AgentStrategy';
-import { formatToken, isHandle, shorten } from '../lib/format';
+import { isHandle, shorten } from '../lib/format';
 import { DEFAULT_LIMIT_ORDER_PROTECTION_BPS, DEFAULT_SWAP_PROTECTION_BPS, deriveLimitOrderMinOut, deriveSwapMinOut } from '../lib/min-out';
 
 const SENTINEL = '0x0000000000000000000000000000000000000001';
@@ -29,11 +28,8 @@ export default function SafeTreasury({
   onCreateOrder,
   onEnable,
   onFinalizeUnwrap,
-  onFund,
   onGrantViewer,
-  onNavigate,
   onNotice,
-  onRefresh,
   onReveal,
   onRevoke,
   onSetOperator,
@@ -46,7 +42,7 @@ export default function SafeTreasury({
   safePendingUnwraps = [],
   ethPrice,
   tokens,
-  view = 'overview',
+  view = 'swap',
 }) {
   const [swapTokenIn, setSwapTokenIn] = useState('cUSDC');
   const [swapTokenOut, setSwapTokenOut] = useState('cETH');
@@ -63,8 +59,6 @@ export default function SafeTreasury({
   const [expiryHours, setExpiryHours] = useState('24');
   const [viewer, setViewer] = useState(account ?? '');
   const [viewerHandle, setViewerHandle] = useState('cUSDC');
-  const [fundToken, setFundToken] = useState('cUSDC');
-  const [fundAmount, setFundAmount] = useState('1000');
   const [unwrapToken, setUnwrapToken] = useState('cUSDC');
   const [unwrapAmount, setUnwrapAmount] = useState('100');
   const [unwrapRecipientMode, setUnwrapRecipientMode] = useState('owner');
@@ -117,62 +111,17 @@ export default function SafeTreasury({
 
   return (
     <section className="safe-treasury-workspace">
-      <header className="safe-command-header">
-        <div>
-          <p className="eyebrow">SAFE TREASURY · NOX COMPOSABILITY</p>
-          <h2>Safe execution context</h2>
-          <p>The connected wallet signs as an owner; the Safe owns every encrypted balance; the allowlisted Nox module routes only reviewed operations.</p>
-        </div>
-        <div className="safe-heading-actions">
-          <button className="icon-button" onClick={onRefresh} disabled={Boolean(busy)} aria-label="Refresh Safe treasury" title="Refresh Safe treasury"><RefreshCw className={busy === 'safe-refresh' ? 'spin' : ''} size={17} /></button>
-          {safe?.address && <a className="outline-mini-button" href={`https://sepolia.etherscan.io/address/${safe.address}`} target="_blank" rel="noreferrer">View Safe <ExternalLink size={13} /></a>}
-        </div>
-      </header>
-
       {!connected ? (
         <div className="safe-empty-state"><ShieldCheck size={22} /><strong>Connect the Safe owner wallet to continue.</strong><button className="primary-action compact" onClick={onConnect}>Connect owner wallet</button></div>
       ) : !safe?.address ? (
         <div className="safe-empty-state"><ShieldCheck size={22} /><strong>No demo Safe is configured for this network.</strong><span>Deploy a Safe and module, then add their addresses to the Sepolia deployment manifest.</span></div>
       ) : (
         <>
-          <div className="safe-status-grid" aria-label="Safe treasury status">
-            <div className="safe-status-identity"><span>Safe account</span><strong>{shorten(safe.address, 10, 8)}</strong><small>Ethereum Sepolia</small></div>
-            <div><span>Owners / threshold</span><strong>{safe.owners?.length ?? '—'} / {safe.threshold ?? '—'}</strong><small>Safe v1.4.1</small></div>
-            <div><span>Nox module</span><strong className={enabled ? 'status-good' : 'status-bad'}>{enabled ? 'Enabled' : 'Revoked'}</strong><small>{enabled ? 'Restricted execution active' : 'Operations paused'}</small></div>
-            <div><span>Connected signer</span><strong className={safe.isOwner ? 'status-good' : 'status-bad'}>{safe.isOwner ? 'Safe owner' : 'Not an owner'}</strong><small>{safe.isOwner ? 'Owner actions available' : 'Read-only session'}</small></div>
-          </div>
-
           {!enabled && (
             <div className="safe-recovery-banner" role="alert">
               <div><strong>Nox module is revoked</strong><span>Safe balances remain intact, but private swaps, orders, reveals and viewer grants are paused. Re-enable the allowlisted module to continue.</span></div>
               <button className="primary-action compact" onClick={onEnable} disabled={!safe.isOwner || Boolean(busy)}>{busy === 'safe-enable' ? <LoaderCircle className="spin" size={17} /> : <ShieldCheck size={17} />} Enable Nox module</button>
             </div>
-          )}
-
-          {view === 'overview' && <section className="safe-balance-card">
-            <div className="safe-card-heading">
-              <div><p className="eyebrow">TREASURY OVERVIEW</p><h3>Encrypted balances</h3><p className="safe-helper">Reveal grants this owner viewer access through a Safe transaction. Plaintext remains in the current browser session.</p></div>
-              <button className="primary-action compact" onClick={onReveal} disabled={!enabled || Boolean(busy) || !safe.isOwner}>{busy === 'safe-reveal' ? <LoaderCircle className="spin" size={17} /> : <Eye size={17} />} Reveal balances</button>
-            </div>
-            <div className="safe-balance-grid">{Object.values(tokens).map((token) => {
-              const balance = safeBalances?.[token.symbol] ?? {};
-              return <div className="safe-balance-row" key={token.symbol}><div><strong>{token.symbol}</strong><small>{isHandle(balance.handle) ? shorten(balance.handle, 10, 7) : 'No initialized handle'}</small></div><span>{balance.decrypted === null || balance.decrypted === undefined ? '••••••' : formatToken(balance.decrypted, token.decimals)}</span></div>;
-            })}</div>
-            <div className="safe-fund-row">
-              <div><strong>Fund the treasury</strong><span>Wrap public test assets directly into this Safe.</span></div>
-              <label><span>Amount</span><input value={fundAmount} onChange={(event) => setFundAmount(event.target.value)} inputMode="decimal" aria-label="Safe funding amount" /></label>
-              <label><span>Asset</span><select value={fundToken} onChange={(event) => setFundToken(event.target.value)} aria-label="Safe funding token">{Object.values(tokens).map((token) => <option key={token.symbol} value={token.symbol}>{token.publicSymbol}</option>)}</select></label>
-              <button className="outline-mini-button" onClick={() => onFund({ token: fundToken, amount: fundAmount })} disabled={!safe.isOwner || Boolean(busy)}>{busy === 'safe-fund' ? <LoaderCircle className="spin" size={15} /> : <Plus size={15} />} Wrap to Safe</button>
-            </div>
-          </section>}
-
-          {view === 'overview' && (
-            <section className="safe-overview-actions" aria-label="Safe Treasury quick actions">
-              <button type="button" onClick={() => onNavigate('swap')}><ArrowAction icon={<ShieldCheck size={19} />} label="Swap & unwrap" detail="Move or exit Safe-owned confidential value." /></button>
-              <button type="button" onClick={() => onNavigate('orders')}><ArrowAction icon={<Plus size={19} />} label="Orders & Agent" detail={`${openOrders.length} open order${openOrders.length === 1 ? '' : 's'} · Review drafts before signing.`} /></button>
-              <button type="button" onClick={() => onNavigate('activity')}><ArrowAction icon={<Activity size={19} />} label="Treasury activity" detail={`${safeActivity.length} confirmed event${safeActivity.length === 1 ? '' : 's'} · ${safePendingUnwraps.length} pending unwrap${safePendingUnwraps.length === 1 ? '' : 's'}.`} /></button>
-              <button type="button" onClick={() => onNavigate('security')}><ArrowAction icon={<KeyRound size={19} />} label="Access & security" detail="Viewers, token operators, recovery and revoke." /></button>
-            </section>
           )}
 
           {['swap', 'orders'].includes(view) && <div className={`safe-dashboard-grid safe-dashboard-${view}`}>
@@ -307,8 +256,4 @@ export default function SafeTreasury({
 
 function ethersAddress(value) {
   return /^0x[a-fA-F0-9]{40}$/.test(value.trim());
-}
-
-function ArrowAction({ detail, icon, label }) {
-  return <><span className="safe-overview-action-icon">{icon}</span><span><strong>{label}</strong><small>{detail}</small></span><span aria-hidden="true">→</span></>;
 }
