@@ -1,0 +1,22 @@
+{
+  "name": "@noxswap/keeper",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Permissionless NoxSwap limit-order keeper",
+  "type": "module",
+  "scripts": {
+    "start": "npx --yes node@24 src/index.js",
+    "once": "npx --yes node@24 src/index.js --once",
+    "dry": "npx --yes node@24 src/index.js --once --dry-run",
+    "test": "npx --yes node@24 --test test/*.test.js"
+  },
+  "dependencies": {
+    "@noxswap/contracts": "1.0.0",
+    "dotenv": "^17.4.2",
+    "ethers": "^6.17.0"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "license": "MIT"
+}

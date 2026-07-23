@@ -1,0 +1,39 @@
+{
+  "name": "@noxswap/contracts",
+  "version": "1.0.0",
+  "description": "NoxSwap Nox/ERC-7984 contracts, canonical deployment data and verification scripts",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./client-abis": "./client/abis.js",
+    "./deployment-sepolia.json": "./deployment-sepolia.json",
+    "./evidence": "./scripts/lib/evidence.js"
+  },
+  "scripts": {
+    "compile": "npx --yes node@24 node_modules/hardhat/dist/src/cli.js compile",
+    "test": "npx --yes node@24 --test test/*.test.js",
+    "test:nox": "NOX_RUNTIME_TESTS=true npx --yes node@24 node_modules/hardhat/dist/src/cli.js test test/nox-runtime.test.js --network noxLocal",
+    "deploy:sepolia": "npx --yes node@24 scripts/deploy-sepolia.js",
+    "test:sepolia": "npx --yes node@24 scripts/test-sepolia-e2e.js",
+    "sync:client": "npx --yes node@24 scripts/sync-client-artifacts.js",
+    "sync:check": "npx --yes node@24 scripts/sync-client-artifacts.js --check",
+    "verify:sourcify": "npx --yes node@24 scripts/verify-sourcify.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@iexec-nox/nox-hardhat-plugin": "^0.1.0",
+    "@nomicfoundation/hardhat-ethers": "^4.0.6",
+    "@nomicfoundation/hardhat-node-test-runner": "^3.0.17",
+    "ethers": "^6.17.0",
+    "hardhat": "^3.11.0"
+  },
+  "dependencies": {
+    "@iexec-nox/handle": "^0.1.0-beta.13",
+    "@iexec-nox/nox-confidential-contracts": "^0.2.2",
+    "@iexec-nox/nox-protocol-contracts": "^0.2.4",
+    "@openzeppelin/contracts": "^5.4.0",
+    "dotenv": "^17.4.2"
+  }
+}

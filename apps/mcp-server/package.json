@@ -1,0 +1,32 @@
+{
+  "name": "@noxswap/mcp-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NoxSwap MCP v4 tools over stdio",
+  "type": "module",
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "bin": {
+    "noxswap-mcp": "bin/noxswap-mcp.js"
+  },
+  "scripts": {
+    "start": "npx --yes node@24 src/server.js",
+    "test": "npx --yes node@24 --test test/*.test.js",
+    "test:live": "npx --yes node@24 scripts/test-mcp.js",
+    "test:write": "MCP_ALLOW_WRITES=true npx --yes node@24 scripts/test-mcp.js --write"
+  },
+  "dependencies": {
+    "@iexec-nox/handle": "^0.1.0-beta.13",
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "@noxswap/contracts": "1.0.0",
+    "dotenv": "^17.4.2",
+    "ethers": "^6.17.0"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "license": "MIT"
+}

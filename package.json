@@ -1,0 +1,38 @@
+{
+  "name": "noxswap-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build:web",
+    "build:web": "npm run build --workspace @noxswap/web",
+    "compile": "npm run compile --workspace @noxswap/contracts",
+    "deploy:sepolia": "npm run deploy:sepolia --workspace @noxswap/contracts",
+    "dev": "npm run dev --workspace @noxswap/web",
+    "keeper": "npm run start --workspace @noxswap/keeper",
+    "keeper:dry": "npm run dry --workspace @noxswap/keeper",
+    "keeper:once": "npm run once --workspace @noxswap/keeper",
+    "lint": "npm run lint --workspace @noxswap/web",
+    "mcp": "npm run start --workspace @noxswap/mcp-server",
+    "sync:client": "npm run sync:client --workspace @noxswap/contracts",
+    "test": "npm run test:contracts && npm run test:keeper && npm run test:mcp && npm run test:web",
+    "test:contracts": "npm test --workspace @noxswap/contracts",
+    "test:keeper": "npm test --workspace @noxswap/keeper",
+    "test:mcp": "npm test --workspace @noxswap/mcp-server",
+    "test:mcp:live": "npm run test:live --workspace @noxswap/mcp-server",
+    "test:mcp:write": "npm run test:write --workspace @noxswap/mcp-server",
+    "test:nox": "npm run test:nox --workspace @noxswap/contracts",
+    "test:sepolia": "npm run test:sepolia --workspace @noxswap/contracts",
+    "test:web": "npm run test:unit --workspace @noxswap/web",
+    "test:ui": "npm run test:ui --workspace @noxswap/web",
+    "verify:sourcify": "npm run verify:sourcify --workspace @noxswap/contracts"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "license": "MIT"
+}
