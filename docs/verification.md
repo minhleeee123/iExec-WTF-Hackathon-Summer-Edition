@@ -1,6 +1,6 @@
 # NoxSwap Remediation and Verification
 
-Date: 2026-07-23
+Date: 2026-07-24
 
 Production frontend: [https://noxswap-iexec.vercel.app](https://noxswap-iexec.vercel.app)
 
@@ -27,8 +27,10 @@ Production frontend: [https://noxswap-iexec.vercel.app](https://noxswap-iexec.ve
 | Strategy Agent | Groq GPT-OSS strict schema converts natural language and public Chainlink context into a reviewable draft; percentage balance math and Nox encryption stay local | PASS, unit, live provider, desktop/mobile UI, and public Vercel API smoke tests |
 | Keeper AI observer | Optional Groq explanation receives public outcomes only and cannot alter deterministic keeper decisions | PASS, failure-isolation and no-private-field tests |
 | MCP tools | MCP v4 exposes nine public planning/read and opt-in protected write/decrypt tools over stdio | PASS, live Chainlink and Groq planning |
-| Responsive UI | Production build plus 41 frontend unit tests and headless Chrome at `1440x1000` and `390x844`; validates EIP-6963 wallet selection, provider-aware reconnect, keyboard tab semantics, modal focus/escape/scroll behavior, Strategy Agent, public orderbook/detail, filter persistence, operator revoke visibility, URL persistence, owner/non-owner controls, landing/app separation, desktop sidebar, mobile wallet drawer, bottom navigation, and observer endpoint auth/rate/body guards. The same audit build passed public production smoke checks with 10 live orders. | PASS |
+| Responsive UI | Production build plus 46 frontend unit tests and headless Chrome at `1440x1000`, `1280x900`, and `390x844`; validates EIP-6963 wallet selection, provider-aware reconnect, keyboard tab semantics, modal focus/escape/scroll behavior, Strategy Agent, public orderbook/detail, filter persistence, operator revoke visibility, URL persistence, owner/non-owner controls, landing/app separation, desktop sidebar, mobile wallet drawer, bottom navigation, and observer endpoint auth/rate/body guards. Safe Swap & Unwrap, Orders & Agent, Activity, and Access & Security now reuse the same interaction and visual patterns as the personal workspaces without removing Safe functionality. | PASS |
 | Public source verification | Sourcify API v2 Standard JSON verification | PASS, exact creation/runtime match for all ten project contracts |
+| Accessibility and discovery | Lighthouse against the final production build | PASS, Performance 92, Accessibility 100, Best Practices 100, SEO 100, CLS 0.014; robots and sitemap included |
+| Open-source license | Root `LICENSE`, package metadata, and README | PASS, canonical MIT license is recognized from the repository root |
 
 The latest Router V2 live E2E run verified normal settlement, an intentionally impossible minOut with exact confidential refund, both additional pools, permissionless order execution/expiry, owner-only cancellation, double-settlement rejection, ACL sharing, receipt ownership, and release of exactly `0.01 nWETH` during unwrap.
 
@@ -44,19 +46,25 @@ The latest Router V2 live E2E run verified normal settlement, an intentionally i
 | Permissionless LP lifecycle | Not implemented | Initial liquidity is real but deployer-funded; there are no LP shares or remove-liquidity operations. |
 | Local Nox integration test | Not available in this environment | The Nox Hardhat off-chain services require Docker, which is not installed. Live Sepolia E2E is used instead. |
 
-## Current Rubric Assessment
+## Phase 6 Rubric Assessment
 
-| Criterion | Current estimate | Assessment |
+This is an internal evidence-based assessment, not an organizer score. The
+official rubric awards whole stars and totals 14.
+
+| Criterion | Self-assessment | Evidence and remaining work |
 |---|---:|---|
-| Creativity, 3 stars | 2.6-2.9 | Confidential AMM, encrypted slippage protection, limit-order escrow, and selective disclosure are differentiated. |
-| End-to-end accessible, 3 stars | 2.6-2.9 | Real Sepolia E2E and public wallet-free orderbook are proven; production MetaMask write confirmation remains. |
-| ETH Sepolia deployment, 2 stars | 2.0 | Ten live contracts, three encrypted pools, order book, and exact Sourcify matches. |
-| `feedback.md`, 2 stars | 1.8-2.0 | Specific feedback based on actual ACL, indexing, Docker and version issues. |
-| Demo video, 2 stars | 0.0 | No final video exists yet. |
-| Technical implementation, 1 star | 0.8-1.0 | Nox is in the core arithmetic/transfer path, with SDK encryption/decryption and ACL. |
-| UX, 1 star | 0.7-0.9 | Responsive operational UI passes automated checks; wallet workflow still needs production manual smoke test. |
+| Creativity | 3/3 | Confidential AMM, encrypted slippage protection/refunds, confidential limit-order escrow, selective disclosure, Safe module composability, and non-custodial Agent/MCP workflows form a differentiated, coherent system. |
+| Accessible and end-to-end without mock data | 3/3 | Core reads and writes use live Sepolia contracts, Chainlink, Nox SDK/Gateway, and real wallet signatures. Automated flows and the user-confirmed local/preview MetaMask path cover connect, reveal, swap, refreshed reveal, revoke/authorize, and order create/cancel. |
+| ETH Sepolia deployment | 2/2 | Ten NoxSwap contracts, three encrypted pools, the limit order book, Safe treasury, allowlisted module, and Safe order book are live. The newest frontend build still needs the user-approved production publish before recording the final demo. |
+| `feedback.md` | 2/2 | Root feedback records concrete SDK, ACL, indexing, Docker, version, and protected-minOut experience with actionable recommendations. |
+| Demo video, no longer than four minutes | 0/2 | Phase 7 deliverable intentionally left to the user; no final video exists yet. |
+| Technical implementation | 1/1 | Official Nox encrypted types, arithmetic, ERC-7984 wrappers, Handle SDK encryption/decryption, proofs, and ACLs are in the settlement path rather than attached as a label. |
+| UX | 1/1 | Personal and Safe custody are clearly separated but visually consistent, all workflows are responsive and keyboard-operable, and the final build scored Lighthouse Accessibility 100 with no horizontal overflow in tested viewports. |
 
-Strict current estimate: **10.4-11.7 / 14**. After manual wallet validation and a strong sub-four-minute video, a realistic target is **12.4-13.6 / 14**. The largest remaining scoring risk is the missing demo video, not the Nox contract integration.
+**Phase 6-addressable score: 12/12. Current total submission score: 12/14.**
+The missing two points are exclusively the Phase 7 demo-video deliverable. Before
+recording it, publish the latest frontend commit and repeat the already-passing
+MetaMask happy path once on the public URL.
 
 ## Repeatable Commands
 
@@ -82,5 +90,6 @@ npm run test:ui
 - `.env` files are ignored by git.
 - This remains hackathon/testnet software and has not received an external smart-contract security audit.
 - Test faucet assets have no monetary value.
-- Frontend `npm audit` reports 0 vulnerabilities after the Vite 8 upgrade.
-- Backend audit retains four high advisories in the dev-only Hardhat/Nox plugin chain (`adm-zip`) with no compatible upstream fix, plus two moderate advisories through the MCP SDK HTTP adapter. NoxSwap uses MCP over stdio and does not expose the affected static HTTP server.
+- The web workspace production dependency audit reports 0 vulnerabilities after the Vite 8 upgrade.
+- The repository-wide production audit retains two moderate transitive advisories in `@hono/node-server` through the MCP SDK. NoxSwap uses MCP over stdio on Linux and does not start the affected Windows static-file HTTP path; npm's suggested remediation is a breaking SDK downgrade, so the dependency is pinned pending an upstream compatible release.
+- The development-only Hardhat/Nox plugin chain retains upstream advisories with no compatible fix. These packages do not ship in the web or MCP production runtimes.

@@ -1,6 +1,6 @@
 # Build Plan
 
-> Trạng thái: Approved; extended real-feature implementation and public frontend deployment complete.
+> Trạng thái: Completed for Phase 6; final publish and submission media remain in Phase 7.
 
 ## 1. Preconditions
 
@@ -138,7 +138,7 @@ Failure handling:
 
 | Flow | Test | Evidence | Status |
 |---|---|---|---|
-| Compile/ABI/security regression | `npm run compile && npm test` | 27 passing Node tests plus one Docker-gated Nox runtime suite, including 2,000 deterministic swap invariants | Pass |
+| Compile/ABI/security regression | `npm run compile && npm test` | 38 passing contract/keeper/MCP tests, 46 frontend tests, plus one Docker-gated Nox runtime suite, including 2,000 deterministic swap invariants | Pass |
 | Local Nox runtime | `npm run test:nox` | Official Docker stack suite covers wrap, reserves/collateral, protected swap/refund, order execute/cancel/expire, double settlement, and unwrap proof | Added; nightly/manual CI, local run blocked by missing Docker |
 | Keeper decisions, indexing, and lifecycle | `npm test`, `npm run keeper:dry`, and live cycles | Unit coverage, incremental active-order checkpoint, order #3 permissionless execution, and an order #5-only dry scan | Pass |
 | Live Router V2 protections | `npm run test:sepolia` | Any funded signer; positive minOut settlement plus forced rejection with exact confidential refund and sanitized evidence artifact | Pass |
@@ -150,9 +150,10 @@ Failure handling:
 | MCP protocol | `npm run test:mcp` and `npm run test:mcp:write` | Nine tools, live Chainlink/Groq planning, real small swap, order create/cancel, receipt/event/status assertions, and sanitized evidence | Pass |
 | AI strategy and observer | `npm run test:unit`, `npm run test:agent:live`, backend `npm test` | Strict-schema Groq responses, private-field rejection, local percentage compilation, responsive UI, and observer non-authority | Pass |
 | Frontend static quality | `npm run test:unit && npm run build && npm run lint` | 46 unit tests including wallet-provider selection, configurable positive minOut regression, Safe activity normalization, incremental event index/cache, observer auth/rate/body guards, production build, and zero lint errors | Pass |
-| Continuous integration | `.github/workflows/ci.yml` | Push/PR compile, tests, lint, build, deployment consistency, and Gitleaks; YAML validated locally | Pass |
-| Responsive layout | Headless Chrome 1440x1000, 1280x900, and 390x844 | Wallet-free live orderbook, Safe tolerance/deadline/Activity/Agent/unwrap controls, responsive detail, URL reload, owner/non-owner controls, landing/app separation, and no horizontal overflow | Pass |
-| Public dApp accessibility | Headless external URL test | Latest UI-audit build is live at `https://noxswap-iexec.vercel.app`; landing, trade, wallet, activity, desktop/mobile layout, dialog keyboard behavior, and 10 live orders passed | Pass |
+| Continuous integration | `.github/workflows/ci.yml` | Push/PR compile, tests, lint, build, deployment consistency, and Gitleaks; latest Phase 6 commits completed successfully | Pass |
+| Responsive layout | Headless Chrome 1440x1000, 1280x900, and 390x844 | Wallet-free live orderbook; visually unified Safe Swap & Unwrap, Orders & Agent, Activity, and Access & Security; responsive detail; keyboard tabs; URL reload; owner/non-owner controls; landing/app separation; and no horizontal overflow | Pass |
+| Accessibility and discovery | Lighthouse and static route checks against the final production build | Performance 92, Accessibility 100, Best Practices 100, SEO 100, CLS 0.014; robots and sitemap resolve | Pass |
+| Public dApp accessibility | Headless external URL test | `https://noxswap-iexec.vercel.app` remains live against Sepolia; publishing the newest Phase 6 UI build is deliberately deferred to Phase 7 | Pass; latest publish pending |
 | MetaMask UI happy path (local/preview) | Manual browser wallet test | User confirmed provider selection, reveal, swap, refreshed reveal, operator revoke/authorize, and order create/cancel | Pass |
 | MetaMask UI happy path (production) | Manual browser wallet test | Latest frontend audit build must be deployed first | Deferred by user |
 

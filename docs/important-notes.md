@@ -33,11 +33,12 @@
 | Reuse project from previous Vibe Coding Hackathon leads to disqualification | SRC-001 | High | Xác nhận project mới, không tái sử dụng project cũ. |
 | Missing ETH Sepolia deployment or end-to-end accessibility | SRC-001 | High | Thiết kế demo để chạy thật trên Sepolia và tránh mock data cho core flow. |
 | Missing public GitHub, README, docs, `feedback.md` or X submission post | SRC-001 | High | Đưa các deliverable này vào scope submission ngay từ đầu. |
-| Frontend chưa có URL production đã smoke-test | Internal implementation audit, 2026-07-22 | High | Deploy build hiện tại, kiểm tra MetaMask happy path từ mạng ngoài và ghi URL canonical trước submission. |
+| Latest frontend commit chưa được publish lên URL production | Internal implementation audit, 2026-07-24 | Medium | URL production và deployment cũ vẫn hoạt động; publish build Phase 6 mới rồi lặp lại MetaMask happy path trên URL public trước khi quay video. |
 | Local Nox integration stack không chạy vì môi trường thiếu Docker | Nox Hardhat plugin runtime check, 2026-07-22 | Low | Dùng compile/unit + live Sepolia E2E; chạy lại local integration trong CI có Docker nếu có. |
 | Docker-backed Nox integration workflow chưa có run evidence | Internal implementation validation, 2026-07-23 | Low | Workflow nightly/manual đã được thêm; chạy trên GitHub và giữ tách khỏi required PR checks cho đến khi ổn định. |
 | Safe input proofs cannot use a Safe contract as the EOA gateway owner | Live Sepolia smoke test, 2026-07-23 | Closed | Safe owner prepares persistent Nox ACLs in the allowlisted module; only the Safe threshold can trigger settlement and spend treasury balances. |
 | Standard Safe cannot receive the router's ERC-721 receipt callback | Live Sepolia smoke test, 2026-07-23 | Closed | Assets and refunds remain in Safe custody; receipt owner is constrained to a verified Safe owner EOA. |
+| MCP SDK kéo theo hai advisory moderate của `@hono/node-server` | `npm audit --omit=dev`, 2026-07-24 | Low | MCP chỉ chạy stdio trên Linux và không khởi tạo static HTTP server bị ảnh hưởng; không force downgrade SDK, theo dõi bản vá tương thích upstream. |
 
 ## 5. Thông tin chưa xác minh
 

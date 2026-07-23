@@ -5,12 +5,12 @@
 
 ## 1. Trạng thái hiện tại
 
-- Giai đoạn hiện tại: Phase 6 — Final UI/UX and rubric audit
-- Trạng thái: In progress
-- Bước tiếp theo: Align Safe Treasury with the established Trade, Wallet, and Activity interaction patterns, then complete the Phase 6 rubric and regression audit.
-- Blocker hiện tại: Không có blocker kỹ thuật. Direct Safe faucet, owner execute-order, and browser multisig remain explicitly out of scope.
+- Giai đoạn hiện tại: Phase 6 — Development
+- Trạng thái: Completed
+- Bước tiếp theo: Người dùng bắt đầu Phase 7: publish frontend build mới nhất, kiểm tra MetaMask trên URL public, quay video tối đa bốn phút và hoàn tất submission.
+- Blocker hiện tại: Không có blocker Phase 6. Final frontend publish và submission media được giữ lại cho Phase 7 theo yêu cầu của người dùng.
 - Đang chờ phê duyệt từ: Không.
-- Cập nhật lần cuối: 2026-07-24T14:10:00+07:00
+- Cập nhật lần cuối: 2026-07-24T14:45:00+07:00
 
 Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for approval`, `Blocked`, `Completed`, `Skipped`.
 
@@ -34,7 +34,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 | 3. Brainstorm | Research output | Hard gate, rubric scoring và shortlist | Ý tưởng được chọn | Người dùng chọn ý tưởng | Completed |
 | 4. Product Plan | Ý tưởng được chọn | Hoàn thiện `plan/product-plan.md` | MVP, non-goals và demo scenario | Người dùng phê duyệt | Completed |
 | 5. Build Plan | Product Plan đã duyệt | Hoàn thiện `plan/build-plan.md` | Stack, kiến trúc, timeline và backlog | Người dùng phê duyệt | Completed |
-| 6. Development | Build Plan đã duyệt | Hoàn thiện core product, vượt Core Product Ready Gate, triển khai Sepolia | Demo-ready application và landing page | Milestone verification | In progress |
+| 6. Development | Build Plan đã duyệt | Hoàn thiện core product, vượt Core Product Ready Gate, triển khai Sepolia | Demo-ready application và landing page | Milestone verification | Completed |
 | 7. Submission | Demo-ready application và landing page | Hoàn thiện mọi deliverable bắt buộc | Bài nộp hoàn chỉnh | Người dùng final review | Todo |
 
 ## 4. Approval Log
@@ -51,6 +51,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 | Safe Treasury first-level workspace | Approved | User | 2026-07-24T12:45:00+07:00 | Move Safe out of Wallet into the primary navigation while retaining every existing Wallet, Trade, Activity, and Safe capability with matching visual language. |
 | Safe Treasury compact workspace | Approved | User | 2026-07-24T13:29:00+07:00 | Remove the redundant Overview and execution-context grid; retain Safe identity, threshold, module/signer state, four balances, reveal, and funding in a compact header above the four operational sections. |
 | Phase 6 final quality pass | Approved | User | 2026-07-24T14:10:00+07:00 | Align every Safe Treasury workflow with the established product UI/UX without removing capabilities, fix any remaining Phase 6 or rubric weakness, and leave Phase 7 to the user. |
+| Phase 6 milestone verification | Completed | Codex verification | 2026-07-24T14:45:00+07:00 | Full compile/test/lint/build/UI regression passed; Safe workflows are visually unified, Lighthouse scored 92/100/100/100, canonical MIT license exists, and the Phase 6-addressable rubric self-assessment is 12/12. |
 | Final submission | Pending |  |  |  |
 
 ## 5. Blockers và câu hỏi mở
@@ -62,9 +63,9 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 
 ## 6. Bước tiếp theo
 
-1. User reviews the completed compact Safe Treasury workspace.
-2. Deploy the updated frontend when the user lifts the existing deployment deferral, then confirm the final MetaMask flow on the production URL.
-3. Mark Phase 6 completed, then record the demo and write the X submission post.
+1. Publish the latest frontend build when the user lifts the deployment deferral.
+2. Repeat the MetaMask happy path on the public URL.
+3. Record a demo no longer than four minutes, write the X submission post, and complete the final submission review.
 
 ## 7. Quy tắc cập nhật PLAN.md
 
