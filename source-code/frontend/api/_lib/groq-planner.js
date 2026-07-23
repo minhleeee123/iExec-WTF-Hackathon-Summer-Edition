@@ -13,7 +13,7 @@ NoxSwap supports cUSDC -> cETH (side=buy) and cETH -> cUSDC (side=sell).
 Use amountMode=percent when the user specifies a percentage and exact for a public exact amount.
 Never ask for or infer a wallet address, private balance, encrypted handle, signature, seed phrase, or private key.
 If a relative trigger is requested, calculate its USD value from the supplied public ETH/USD oracle price.
-Use slippageBps=50 when the user does not specify slippage and expiryMinutes=1440 when no expiry is specified.
+Use slippageBps=500 when the user does not specify slippage and expiryMinutes=1440 when no expiry is specified.
 requiresWrap is true only when the intent explicitly starts from an underlying n-token or requests wrapping.
 Set supported=false when the request is not a NoxSwap ETH/USDC confidential limit order.
 This is a draft plan, not financial advice, and it must always require explicit wallet confirmation.`

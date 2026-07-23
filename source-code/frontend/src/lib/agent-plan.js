@@ -27,7 +27,7 @@ export const AGENT_PLAN_SCHEMA = Object.freeze({
     amountMode: { type: 'string', enum: ['percent', 'exact'] },
     amountValue: { type: 'string', maxLength: 40 },
     triggerPriceUsd: { type: 'string', maxLength: 40 },
-    slippageBps: { type: 'integer', minimum: 10, maximum: 500 },
+    slippageBps: { type: 'integer', minimum: 10, maximum: 1_000 },
     expiryMinutes: { type: 'integer', minimum: 5, maximum: 10_080 },
     requiresWrap: { type: 'boolean' },
     summary: { type: 'string', maxLength: 180 },
@@ -117,8 +117,8 @@ export function normalizeAgentPlan(value) {
   if (value.amountMode === 'percent' && Number(amountValue) > 100) {
     throw new RangeError('Agent percentage cannot exceed 100')
   }
-  if (!Number.isInteger(value.slippageBps) || value.slippageBps < 10 || value.slippageBps > 500) {
-    throw new RangeError('Agent slippage must be between 10 and 500 basis points')
+  if (!Number.isInteger(value.slippageBps) || value.slippageBps < 10 || value.slippageBps > 1_000) {
+    throw new RangeError('Agent slippage must be between 10 and 1,000 basis points')
   }
   if (!Number.isInteger(value.expiryMinutes) || value.expiryMinutes < 5 || value.expiryMinutes > 10_080) {
     throw new RangeError('Agent expiry must be between 5 minutes and 7 days')

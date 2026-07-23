@@ -160,6 +160,7 @@ try {
       assert.equal(await page.getByLabel('Limit order amount').inputValue(), '0.01');
       assert.equal(await page.getByLabel('ETH trigger price').inputValue(), '2500');
       assert.equal(await page.getByLabel('Limit order expiry minutes').inputValue(), '360');
+      assert.equal(await page.getByLabel('Limit order oracle tolerance').inputValue(), '100');
       await page.waitForFunction(() => document.querySelector('[aria-label="Limit order minimum output"]')?.value === '24.67575');
       const agentLayout = await page.evaluate(() => ({
         clientWidth: document.documentElement.clientWidth,

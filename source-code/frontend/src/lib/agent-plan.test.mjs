@@ -46,7 +46,7 @@ test('normalizes a strict confidential limit-order plan', () => {
 test('rejects unsafe or semantically invalid plan values', () => {
   assert.throws(() => normalizeAgentPlan({ ...plan, amountValue: '0' }), /greater than zero/)
   assert.throws(() => normalizeAgentPlan({ ...plan, amountValue: '101' }), /cannot exceed 100/)
-  assert.throws(() => normalizeAgentPlan({ ...plan, slippageBps: 0 }), /between 10 and 500/)
+  assert.throws(() => normalizeAgentPlan({ ...plan, slippageBps: 0 }), /between 10 and 1,000/)
   assert.throws(() => normalizeAgentPlan({ ...plan, walletAddress: '0x123' }), /unsupported fields/)
 })
 

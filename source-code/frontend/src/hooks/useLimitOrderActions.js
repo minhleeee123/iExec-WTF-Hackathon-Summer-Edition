@@ -5,7 +5,7 @@ import { CONFIDENTIAL_TOKEN_ABI, LIMIT_ORDER_ABI } from '../contracts';
 import { TOKENS } from '../config';
 import { createHandleClient, retry } from '../lib/nox';
 import { formatInputAmount, formatToken, shorten } from '../lib/format';
-import { deriveLimitOrderMinOut } from '../lib/min-out';
+import { DEFAULT_LIMIT_ORDER_PROTECTION_BPS, deriveLimitOrderMinOut } from '../lib/min-out';
 import { CONTRACT_ORDER_STATUS, getOrderPermissions, settlementOutcome, shouldDecryptSettlement } from '../lib/orders.js';
 import { validateMinimumOutput, validateTokenAmount } from '../lib/validation';
 
@@ -34,7 +34,7 @@ export default function useLimitOrderActions({
   const [amount, setAmount] = useState('5');
   const [minOut, setMinOut] = useState('');
   const [minOutAuto, setMinOutAuto] = useState(true);
-  const [protectionBps, setProtectionBps] = useState(50);
+  const [protectionBps, setProtectionBps] = useState(DEFAULT_LIMIT_ORDER_PROTECTION_BPS);
   const [allowZeroMinOut, setAllowZeroMinOut] = useState(false);
   const [trigger, setTrigger] = useState('');
   const [expiryMinutes, setExpiryMinutes] = useState('30');
@@ -352,6 +352,7 @@ export default function useLimitOrderActions({
     formError,
     minOut,
     minOutAuto,
+    onProtectionChange: setProtectionBps,
     applyAgentPlan: (plan) => {
       setSide(plan.side);
       setAmount(plan.amount);
@@ -373,7 +374,7 @@ export default function useLimitOrderActions({
     onSideChange: (nextSide) => {
       setSide(nextSide);
       setAmount(nextSide === 'buy' ? '5' : '0.001');
-      setProtectionBps(50);
+      setProtectionBps(DEFAULT_LIMIT_ORDER_PROTECTION_BPS);
       setMinOutAuto(true);
       setAllowZeroMinOut(false);
     },
@@ -384,6 +385,7 @@ export default function useLimitOrderActions({
     revealOrderTerms,
     revealedTerms,
     suggestedMinOut,
+    protectionBps,
     onUseSuggestedMinOut: () => setMinOutAuto(true),
     settleOrder,
     side,

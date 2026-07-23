@@ -32,10 +32,15 @@ test('keeps the reported 1,000 cUSDC regression below the current encrypted-pool
   }), '0.516244275604');
 });
 
-test('derives protected limit-order minimums in both directions', () => {
-  assert.equal(deriveLimitOrderMinOut({ amount: '100', outputDecimals: 18, side: 'buy', triggerPrice: '2000' }), '0.04960075');
-  assert.equal(deriveLimitOrderMinOut({ amount: '0.05', outputDecimals: 6, side: 'sell', triggerPrice: '2000' }), '99.2015');
+test('derives protected limit-order minimums with the default five-percent tolerance', () => {
+  assert.equal(deriveLimitOrderMinOut({ amount: '100', outputDecimals: 18, side: 'buy', triggerPrice: '2000' }), '0.0473575');
+  assert.equal(deriveLimitOrderMinOut({ amount: '0.05', outputDecimals: 6, side: 'sell', triggerPrice: '2000' }), '94.715');
   assert.equal(deriveLimitOrderMinOut({ amount: '100', outputDecimals: 18, side: 'buy', triggerPrice: '2000', slippageBps: 100 }), '0.0493515');
+});
+
+test('keeps the current 1,000 cUSDC limit-order regression below the encrypted-pool output', () => {
+  const minimum = deriveLimitOrderMinOut({ amount: '1000', outputDecimals: 18, side: 'buy', triggerPrice: '1921.6' });
+  assert(Number(minimum) < 0.49669838285348444);
 });
 
 test('does not invent a quote for unsupported pairs or invalid input', () => {

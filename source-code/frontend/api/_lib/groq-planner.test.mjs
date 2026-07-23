@@ -20,7 +20,7 @@ const plan = {
   amountMode: 'percent',
   amountValue: '10',
   triggerPriceUsd: '1900',
-  slippageBps: 50,
+  slippageBps: 500,
   expiryMinutes: 1440,
   requiresWrap: false,
   summary: 'Buy cETH with 10% of cUSDC at $1,900.',
