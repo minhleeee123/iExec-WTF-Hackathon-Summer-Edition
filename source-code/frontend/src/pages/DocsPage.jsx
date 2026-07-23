@@ -11,6 +11,7 @@ import {
   Wallet,
   Workflow,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import deployment from '../deployment.json';
 
@@ -27,6 +28,17 @@ const contractRows = [
   ['Chainlink ETH/USD', deployment.feeds.ethUsd],
 ];
 
+const tocItems = [
+  ['quickstart', '01 / Quickstart'],
+  ['wallet', '02 / Wallet & balances'],
+  ['swaps', '03 / Protected swaps'],
+  ['orders', '04 / Limit orders'],
+  ['privacy', '05 / Privacy model'],
+  ['agent', '06 / Strategy Agent'],
+  ['troubleshooting', '07 / Troubleshooting'],
+  ['contracts', '08 / Contracts'],
+];
+
 function ContractAddress({ address }) {
   return (
     <a className="docs-contract-address" href={`${explorerBase}${address}`} target="_blank" rel="noreferrer">
@@ -36,6 +48,33 @@ function ContractAddress({ address }) {
 }
 
 export default function DocsPage() {
+  const [activeSection, setActiveSection] = useState('quickstart');
+
+  useEffect(() => {
+    const updateActiveSection = () => {
+      const marker = window.scrollY + 132;
+      let nextSection = tocItems[0][0];
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (maxScroll > 0 && window.scrollY >= maxScroll - 4) {
+        nextSection = tocItems[tocItems.length - 1][0];
+      } else {
+        for (const [id] of tocItems) {
+          const section = document.getElementById(id);
+          if (section && section.offsetTop <= marker) nextSection = id;
+        }
+      }
+      setActiveSection((current) => current === nextSection ? current : nextSection);
+    };
+
+    updateActiveSection();
+    window.addEventListener('scroll', updateActiveSection, { passive: true });
+    window.addEventListener('resize', updateActiveSection);
+    return () => {
+      window.removeEventListener('scroll', updateActiveSection);
+      window.removeEventListener('resize', updateActiveSection);
+    };
+  }, []);
+
   return (
     <main className="docs-page">
       <section className="docs-hero">
@@ -61,14 +100,9 @@ export default function DocsPage() {
       <div className="docs-layout">
         <aside className="docs-toc" aria-label="Documentation sections">
           <p className="eyebrow">ON THIS PAGE</p>
-          <a href="#quickstart">01 / Quickstart</a>
-          <a href="#wallet">02 / Wallet &amp; balances</a>
-          <a href="#swaps">03 / Protected swaps</a>
-          <a href="#orders">04 / Limit orders</a>
-          <a href="#privacy">05 / Privacy model</a>
-          <a href="#agent">06 / Strategy Agent</a>
-          <a href="#troubleshooting">07 / Troubleshooting</a>
-          <a href="#contracts">08 / Contracts</a>
+          {tocItems.map(([id, label]) => (
+            <a className={activeSection === id ? 'active' : ''} href={`#${id}`} onClick={() => setActiveSection(id)} aria-current={activeSection === id ? 'location' : undefined} key={id}>{label}</a>
+          ))}
         </aside>
 
         <div className="docs-content">
