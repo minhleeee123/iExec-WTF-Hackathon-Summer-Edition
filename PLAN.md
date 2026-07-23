@@ -7,10 +7,10 @@
 
 - Giai đoạn hiện tại: Phase 6 — Development validation and public deployment
 - Trạng thái: In progress
-- Bước tiếp theo: Deploy the latest wallet/minOut/reveal/operator fixes, smoke-test the final MetaMask write confirmation on production, then record the demo.
+- Bước tiếp theo: Production rollout is intentionally deferred by the user. When resumed, deploy the latest reliability/UI audit commits, run the final MetaMask production smoke test, then record the demo.
 - Blocker hiện tại: Local Nox off-chain test stack cần Docker nhưng môi trường hiện tại không có Docker; sử dụng compile/unit tests và live Sepolia verification làm acceptance evidence.
 - Đang chờ phê duyệt từ: Không.
-- Cập nhật lần cuối: 2026-07-23T16:35:05+07:00
+- Cập nhật lần cuối: 2026-07-23T18:40:03+07:00
 
 Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for approval`, `Blocked`, `Completed`, `Skipped`.
 

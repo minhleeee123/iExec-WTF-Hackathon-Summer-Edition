@@ -99,6 +99,7 @@ Failure handling:
 - [x] Add the stateless permissionless keeper with dry-run, health, structured logs, optional webhook, and competing-keeper protection.
 - [x] Replace linear `1..nextOrderId` polling with lifecycle-event indexes, finalized checkpoints, bounded log ranges, and active-order reads.
 - [x] Add push/PR CI for contracts, keeper, frontend, deployment consistency, and secret scanning; keep signer-backed Sepolia E2E manual.
+- [x] Manual MetaMask local/preview smoke test: provider selection, private reveal, default protected swap, post-settlement reveal refresh, operator revoke/authorize, and limit-order create/cancel.
 - [ ] Manual MetaMask smoke test in the final public-hosted URL.
 
 ### Milestone 5: Submission
@@ -128,7 +129,7 @@ Failure handling:
 
 | Flow | Test | Evidence | Status |
 |---|---|---|---|
-| Compile/ABI/security regression | `npm run compile && npm test` | 23 passing Node tests plus one Docker-gated Nox runtime suite, including 2,000 deterministic swap invariants | Pass |
+| Compile/ABI/security regression | `npm run compile && npm test` | 27 passing Node tests plus one Docker-gated Nox runtime suite, including 2,000 deterministic swap invariants | Pass |
 | Local Nox runtime | `npm run test:nox` | Official Docker stack suite covers wrap, reserves/collateral, protected swap/refund, order execute/cancel/expire, double settlement, and unwrap proof | Added; nightly/manual CI, local run blocked by missing Docker |
 | Keeper decisions, indexing, and lifecycle | `npm test`, `npm run keeper:dry`, and live cycles | Unit coverage, incremental active-order checkpoint, order #3 permissionless execution, and an order #5-only dry scan | Pass |
 | Live Router V2 protections | `npm run test:sepolia` | Any funded signer; positive minOut settlement plus forced rejection with exact confidential refund and sanitized evidence artifact | Pass |
@@ -142,7 +143,8 @@ Failure handling:
 | Continuous integration | `.github/workflows/ci.yml` | Push/PR compile, tests, lint, build, deployment consistency, and Gitleaks; YAML validated locally | Pass |
 | Responsive layout | Headless Chrome 1440x1000 and 390x844 | Wallet-free live orderbook, responsive detail, URL reload, owner/non-owner controls, landing/app separation, and no horizontal overflow | Pass |
 | Public dApp accessibility | Headless external URL test | Production route loads the live public orderbook at `https://frontend-dusky-five-56.vercel.app` | Pass |
-| MetaMask UI happy path | Manual browser wallet test | Requires extension/user confirmation | Pending |
+| MetaMask UI happy path (local/preview) | Manual browser wallet test | User confirmed provider selection, reveal, swap, refreshed reveal, operator revoke/authorize, and order create/cancel | Pass |
+| MetaMask UI happy path (production) | Manual browser wallet test | Latest frontend audit build must be deployed first | Deferred by user |
 
 ## 7. Remaining risks
 
