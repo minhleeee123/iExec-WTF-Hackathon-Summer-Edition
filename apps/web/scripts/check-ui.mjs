@@ -294,6 +294,16 @@ try {
     }));
     assert(walletLayout.scrollWidth <= walletLayout.clientWidth, 'connected wallet view has horizontal overflow');
     await walletPage.screenshot({ path: '/tmp/noxswap-wallet.png', fullPage: true });
+    await walletPage.getByRole('tab', { name: 'Safe treasury' }).click();
+    await walletPage.getByRole('heading', { name: 'Private operations under Safe control' }).waitFor({ timeout: 30_000 });
+    await walletPage.locator('.safe-status-grid').getByText('Enabled', { exact: true }).waitFor();
+    await walletPage.locator('.safe-status-grid').getByText('Safe owner', { exact: true }).waitFor();
+    const safeLayout = await walletPage.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }));
+    assert(safeLayout.scrollWidth <= safeLayout.clientWidth, 'Safe treasury view has horizontal overflow');
+    await walletPage.screenshot({ path: '/tmp/noxswap-safe-treasury.png', fullPage: true });
     await walletPage.goto(`${url}/app/trade?mode=orders&order=${actionableOrderId}`, { waitUntil: 'domcontentloaded' });
     await walletPage.getByRole('dialog', { name: `Order ${actionableOrderId} details` }).waitFor({ timeout: 30_000 });
     await walletPage.getByRole('button', { name: 'Revoke OrderBook authorization' }).waitFor({ timeout: 30_000 });
@@ -308,7 +318,9 @@ try {
       cooldownNotice,
       excessAmountBlocked: true,
       privateBalanceRevealAvailable: true,
+      safeTreasuryStatus: 'enabled-owner',
       screenshot: '/tmp/noxswap-wallet.png',
+      safeTreasuryScreenshot: '/tmp/noxswap-safe-treasury.png',
       ownerOrderScreenshot: '/tmp/noxswap-order-owner.png',
     });
     await walletPage.close();

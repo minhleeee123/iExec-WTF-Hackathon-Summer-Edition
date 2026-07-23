@@ -1042,3 +1042,48 @@ footer a { display: inline-flex; align-items: center; gap: 5px; }
   gap: 6px;
   color: var(--muted);
 }
+
+/* Safe treasury workspace */
+.safe-treasury-band { background: #f7f7fb; }
+.safe-heading { align-items: flex-start; }
+.safe-heading-actions { display: flex; align-items: center; gap: 10px; }
+.safe-heading-actions .text-button { display: inline-flex; align-items: center; gap: 4px; }
+.safe-status-grid { margin: 22px 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.safe-status-grid > div { padding: 13px 14px; background: white; border: 2px solid var(--ink); border-radius: 7px; box-shadow: 2px 2px 0 var(--ink); }
+.safe-status-grid span, .safe-balance-row small, .safe-order-row small { display: block; color: var(--muted); font: 400 10px/1.4 'Space Mono', monospace; }
+.safe-status-grid strong { display: block; margin-top: 5px; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+.status-good { color: #087b4b; }
+.status-bad { color: #a1264b; }
+.safe-balance-card, .safe-operation-card { padding: 20px; background: white; border: 2px solid var(--ink); border-radius: 8px; box-shadow: 3px 3px 0 var(--ink); }
+.safe-operation-grid { margin-top: 18px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.safe-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.safe-card-heading h3 { margin: 3px 0 0; font-size: 18px; }
+.safe-helper { display: block; margin: 10px 0 14px; color: var(--muted); font: 400 11px/1.55 'Space Mono', monospace; }
+.safe-balance-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
+.safe-balance-row { padding: 11px 12px; background: #f5f5fa; border: 1px solid var(--line); border-radius: 6px; }
+.safe-balance-row > span { display: block; margin-top: 8px; font-size: 16px; font-weight: 800; }
+.safe-fund-row { margin-top: 14px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding-top: 14px; border-top: 1px solid var(--line); }
+.safe-fund-row > span { margin-right: auto; color: var(--muted); font: 400 11px/1.4 'Space Mono', monospace; }
+.safe-fund-row input, .safe-fund-row select { min-height: 38px; width: 120px; padding: 0 9px; border: 1.5px solid var(--ink); border-radius: 5px; background: white; font: 600 12px 'Space Mono', monospace; }
+.safe-operation-card .inline-fields { margin-top: 12px; }
+.safe-operation-card input, .safe-operation-card select { min-height: 42px; width: 100%; padding: 0 10px; border: 1.5px solid var(--ink); border-radius: 5px; background: white; font: 600 12px 'Space Mono', monospace; }
+.safe-operation-card .primary-action { margin-top: 14px; }
+.safe-orders-card { margin-top: 18px; }
+.safe-order-list { display: grid; gap: 8px; margin-top: 14px; }
+.safe-order-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 12px; background: #f5f5fa; border: 1px solid var(--line); border-radius: 6px; }
+.safe-order-row strong { display: block; font-size: 13px; }
+.safe-security-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 14px; }
+.safe-empty-state { min-height: 150px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 12px; padding: 28px; background: white; border: 2px dashed var(--ink); border-radius: 8px; }
+.safe-empty-state strong { font-size: 14px; }
+.safe-empty-state .primary-action { width: auto; }
+
+@media (max-width: 820px) {
+  .safe-status-grid, .safe-balance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .safe-operation-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 520px) {
+  .safe-status-grid, .safe-balance-grid { grid-template-columns: 1fr; }
+  .safe-balance-card, .safe-operation-card { padding: 15px; }
+  .safe-order-row { align-items: flex-start; flex-direction: column; }
+}

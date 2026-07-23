@@ -7,7 +7,10 @@ import {
   CHAINLINK_ETH_USD,
   CHAINLINK_FEED_ABI,
   CONFIDENTIAL_TOKEN_ABI,
+  LIMIT_ORDER_ABI,
   NOX_SWAP_ABI,
+  SAFE_ABI,
+  SAFE_MODULE_ABI,
   TEST_TOKEN_ABI,
 } from './contracts';
 import {
@@ -23,6 +26,7 @@ import { createHandleClient, retry } from './lib/nox';
 import { queryRecentSwapEvents } from './lib/history';
 import { DEFAULT_SWAP_PROTECTION_BPS, deriveSwapMinOut } from './lib/min-out';
 import { discoverWalletProvider } from './lib/wallet-providers';
+import { executeSafeModule, parseSafeModuleEvent, SAFE_SENTINEL_MODULE } from './lib/safe';
 import {
   decodeReceiptImage,
   formatDuration,
@@ -62,6 +66,11 @@ function readWalletPreference() {
 
 function writeWalletPreference(walletId) {
   try { window.localStorage.setItem(WALLET_PREFERENCE_KEY, walletId); } catch { /* Storage can be disabled in privacy mode. */ }
+}
+
+function tokenSymbolForAddress(address) {
+  const match = Object.values(TOKENS).find((token) => token.wrapper.toLowerCase() === address.toLowerCase());
+  return match?.symbol ?? address;
 }
 
 export default function App() {
@@ -104,6 +113,9 @@ export default function App() {
   const [walletProvider, setWalletProvider] = useState(null);
   const [walletAvailable, setWalletAvailable] = useState(() => Boolean(window.ethereum));
   const [walletName, setWalletName] = useState('');
+  const [safeState, setSafeState] = useState({ address: deployment.safe?.address ?? '', moduleAddress: deployment.safe?.module ?? '', orderBook: deployment.safe?.orderBook ?? '', moduleEnabled: false, owners: [], threshold: 0, isOwner: false });
+  const [safeBalances, setSafeBalances] = useState(() => createInitialBalances());
+  const [safeOrders, setSafeOrders] = useState([]);
 
   const connected = Boolean(account);
   const correctNetwork = chainId === deployment.chainId;
@@ -281,10 +293,67 @@ export default function App() {
 
   }, [account, walletProvider]);
 
+  const loadSafeAccount = useCallback(async () => {
+    const configuredSafe = deployment.safe;
+    if (!configuredSafe?.address || !configuredSafe.module || !walletProvider) return null;
+    const provider = new ethers.BrowserProvider(walletProvider);
+    const safeContract = new ethers.Contract(configuredSafe.address, SAFE_ABI, provider);
+    const [owners, threshold, moduleEnabled, ownerAddress] = await Promise.all([
+      safeContract.getOwners(),
+      safeContract.getThreshold(),
+      safeContract.isModuleEnabled(configuredSafe.module),
+      provider.getSigner().then((signer) => signer.getAddress()),
+    ]);
+    const nextBalances = createInitialBalances();
+    await Promise.all(Object.values(TOKENS).map(async (token) => {
+      const wrapper = new ethers.Contract(token.wrapper, CONFIDENTIAL_TOKEN_ABI, provider);
+      nextBalances[token.symbol] = {
+        ...nextBalances[token.symbol],
+        handle: await wrapper.confidentialBalanceOf(configuredSafe.address),
+      };
+    }));
+    const safeOrderBookAddress = configuredSafe.orderBook ?? deployment.contracts.limitOrderBook;
+    const orderBook = new ethers.Contract(safeOrderBookAddress, LIMIT_ORDER_ABI, provider);
+    const nextOrderId = await orderBook.nextOrderId();
+    const orders = [];
+    for (let id = 1n; id < nextOrderId && id - 1n < 500n; id++) {
+      try {
+        const order = await orderBook.getOrder(id);
+        if (order.owner.toLowerCase() !== configuredSafe.address.toLowerCase()) continue;
+        orders.push({
+          id: id.toString(),
+          owner: order.owner,
+          tokenIn: tokenSymbolForAddress(order.tokenIn),
+          tokenOut: tokenSymbolForAddress(order.tokenOut),
+          amountHandle: order.encryptedAmountIn,
+          minOutHandle: order.encryptedMinOut,
+          triggerPrice: order.triggerPrice,
+          expiry: Number(order.expiry),
+          status: Number(order.status),
+        });
+      } catch (error) {
+        console.warn(`Safe order ${id} could not be read.`, error);
+      }
+    }
+    const nextState = {
+      address: configuredSafe.address,
+      moduleAddress: configuredSafe.module,
+      orderBook: safeOrderBookAddress,
+      moduleEnabled,
+      owners: [...owners],
+      threshold: Number(threshold),
+      isOwner: owners.some((owner) => owner.toLowerCase() === ownerAddress.toLowerCase()),
+    };
+    setSafeState(nextState);
+    setSafeBalances(nextBalances);
+    setSafeOrders(orders.sort((left, right) => Number(right.id) - Number(left.id)));
+    return nextBalances;
+  }, [walletProvider]);
+
   const refresh = async () => {
     try {
       setBusy('refresh');
-      await Promise.all([loadMarket(), loadAccount()]);
+      await Promise.all([loadMarket(), loadAccount(), loadSafeAccount()]);
     } catch (error) {
       fail(error);
     } finally {
@@ -367,6 +436,9 @@ export default function App() {
       setReceipt(null);
       setGatewayEvidence(null);
       setExecutionComparison(null);
+      setSafeState({ address: deployment.safe?.address ?? '', moduleAddress: deployment.safe?.module ?? '', orderBook: deployment.safe?.orderBook ?? '', moduleEnabled: false, owners: [], threshold: 0, isOwner: false });
+      setSafeBalances(createInitialBalances());
+      setSafeOrders([]);
       setAccount(accounts[0] ?? '');
     };
     const onChain = (chain) => {
@@ -378,6 +450,9 @@ export default function App() {
         setFaucets(createInitialFaucets());
         setEthBalance(0n);
         setHistory([]);
+        setSafeState({ address: deployment.safe?.address ?? '', moduleAddress: deployment.safe?.module ?? '', orderBook: deployment.safe?.orderBook ?? '', moduleEnabled: false, owners: [], threshold: 0, isOwner: false });
+        setSafeBalances(createInitialBalances());
+        setSafeOrders([]);
       }
     };
     sync().catch(fail);
@@ -390,8 +465,8 @@ export default function App() {
   }, [walletProvider]);
 
   useEffect(() => {
-    if (account && correctNetwork) loadAccount(account).catch(fail);
-  }, [account, correctNetwork, loadAccount]);
+    if (account && correctNetwork) Promise.all([loadAccount(account), loadSafeAccount()]).catch(fail);
+  }, [account, correctNetwork, loadAccount, loadSafeAccount]);
 
   const faucet = async (symbol) => {
     try {
@@ -647,6 +722,257 @@ export default function App() {
     }
   };
 
+  const ensureSafeOperator = async (wallet, tokenSymbol, operator, busyKey) => {
+    const token = TOKENS[tokenSymbol];
+    const wrapper = new ethers.Contract(token.wrapper, CONFIDENTIAL_TOKEN_ABI, wallet.signer);
+    if (await wrapper.isOperator(safeState.address, operator)) return;
+    const expiry = BigInt(Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60);
+    const execution = await executeSafeModule({
+      signer: wallet.signer,
+      safeAddress: safeState.address,
+      moduleAddress: safeState.moduleAddress,
+      method: 'setTokenOperator',
+      args: [token.wrapper, operator, expiry],
+    });
+    addLog(`Authorize ${operator === deployment.contracts.noxSwapRouter ? 'router' : 'order book'} for Safe ${token.symbol}`, execution.transaction.hash);
+    await execution.transaction.wait();
+    setBusy(busyKey);
+  };
+
+  const safeFund = async ({ token: tokenSymbol, amount }) => {
+    try {
+      if (!safeState.address || !safeState.isOwner) throw new Error('The connected wallet must be a Safe owner to fund this treasury.');
+      setBusy('safe-fund');
+      const wallet = await getWallet();
+      const token = TOKENS[tokenSymbol];
+      const value = ethers.parseUnits(amount, token.decimals);
+      const underlying = new ethers.Contract(token.underlying, TEST_TOKEN_ABI, wallet.signer);
+      const wrapper = new ethers.Contract(token.wrapper, CONFIDENTIAL_TOKEN_ABI, wallet.signer);
+      const liveBalance = await underlying.balanceOf(wallet.address);
+      if (value > liveBalance) throw new Error(`Amount exceeds your public ${token.publicSymbol} balance.`);
+      const approval = await underlying.approve(token.wrapper, value);
+      addLog(`Approve ${token.publicSymbol} funding`, approval.hash);
+      await approval.wait();
+      const transaction = await wrapper.wrap(safeState.address, value);
+      addLog(`Wrap ${amount} ${token.publicSymbol} to Safe`, transaction.hash);
+      await transaction.wait();
+      setNotice({ type: 'success', text: `${amount} ${token.publicSymbol} wrapped into the Safe treasury.` });
+      await loadSafeAccount();
+    } catch (error) {
+      fail(error);
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const decryptSafeSnapshot = async (wallet, snapshot) => {
+    const client = await createHandleClient(wallet.signer);
+    const next = { ...snapshot };
+    for (const token of Object.values(TOKENS)) {
+      const handle = snapshot[token.symbol].handle;
+      if (!isHandle(handle)) {
+        next[token.symbol] = { ...snapshot[token.symbol], decrypted: 0n };
+        continue;
+      }
+      const grant = await executeSafeModule({
+        signer: wallet.signer,
+        safeAddress: safeState.address,
+        moduleAddress: safeState.moduleAddress,
+        method: 'addViewer',
+        args: [handle, wallet.address],
+      });
+      addLog(`Grant Safe owner viewer for ${token.symbol}`, grant.transaction.hash);
+      await grant.transaction.wait();
+      const decrypted = await retry(() => client.decrypt(handle), 6, 3000);
+      next[token.symbol] = { ...snapshot[token.symbol], decrypted: decrypted.value };
+    }
+    setSafeBalances(next);
+    return next;
+  };
+
+  const safeReveal = async () => {
+    try {
+      setBusy('safe-reveal');
+      const wallet = await getWallet();
+      const snapshot = await loadSafeAccount();
+      if (!snapshot) throw new Error('Safe treasury is not configured on this network.');
+      await decryptSafeSnapshot(wallet, snapshot);
+      setNotice({ type: 'success', text: 'Safe balances revealed through Safe-controlled Nox viewer grants.' });
+    } catch (error) {
+      fail(error);
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const safeSwap = async ({ tokenIn: tokenInSymbol, tokenOut: tokenOutSymbol, amount, minOut: minimum }) => {
+    let confirmedTransactionHash = '';
+    try {
+      if (!safeState.moduleEnabled || !safeState.isOwner) throw new Error('The connected wallet must be an owner of an enabled Safe module.');
+      setBusy('safe-swap');
+      const wallet = await getWallet();
+      const input = TOKENS[tokenInSymbol];
+      const output = TOKENS[tokenOutSymbol];
+      const amountValue = ethers.parseUnits(amount, input.decimals);
+      const minimumValue = ethers.parseUnits(minimum, output.decimals);
+      await ensureSafeOperator(wallet, tokenInSymbol, deployment.contracts.noxSwapRouter, 'safe-swap');
+      const client = await createHandleClient(wallet.signer);
+      const [encrypted, encryptedMinimum] = await Promise.all([
+        client.encryptInput(amountValue, 'uint256', safeState.moduleAddress),
+        client.encryptInput(minimumValue, 'uint256', safeState.moduleAddress),
+      ]);
+      const module = new ethers.Contract(safeState.moduleAddress, SAFE_MODULE_ABI, wallet.signer);
+      for (const prepared of [encrypted, encryptedMinimum]) {
+        const preparation = await module.prepareInput(prepared.handle, prepared.handleProof, deployment.contracts.noxSwapRouter);
+        addLog('Prepare Safe swap ciphertext ACL', preparation.hash);
+        await preparation.wait();
+      }
+      const execution = await executeSafeModule({
+        signer: wallet.signer,
+        safeAddress: safeState.address,
+        moduleAddress: safeState.moduleAddress,
+        method: 'confidentialSwap',
+        args: [input.wrapper, output.wrapper, encrypted.handle, encryptedMinimum.handle, wallet.address, chainNow + 20 * 60],
+      });
+      addLog('Safe confidential swap submitted', execution.transaction.hash);
+      const mined = await execution.transaction.wait();
+      confirmedTransactionHash = execution.transaction.hash;
+      const event = parseSafeModuleEvent(mined, module, 'SafeSwapExecuted');
+      if (!event) throw new Error('SafeSwapExecuted event was not found.');
+      for (const handle of [event.args.encryptedOutput, event.args.encryptedRefund]) {
+        const grant = await executeSafeModule({ signer: wallet.signer, safeAddress: safeState.address, moduleAddress: safeState.moduleAddress, method: 'addViewer', args: [handle, wallet.address] });
+        await grant.transaction.wait();
+      }
+      const [decrypted, refund] = await Promise.all([
+        retry(() => client.decrypt(event.args.encryptedOutput), 6, 3000),
+        retry(() => client.decrypt(event.args.encryptedRefund), 6, 3000),
+      ]);
+      const received = formatToken(decrypted.value, output.decimals);
+      const returned = formatToken(refund.value, input.decimals);
+      setNotice({ type: 'success', text: `Safe swap confirmed. Received ${received} ${output.symbol}; refund ${returned} ${input.symbol}.` });
+      const [snapshot] = await Promise.all([loadSafeAccount(), loadAccount(wallet.address)]);
+      try {
+        await decryptSafeSnapshot(wallet, snapshot);
+      } catch (revealError) {
+        setNotice({ type: 'info', text: `Safe swap confirmed. Received ${received} ${output.symbol}; refund ${returned} ${input.symbol}. Refreshed balances need a manual reveal: ${revealError.shortMessage ?? revealError.message}` });
+      }
+    } catch (error) {
+      if (confirmedTransactionHash) {
+        console.error(error);
+        setNotice({ type: 'info', text: `Safe swap ${shorten(confirmedTransactionHash, 12, 10)} was confirmed, but post-settlement reveal needs a manual retry: ${error.shortMessage ?? error.message}` });
+        await loadSafeAccount().catch(console.error);
+      } else {
+        fail(error);
+      }
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const safeCreateOrder = async ({ tokenIn: tokenInSymbol, tokenOut: tokenOutSymbol, amount, minOut: minimum, triggerPrice, expiryHours }) => {
+    try {
+      if (!safeState.moduleEnabled || !safeState.isOwner) throw new Error('The connected wallet must be an owner of an enabled Safe module.');
+      setBusy('safe-order');
+      const wallet = await getWallet();
+      const input = TOKENS[tokenInSymbol];
+      const output = TOKENS[tokenOutSymbol];
+      const amountValue = ethers.parseUnits(amount, input.decimals);
+      const minimumValue = ethers.parseUnits(minimum, output.decimals);
+      const trigger = ethers.parseUnits(triggerPrice, 8);
+      const expiry = chainNow + Math.max(1, Number(expiryHours)) * 60 * 60;
+      if (!safeState.orderBook) throw new Error('Safe limit-order book is not configured.');
+      await ensureSafeOperator(wallet, tokenInSymbol, safeState.orderBook, 'safe-order');
+      const client = await createHandleClient(wallet.signer);
+      const [encrypted, encryptedMinimum] = await Promise.all([
+        client.encryptInput(amountValue, 'uint256', safeState.moduleAddress),
+        client.encryptInput(minimumValue, 'uint256', safeState.moduleAddress),
+      ]);
+      const module = new ethers.Contract(safeState.moduleAddress, SAFE_MODULE_ABI, wallet.signer);
+      for (const prepared of [encrypted, encryptedMinimum]) {
+        const preparation = await module.prepareInput(prepared.handle, prepared.handleProof, safeState.orderBook);
+        addLog('Prepare Safe order ciphertext ACL', preparation.hash);
+        await preparation.wait();
+      }
+      const execution = await executeSafeModule({
+        signer: wallet.signer,
+        safeAddress: safeState.address,
+        moduleAddress: safeState.moduleAddress,
+        method: 'createLimitOrder',
+        args: [input.wrapper, output.wrapper, encrypted.handle, encryptedMinimum.handle, wallet.address, trigger, expiry],
+      });
+      addLog('Safe confidential limit order submitted', execution.transaction.hash);
+      await execution.transaction.wait();
+      setNotice({ type: 'success', text: 'Safe limit order created. Amount and minOut remain encrypted.' });
+      await loadSafeAccount();
+    } catch (error) {
+      fail(error);
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const safeCancelOrder = async (orderId) => {
+    try {
+      setBusy(`safe-cancel-${orderId}`);
+      const wallet = await getWallet();
+      const execution = await executeSafeModule({ signer: wallet.signer, safeAddress: safeState.address, moduleAddress: safeState.moduleAddress, method: 'cancelLimitOrder', args: [orderId] });
+      addLog(`Cancel Safe order #${orderId}`, execution.transaction.hash);
+      await execution.transaction.wait();
+      setNotice({ type: 'success', text: `Safe order #${orderId} cancelled and refunded.` });
+      await loadSafeAccount();
+    } catch (error) {
+      fail(error);
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const safeGrantViewer = async ({ handle, viewer }) => {
+    try {
+      if (!isHandle(handle) || !ethers.isAddress(viewer)) throw new Error('Choose an initialized handle and enter a valid viewer address.');
+      setBusy('safe-viewer');
+      const wallet = await getWallet();
+      const execution = await executeSafeModule({ signer: wallet.signer, safeAddress: safeState.address, moduleAddress: safeState.moduleAddress, method: 'addViewer', args: [handle, viewer] });
+      addLog(`Grant Safe viewer ${shorten(viewer)}`, execution.transaction.hash);
+      await execution.transaction.wait();
+      setNotice({ type: 'success', text: `Viewer ${shorten(viewer)} granted access to the selected Safe handle.` });
+    } catch (error) {
+      fail(error);
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const safeSetOperator = async (tokenSymbol) => {
+    try {
+      setBusy(`safe-operator-${tokenSymbol}`);
+      const wallet = await getWallet();
+      await ensureSafeOperator(wallet, tokenSymbol, deployment.contracts.noxSwapRouter, `safe-operator-${tokenSymbol}`);
+      setNotice({ type: 'success', text: `${tokenSymbol} router authorization is active for the Safe.` });
+      await loadSafeAccount();
+    } catch (error) {
+      fail(error);
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const safeRevoke = async (previousModule = SAFE_SENTINEL_MODULE) => {
+    try {
+      setBusy('safe-revoke');
+      const wallet = await getWallet();
+      const execution = await executeSafeModule({ signer: wallet.signer, safeAddress: safeState.address, moduleAddress: safeState.moduleAddress, method: 'revoke', args: [previousModule] });
+      addLog('Revoke Nox Safe module', execution.transaction.hash);
+      await execution.transaction.wait();
+      setNotice({ type: 'success', text: 'Nox Safe module revoked. The Safe remains intact and can be reconfigured by its owners.' });
+      await loadSafeAccount();
+    } catch (error) {
+      fail(error);
+    } finally {
+      setBusy('');
+    }
+  };
+
   const grantAuditor = async () => {
     try {
       if (!ethers.isAddress(auditor)) throw new Error('Enter a valid Ethereum address.');
@@ -823,6 +1149,26 @@ export default function App() {
     onAuditorChange: setAuditor,
     onGrant: grantAuditor,
   };
+  const safeProps = {
+    account,
+    busy,
+    connected,
+    onCancelOrder: safeCancelOrder,
+    onConnect: openWalletModal,
+    onCreateOrder: safeCreateOrder,
+    onFund: safeFund,
+    onGrantViewer: safeGrantViewer,
+    onRefresh: refresh,
+    onReveal: safeReveal,
+    onRevoke: safeRevoke,
+    onSetOperator: safeSetOperator,
+    onSwap: safeSwap,
+    safe: safeState,
+    safeBalances,
+    safeOrders,
+    ethPrice,
+    tokens: TOKENS,
+  };
   const activityProps = {
     history,
     logs,
@@ -865,7 +1211,7 @@ export default function App() {
             <Suspense fallback={<div className="route-loading"><LoaderCircle className="spin" size={24} /><span>Loading NoxSwap</span></div>}>
               <Routes>
                 <Route path="/app/trade" element={<TradePage orderContext={orderContext} swapProps={swapProps} />} />
-                <Route path="/app/wallet" element={<WalletPage aclProps={aclProps} assetProps={assetProps} />} />
+                <Route path="/app/wallet" element={<WalletPage aclProps={aclProps} assetProps={assetProps} safeProps={safeProps} />} />
                 <Route path="/app/activity" element={<ActivityPage activityProps={activityProps} evidenceProps={evidenceProps} />} />
                 <Route path="/swap" element={<Navigate replace to="/app/trade" />} />
                 <Route path="/orders" element={<Navigate replace to="/app/trade?mode=orders" />} />
