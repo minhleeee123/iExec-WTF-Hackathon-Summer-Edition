@@ -14,6 +14,7 @@
     "test": "npx --yes node@24 --test test/*.test.js",
     "test:nox": "NOX_RUNTIME_TESTS=true npx --yes node@24 node_modules/hardhat/dist/src/cli.js test test/nox-runtime.test.js --network noxLocal",
     "deploy:sepolia": "npx --yes node@24 scripts/deploy-sepolia.js",
+    "deploy:safe:sepolia": "npx --yes node@24 scripts/deploy-safe-sepolia.js",
     "test:sepolia": "npx --yes node@24 scripts/test-sepolia-e2e.js",
     "sync:client": "npx --yes node@24 scripts/sync-client-artifacts.js",
     "sync:check": "npx --yes node@24 scripts/sync-client-artifacts.js --check",
