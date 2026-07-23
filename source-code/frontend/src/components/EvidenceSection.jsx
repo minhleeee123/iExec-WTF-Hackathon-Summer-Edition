@@ -1,6 +1,7 @@
 import { FileKey2, KeyRound, LockKeyhole, ShieldCheck } from 'lucide-react';
 import deployment from '../deployment.json';
 import { shorten } from '../lib/format';
+import { CardHelpButton } from './CardHelpModal';
 
 export default function EvidenceSection({
   attestation,
@@ -13,7 +14,20 @@ export default function EvidenceSection({
 }) {
   return (
     <section className="evidence-band">
-      <div><p className="eyebrow">VERIFIABLE EXECUTION</p><h2>Inspect what the wallet submitted.</h2><p>Proofs, encrypted protection handles, Gateway verification, and measured oracle deviation come from confirmed client operations.</p></div>
+      <div className="section-title">
+        <div><p className="eyebrow">VERIFIABLE EXECUTION</p><h2>Inspect what the wallet submitted.</h2></div>
+        <CardHelpButton
+          category="VERIFICATION GUIDE"
+          title="TEE Proofs & Cryptographic Receipts"
+          description="Inspect iExec Nox Trusted Execution Environment (TEE) attestation proofs, hardware signatures, and cryptographic execution receipts."
+          steps={[
+            { heading: 'Step 1 - View Gateway Attestation', detail: 'Click "Inspect last proof" to verify SGX enclave hardware signatures and Gateway verification.' },
+            { heading: 'Step 2 - View Receipt Proof', detail: 'Click "Open receipt NFT" to inspect encrypted input/output handles, timestamp, and transaction parameters.' },
+            { heading: 'Step 3 - Measured Oracle Deviation', detail: 'Compare actual confidential execution rate against public Chainlink reference price in basis points (bps).' },
+          ]}
+        />
+        <p>Proofs, encrypted protection handles, Gateway verification, and measured oracle deviation come from confirmed client operations.</p>
+      </div>
       <div className="evidence-actions">
         <button onClick={onOpenProof} disabled={!lastProof}><ShieldCheck size={17} /> Inspect last proof</button>
         <button onClick={onOpenReceipt} disabled={!receipt}><FileKey2 size={17} /> Open receipt NFT</button>

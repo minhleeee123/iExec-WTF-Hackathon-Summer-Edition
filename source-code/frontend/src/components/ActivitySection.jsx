@@ -1,11 +1,25 @@
 import { Activity, ArrowUpRight, ExternalLink, FileKey2, History } from 'lucide-react';
 import { shorten } from '../lib/format';
+import { CardHelpButton } from './CardHelpModal';
 
 export default function ActivitySection({ history = [], logs = [], onOpenReceipt }) {
   return (
     <section id="activity" className="activity-grid">
       <div className="history-panel">
-        <div className="section-heading"><div><p className="eyebrow">ON-CHAIN EVENTS</p><h2>Swap history</h2></div><History size={20} /></div>
+        <div className="section-heading">
+          <div><p className="eyebrow">ON-CHAIN EVENTS</p><h2>Swap history</h2></div>
+          <CardHelpButton
+            category="SWAP HISTORY GUIDE"
+            title="On-Chain Events & Receipts"
+            description="Track confirmed confidential swaps mined on Sepolia testnet and view encrypted receipt proofs."
+            steps={[
+              { heading: 'Step 1 - Gas Fee & On-Chain Mining', detail: 'Transactions are submitted to Sepolia EVM using Sepolia ETH for gas.' },
+              { heading: 'Step 2 - Encrypted Output Handle', detail: 'The encrypted ciphertext handle produced by Nox TEE router is recorded in each event log.' },
+              { heading: 'Step 3 - View Receipt Details', detail: 'Click the Key icon on any swap row to open the full cryptographic receipt proof.' },
+              { heading: 'Step 4 - Etherscan Verification', detail: 'Click the Arrow icon to verify the mined transaction hash directly on Sepolia Etherscan.' },
+            ]}
+          />
+        </div>
         {history.length === 0 ? <p className="empty-state">No SwapExecuted events found for this wallet.</p> : (
           <div className="history-table" role="table">
             {history.map((item) => (

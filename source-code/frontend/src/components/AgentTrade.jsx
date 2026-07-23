@@ -23,13 +23,14 @@ export default function AgentTrade({ context }) {
       <div className="embedded-intro">
         <div><p className="eyebrow">INTENT-BASED CONFIDENTIAL TRADE</p><h2>Strategy Agent</h2></div>
         <CardHelpButton
-          category="AI AGENT GUIDE"
-          title="Strategy Agent Co-Pilot"
-          description="Use natural language to draft confidential swap or limit order parameters powered by Groq LLM & Chainlink."
+          category="AI STRATEGY AGENT GUIDE"
+          title="Strategy Agent & Confidential Orders"
+          description="Use natural language to draft confidential order parameters with Groq AI, then escrow encrypted orders on Sepolia."
           steps={[
-            { heading: 'Step 1 - Type Intent', detail: 'Type a natural language prompt like "Swap 10 cUSDC to cETH when price is favorable".' },
-            { heading: 'Step 2 - Review Draft', detail: 'The AI processes public Chainlink context and drafts parameters locally.' },
-            { heading: 'Step 3 - Gas Fee & Wallet', detail: 'Ensure your wallet has Sepolia ETH for gas. MetaMask remains the sole transaction authority.' },
+            { heading: 'Step 1 - Gas Fee', detail: 'Creating orders requires Sepolia ETH for gas (claim free Sepolia ETH if low). Execution gas is paid by automated keepers.' },
+            { heading: 'Step 2 - Generate AI Draft', detail: 'Type a trading intent (e.g. "Sell 0.01 cETH when ETH reaches $2,500") and click "Generate private strategy draft".' },
+            { heading: 'Step 3 - Apply & Authorize', detail: 'Click "Apply to order form". Authorize OrderBook once for tokenIn if required.' },
+            { heading: 'Step 4 - Escrow Order', detail: 'Click "Escrow confidential order" to deposit encrypted tokens on-chain. MetaMask remains the sole transaction authority.' },
           ]}
         />
         <p>Groq translates natural language into a reviewable order draft. Nox encrypts the final terms locally and MetaMask remains the only transaction authority.</p>
@@ -40,6 +41,7 @@ export default function AgentTrade({ context }) {
           actions={actions}
           busy={context.busy}
           connected={Boolean(context.account)}
+          hideHelp
           onConnect={context.onConnect}
           onReveal={context.onReveal}
           privateBalancesVisible={context.privateBalancesVisible}

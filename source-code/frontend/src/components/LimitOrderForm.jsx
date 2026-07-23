@@ -3,7 +3,7 @@ import { formatToken } from '../lib/format';
 import { CardHelpButton } from './CardHelpModal';
 import OrderReadiness from './OrderReadiness';
 
-export default function LimitOrderForm({ actions, busy, connected, onConnect, onReveal, privateBalancesVisible }) {
+export default function LimitOrderForm({ actions, busy, connected, hideHelp = false, onConnect, onReveal, privateBalancesVisible }) {
   const {
     amount,
     authorizeOrderBook,
@@ -39,17 +39,19 @@ export default function LimitOrderForm({ actions, busy, connected, onConnect, on
     <div className="order-form public-order-form">
       <div className="section-heading compact-heading">
         <div><p className="eyebrow">CREATE ORDER</p><h2>Private terms, public trigger</h2></div>
-        <CardHelpButton
-          category="LIMIT ORDER GUIDE"
-          title="Confidential Limit Orders"
-          description="Escrow tokens into on-chain confidential limit orders that execute permissionlessly when Chainlink oracle prices trigger your target."
-          steps={[
-            { heading: 'Step 1 - Gas Fee', detail: 'Creating or cancelling orders requires Sepolia ETH for gas. Execution gas is paid by the automated keeper.' },
-            { heading: 'Step 2 - Authorize OrderBook', detail: 'Click "Authorize OrderBook" once for tokenIn if not already authorized.' },
-            { heading: 'Step 3 - Set Target Price & MinOut', detail: 'Specify your target price and minimum output. Your order stays encrypted until executed or cancelled.' },
-            { heading: 'Step 4 - Escrow Order', detail: 'Click "Escrow confidential order" and confirm in your wallet.' },
-          ]}
-        />
+        {!hideHelp && (
+          <CardHelpButton
+            category="LIMIT ORDER GUIDE"
+            title="Confidential Limit Orders"
+            description="Escrow tokens into on-chain confidential limit orders that execute permissionlessly when Chainlink oracle prices trigger your target."
+            steps={[
+              { heading: 'Step 1 - Gas Fee', detail: 'Creating or cancelling orders requires Sepolia ETH for gas. Execution gas is paid by the automated keeper.' },
+              { heading: 'Step 2 - Authorize OrderBook', detail: 'Click "Authorize OrderBook" once for tokenIn if not already authorized.' },
+              { heading: 'Step 3 - Set Target Price & MinOut', detail: 'Specify your target price and minimum output. Your order stays encrypted until executed or cancelled.' },
+              { heading: 'Step 4 - Escrow Order', detail: 'Click "Escrow confidential order" and confirm in your wallet.' },
+            ]}
+          />
+        )}
       </div>
       <div className="segmented order-side" role="group" aria-label="Limit order side">
         <button className={side === 'buy' ? 'active' : ''} onClick={() => onSideChange('buy')}>Buy ETH</button>
