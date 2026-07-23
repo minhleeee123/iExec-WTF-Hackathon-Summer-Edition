@@ -47,6 +47,39 @@ export const LIMIT_ORDER_ABI = [
   'event OrderExpired(uint256 indexed orderId,bytes32 encryptedRefund)',
 ];
 
+export const SAFE_MODULE_ABI = [
+  'function safe() view returns (address)',
+  'function router() view returns (address)',
+  'function orderBook() view returns (address)',
+  'function noxCompute() view returns (address)',
+  'function immutableToken(address token) view returns (bool)',
+  'function isEnabled() view returns (bool)',
+  'function confidentialSwap(address tokenIn,address tokenOut,bytes32 encryptedAmountIn,bytes inputProof,bytes32 encryptedMinOut,bytes minOutProof,uint64 deadline) returns (bytes32 encryptedOutput,bytes32 encryptedRefund,uint256 receiptId)',
+  'function createLimitOrder(address tokenIn,address tokenOut,bytes32 encryptedAmountIn,bytes amountProof,bytes32 encryptedMinOut,bytes minOutProof,uint256 triggerPrice,uint64 expiry) returns (uint256 orderId)',
+  'function cancelLimitOrder(uint256 orderId) returns (bytes32 encryptedRefund)',
+  'function setTokenOperator(address token,address operator,uint48 until)',
+  'function addViewer(bytes32 handle,address viewer)',
+  'function revoke(address previousModule)',
+  'event SafeSwapExecuted(address indexed safe,address indexed tokenIn,address indexed tokenOut,bytes32 encryptedOutput,bytes32 encryptedRefund,uint256 receiptId)',
+  'event SafeOrderCreated(address indexed safe,uint256 indexed orderId)',
+  'event SafeOrderCancelled(address indexed safe,uint256 indexed orderId,bytes32 encryptedRefund)',
+  'event SafeTokenOperatorUpdated(address indexed safe,address indexed token,address indexed operator,uint48 until)',
+  'event SafeViewerAdded(address indexed safe,bytes32 indexed handle,address indexed viewer)',
+  'event SafeModuleRevoked(address indexed safe,address indexed module)',
+];
+
+export const SAFE_ABI = [
+  'function isModuleEnabled(address module) view returns (bool)',
+  'function isOwner(address owner) view returns (bool)',
+  'function getOwners() view returns (address[])',
+  'function getThreshold() view returns (uint256)',
+  'function nonce() view returns (uint256)',
+  'function enableModule(address module)',
+  'function disableModule(address prevModule,address module)',
+  'function execTransaction(address to,uint256 value,bytes data,uint8 operation,uint256 safeTxGas,uint256 baseGas,uint256 gasPrice,address gasToken,address refundReceiver,bytes signatures) returns (bool success)',
+  'function getTransactionHash(address to,uint256 value,bytes data,uint8 operation,uint256 safeTxGas,uint256 baseGas,uint256 gasPrice,address gasToken,address refundReceiver,uint256 _nonce) view returns (bytes32)',
+];
+
 export const CHAINLINK_FEED_ABI = [
   'function latestRoundData() view returns (uint80 roundId,int256 answer,uint256 startedAt,uint256 updatedAt,uint80 answeredInRound)',
   'function decimals() view returns (uint8)',

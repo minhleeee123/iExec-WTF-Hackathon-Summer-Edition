@@ -48,8 +48,21 @@ test('compiled limit order ABI supports create, execute, cancel, and expiry refu
   assert(orderArtifact.abi.some((entry) => entry.type === 'event' && entry.name === 'OrderExecuted'));
 });
 
+test('compiled Safe module exposes only allowlisted Nox treasury operations', () => {
+  const moduleArtifact = artifact('NoxSafeModule');
+  for (const name of ['confidentialSwap', 'createLimitOrder', 'cancelLimitOrder', 'setTokenOperator', 'addViewer', 'revoke', 'isEnabled']) {
+    assert(moduleArtifact.abi.some((entry) => entry.type === 'function' && entry.name === name), `${name} missing`);
+  }
+  assert(moduleArtifact.abi.some((entry) => entry.type === 'event' && entry.name === 'SafeSwapExecuted'));
+  assert(moduleArtifact.abi.some((entry) => entry.type === 'event' && entry.name === 'SafeModuleRevoked'));
+  const moduleSource = read('contracts/NoxSafeModule.sol');
+  assert.match(moduleSource, /onlySafe/);
+  assert.match(moduleSource, /InvalidOperator/);
+  assert.doesNotMatch(moduleSource, /execute\(address|delegatecall\(/i);
+});
+
 test('compiled contracts stay below the EVM runtime bytecode limit', () => {
-  for (const name of ['NoxTestToken', 'NoxConfidentialToken', 'NoxSwap', 'NoxLimitOrderBook']) {
+  for (const name of ['NoxTestToken', 'NoxConfidentialToken', 'NoxSwap', 'NoxLimitOrderBook', 'NoxSafeModule']) {
     const runtimeBytes = (artifact(name).deployedBytecode.length - 2) / 2;
     assert(runtimeBytes > 0, `${name} must have runtime bytecode`);
     assert(runtimeBytes < 24_576, `${name} exceeds EIP-170: ${runtimeBytes} bytes`);
