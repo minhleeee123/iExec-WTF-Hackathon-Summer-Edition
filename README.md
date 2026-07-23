@@ -27,7 +27,7 @@ User documentation: [https://noxswap-iexec.vercel.app/docs](https://noxswap-iexe
 | nSOL test ERC-20 | [`0x6740...595f`](https://sepolia.etherscan.io/address/0x674020dd2C1fB45E26f6e31AC1a7EeceF3E8595f) |
 | iExec NoxCompute | [`0x24Ef...77bF`](https://sepolia.etherscan.io/address/0x24Ef36Ec5b626D7DCD09a98F3083c2758F0F77bF) |
 
-The three encrypted pools were initialized in transactions [`0xb509...6ae87`](https://sepolia.etherscan.io/tx/0xb50926c8d71c293e5f13b0f79c46d0f4260b5c4a4301c78fbb34eac96f6ae87b), [`0xdd08...3c72`](https://sepolia.etherscan.io/tx/0xdd08e2eff23401b32b682090162f84dff01e06b3639c37a2bf137d495c3c3c72), and [`0xa650...1f5e`](https://sepolia.etherscan.io/tx/0xa650ae996f1faa9c5d1449154a0c378d6f089f505ec5f53700f0a4f620351f5e). Full addresses and transactions are in [`source-code/backend/deployment-sepolia.json`](./source-code/backend/deployment-sepolia.json).
+The three encrypted pools were initialized in transactions [`0xb509...6ae87`](https://sepolia.etherscan.io/tx/0xb50926c8d71c293e5f13b0f79c46d0f4260b5c4a4301c78fbb34eac96f6ae87b), [`0xdd08...3c72`](https://sepolia.etherscan.io/tx/0xdd08e2eff23401b32b682090162f84dff01e06b3639c37a2bf137d495c3c3c72), and [`0xa650...1f5e`](https://sepolia.etherscan.io/tx/0xa650ae996f1faa9c5d1449154a0c378d6f089f505ec5f53700f0a4f620351f5e). Full addresses and transactions are in [`packages/contracts/deployment-sepolia.json`](./packages/contracts/deployment-sepolia.json).
 
 All ten project contracts have exact creation/runtime source matches on Sourcify. [Inspect the verified Router V2 source](https://repo.sourcify.dev/11155111/0x6e8df82d708196e75Fb735120B4817f5c2551015).
 
@@ -87,42 +87,37 @@ The router computes the 0.30% fee and constant-product quote using `Nox.mul`, `N
 - No fixed MEV-savings claim. The UI reports measured execution-versus-oracle deviation only for ETH/USDC.
 - No LP share/removal lifecycle. Pools are deployer-funded test liquidity.
 
-See [`source-code/VERIFICATION.md`](./source-code/VERIFICATION.md) for the remediation and test record.
+See [`docs/verification.md`](./docs/verification.md) for the remediation and test record.
 
 ## Repository Layout
 
 ```text
-source-code/
-  backend/
+apps/
+  web/
+    src/
+    api/agent/
+    scripts/check-ui.mjs
+    vercel.json
+  keeper/
+    src/index.js
+    src/keeper-order-index.js
+    src/keeper-scanner.js
+    src/observer-client.js
+  mcp-server/
+    src/server.js
+    src/strategy-client.js
+    bin/noxswap-mcp.js
+packages/
+  contracts/
     contracts/NoxTestToken.sol
     contracts/NoxConfidentialToken.sol
     contracts/NoxSwap.sol
     contracts/NoxLimitOrderBook.sol
+    client/abis.js
     scripts/deploy-sepolia.js
     scripts/test-sepolia-e2e.js
-    scripts/test-mcp.js
-    mcp-server.js
-    bin/noxswap-mcp.js
-    keeper.js
-    lib/agent-client.js
-    lib/keeper-decision.js
-    lib/keeper-scanner.js
-    lib/keeper-notifier.js
-    lib/keeper-health.js
-  frontend/
-    src/App.jsx
-    src/components/OrderBook.jsx
-    src/components/OrderDetail.jsx
-    src/components/AgentStrategy.jsx
-    src/components/AgentTrade.jsx
-    src/hooks/useLimitOrderBook.js
-    src/hooks/useLimitOrderActions.js
-    src/components/AppSidebar.jsx
-    src/pages/TradePage.jsx
-    src/pages/WalletPage.jsx
-    src/pages/ActivityPage.jsx
-    src/contracts.js
-    src/deployment.json
+    scripts/sync-client-artifacts.js
+    deployment-sepolia.json
 ```
 
 ## Run the Web Client
@@ -130,7 +125,6 @@ source-code/
 Prerequisites: Node.js 20.19 or newer and npm.
 
 ```bash
-cd source-code/frontend
 npm install
 npm run dev
 ```
@@ -145,7 +139,7 @@ MetaMask must be on Ethereum Sepolia for write operations. Read-only pool and
 Chainlink data load without a wallet.
 
 The Strategy Agent is available at `/app/trade?mode=agent`. For local development,
-place `GROQ_API_KEY` in the ignored `source-code/frontend/.env.local`; on Vercel,
+place `GROQ_API_KEY` in the ignored `apps/web/.env.local`; on Vercel,
 configure it as a server-side project secret. Never prefix it with `VITE_`, which
 would expose it to browser JavaScript. `GROQ_MODEL` defaults to
 `openai/gpt-oss-20b`.
@@ -164,10 +158,9 @@ gas simulation immediately before submission.
 
 ## Compile and Test
 
-Hardhat 3 and its native EDR dependency require a newer Node runtime than the machine default, so backend scripts invoke Node 24 through `npx`.
+Hardhat 3 and its native EDR dependency require a newer Node runtime than the machine default, so workspace scripts invoke Node 24 through `npx`.
 
 ```bash
-cd source-code/backend
 npm install
 npm run compile
 npm test
@@ -179,14 +172,14 @@ Live tests require a funded Sepolia test wallet. Never commit its private key.
 
 ```bash
 PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:sepolia
-PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:mcp
+PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:mcp:live
 PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:mcp:write
 npm run verify:sourcify
 ```
 
 The live E2E signer can be any funded Sepolia wallet; it does not need to be the
 deployment owner. Each run writes sanitized JSON evidence under
-`source-code/backend/artifacts/evidence/`. The local Nox off-chain Hardhat stack
+`packages/contracts/artifacts/evidence/`. The local Nox off-chain Hardhat stack
 requires Docker. When Docker is unavailable, the acceptance path is compile plus
 unit tests plus the live Sepolia E2E test.
 
@@ -197,7 +190,6 @@ rechecks status before submission, and sequentially calls only `executeOrder` or
 `expireOrder`. It has no database and never decrypts handles.
 
 ```bash
-cd source-code/backend
 npm run keeper:dry
 KEEPER_PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run keeper:once
 KEEPER_PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run keeper
@@ -205,8 +197,8 @@ KEEPER_PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run keeper
 
 Polling mode exposes `GET /health` on port `8787` by default and supports an
 optional `NOTIFICATION_WEBHOOK_URL`. See
-[`source-code/backend/.env.example`](./source-code/backend/.env.example) and
-[`source-code/backend/README.md`](./source-code/backend/README.md).
+[`apps/keeper/.env.example`](./apps/keeper/.env.example) and
+[`apps/keeper/README.md`](./apps/keeper/README.md).
 Set `KEEPER_AI_OBSERVER_URL` and `KEEPER_AI_OBSERVER_TOKEN` to the deployed
 `/api/agent/observe` endpoint and its shared secret to add keeper-only structured
 explanations. The endpoint also enforces a five-request-per-minute client limit
@@ -216,7 +208,6 @@ decision and failures do not block settlement.
 ## MCP Server
 
 ```bash
-cd source-code/backend
 npm run mcp # public read/planning tools; no signing key required
 ```
 
@@ -240,12 +231,11 @@ Write tools are disabled by default; enabling them requires both `PRIVATE_KEY` a
 ## Redeploy
 
 ```bash
-cd source-code/backend
 npm run compile
 PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run deploy:sepolia
 ```
 
-The current script is an extension deployment: it reuses the original nUSDC/nWETH wrappers, deploys nWBTC/nSOL, four-token Router V2 and the limit-order book, initializes all three encrypted pools, and synchronizes both deployment JSON files. It requires the existing deployment owner.
+The current script is an extension deployment: it reuses the original nUSDC/nWETH wrappers, deploys nWBTC/nSOL, four-token Router V2 and the limit-order book, initializes all three encrypted pools, and synchronizes the canonical contracts artifact with the committed web snapshot. It requires the existing deployment owner.
 
 ## License
 

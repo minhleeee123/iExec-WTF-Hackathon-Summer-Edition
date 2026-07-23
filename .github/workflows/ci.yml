@@ -26,12 +26,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  backend:
-    name: Contracts and keeper
+  protocol:
+    name: Contracts, keeper and MCP
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: source-code/backend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,20 +37,19 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: source-code/backend/package-lock.json
+          cache-dependency-path: package-lock.json
       - name: Install dependencies
         run: npm ci
       - name: Compile contracts
         run: npm run compile
+      - name: Check generated client artifacts
+        run: npm run sync:check --workspace @noxswap/contracts
       - name: Run contract, protocol and keeper tests
-        run: npm test
+        run: npm run test:contracts && npm run test:keeper && npm run test:mcp
 
   frontend:
     name: Frontend quality
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: source-code/frontend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -62,11 +58,11 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: source-code/frontend/package-lock.json
+          cache-dependency-path: package-lock.json
       - name: Install dependencies
         run: npm ci
       - name: Run unit tests
-        run: npm run test:unit
+        run: npm run test:web
       - name: Lint
         run: npm run lint
       - name: Build production bundle

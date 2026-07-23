@@ -83,8 +83,10 @@ Chỉ hoàn thiện `plan/build-plan.md` sau khi Product Plan được phê duy�
 
 ### Giai đoạn 5 — Phát triển và submission
 
-- Web/mobile client và landing page: `source-code/frontend/`
-- Backend/API nếu cần: `source-code/backend/`
+- Web/mobile client, landing page và Vercel Agent API: `apps/web/`
+- Stateless keeper: `apps/keeper/`
+- MCP stdio server: `apps/mcp-server/`
+- Solidity, Hardhat, deployment và canonical artifacts: `packages/contracts/`
 - Slide: `submission/slide/`
 - Video: `submission/video/`
 

@@ -22,9 +22,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: sepolia
-    defaults:
-      run:
-        working-directory: source-code/backend
     env:
       PRIVATE_KEY: ${{ secrets.SEPOLIA_PRIVATE_KEY }}
       SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
@@ -37,7 +34,7 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: source-code/backend/package-lock.json
+          cache-dependency-path: package-lock.json
       - name: Install dependencies
         run: npm ci
       - name: Compile contracts
@@ -52,6 +49,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sepolia-evidence-${{ github.run_id }}
-          path: source-code/backend/artifacts/evidence/*.json
+          path: packages/contracts/artifacts/evidence/*.json
           if-no-files-found: warn
           retention-days: 30

@@ -1,7 +1,7 @@
 # NoxSwap Threat Model
 
 > Scope: the Ethereum Sepolia deployment recorded in
-> `source-code/backend/deployment-sepolia.json` and the clients in this repository.
+> `packages/contracts/deployment-sepolia.json` and the clients in this repository.
 > This is a testnet prototype, not an audited production system.
 
 ## 1. Security objectives

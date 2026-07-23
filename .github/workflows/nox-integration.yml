@@ -17,9 +17,6 @@ jobs:
     name: Local Nox stack and bytecode E2E
     runs-on: ubuntu-latest
     timeout-minutes: 35
-    defaults:
-      run:
-        working-directory: source-code/backend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,7 +25,7 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: source-code/backend/package-lock.json
+          cache-dependency-path: package-lock.json
       - name: Install dependencies
         run: npm ci
       - name: Compile contracts
@@ -40,6 +37,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nox-runtime-logs-${{ github.run_id }}
-          path: source-code/backend/offchain-services.log
+          path: packages/contracts/offchain-services.log
           if-no-files-found: warn
           retention-days: 14

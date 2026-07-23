@@ -61,16 +61,13 @@ Strict current estimate: **10.4-11.7 / 14**. After manual wallet validation and 
 ## Repeatable Commands
 
 ```bash
-cd source-code/backend
+npm install
 npm run compile
 npm test
 npm run keeper:dry
 PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:sepolia
-PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:mcp
-
-cd ../frontend
-npm run test:unit
-npm run test:agent:live
+PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:mcp:live
+npm run test:agent:live --workspace @noxswap/web
 npm run build
 npm run lint
 npm run test:ui

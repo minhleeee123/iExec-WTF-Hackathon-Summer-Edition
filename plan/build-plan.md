@@ -16,7 +16,7 @@
 - Core flow: Connect -> Faucet -> Wrap -> SDK encrypt -> Confidential swap -> SDK decrypt -> Receipt/history.
 - Supporting real flows: Unwrap với public decryption proof, ACL viewer, Chainlink reference price, MCP stdio.
 - Public frontend deployment: `https://noxswap-iexec.vercel.app`; external desktop/mobile smoke tests and a ten-order public read passed against live Sepolia data.
-- Contract deployment: Live on Ethereum Sepolia, addresses canonical trong `source-code/backend/deployment-sepolia.json`.
+- Contract deployment: Live on Ethereum Sepolia, addresses canonical trong `packages/contracts/deployment-sepolia.json`.
 
 ## 3. Tech stack
 
