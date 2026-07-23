@@ -1318,6 +1318,7 @@ export default function App() {
   };
   const safeProps = {
     account,
+    balances,
     busy,
     connected,
     onCancelOrder: safeCancelOrder,

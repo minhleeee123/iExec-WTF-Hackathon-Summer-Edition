@@ -350,14 +350,14 @@ try {
     await walletPage.getByTestId('desktop-primary-nav').getByRole('link', { name: /Safe Treasury/ }).click();
     await walletPage.waitForURL(`${url}/app/safe`);
     await walletPage.getByRole('heading', { name: 'Safe Treasury', exact: true }).waitFor();
-    const safeMeta = walletPage.locator('.safe-page-meta');
-    await safeMeta.getByText(/Enabled|Paused/, { exact: true }).waitFor({ timeout: 30_000 });
-    await safeMeta.getByText('Safe owner', { exact: true }).waitFor();
-    const safeModuleEnabled = await safeMeta.getByText('Enabled', { exact: true }).count() > 0;
+    const safeCustody = walletPage.locator('.safe-custody-panel');
+    await safeCustody.getByText(/Module enabled|Operations paused/, { exact: true }).waitFor({ timeout: 30_000 });
+    await safeCustody.getByText('Safe owner', { exact: true }).waitFor();
+    const safeModuleEnabled = await safeCustody.getByText('Module enabled', { exact: true }).count() > 0;
     if (safeModuleEnabled) {
       assert.equal(await walletPage.getByRole('button', { name: 'Enable Nox module' }).count(), 0, 'enabled Safe must not show recovery action');
     } else {
-      assert.equal(await safeMeta.getByText('Paused', { exact: true }).count(), 1, 'revoked Safe must expose its paused module state');
+      assert.equal(await safeCustody.getByText('Operations paused', { exact: true }).count(), 1, 'revoked Safe must expose its paused module state');
       await walletPage.getByRole('button', { name: 'Enable Nox module' }).waitFor();
     }
     assert.equal(await walletPage.getByRole('heading', { name: 'Safe execution context' }).count(), 0, 'Safe workspace must not duplicate its execution context');
@@ -365,13 +365,21 @@ try {
     assert.equal(await walletPage.locator('.safe-workflow-tabs [role="tab"]').count(), 4, 'Safe workspace must expose four first-level sections');
     assert.equal(await walletPage.getByRole('tab', { name: 'Overview' }).count(), 0, 'Safe workspace must not retain a redundant Overview section');
     assert.equal(await walletPage.locator('.safe-page-balance-strip > span').count(), 4, 'compact Safe header must preserve all confidential balances');
-    await walletPage.getByRole('button', { name: 'Reveal', exact: true }).waitFor();
+    assert.equal(await walletPage.locator('.safe-swap-panel.swap-panel').count(), 1, 'Safe swap must reuse the product swap panel pattern');
+    await safeCustody.getByRole('button', { name: 'Reveal', exact: true }).waitFor();
     assert.equal(await walletPage.getByLabel('Safe funding amount').inputValue(), '1000');
     assert.equal(await walletPage.getByLabel('Safe funding token').inputValue(), 'cUSDC');
     await walletPage.locator('.safe-operation-tabs').waitFor();
     assert.equal(await walletPage.locator('.safe-operation-tabs [role="tab"]').count(), 2, 'Safe movement must separate swap and unwrap');
+    const safeSwapTab = walletPage.getByRole('tab', { name: 'Protected swap', exact: true });
+    await safeSwapTab.focus();
+    await safeSwapTab.press('End');
+    assert.equal(await walletPage.getByRole('tab', { name: 'Unwrap', exact: true }).getAttribute('aria-selected'), 'true', 'Safe operation tabs must support keyboard navigation');
+    await walletPage.getByRole('tab', { name: 'Unwrap', exact: true }).press('Home');
+    assert.equal(await safeSwapTab.getAttribute('aria-selected'), 'true', 'Safe operation tabs must support Home navigation');
     assert.equal(await walletPage.getByLabel('Safe swap oracle tolerance').inputValue(), '1000');
     assert.equal(await walletPage.getByLabel('Safe swap deadline minutes').inputValue(), '20');
+    await walletPage.screenshot({ path: '/tmp/noxswap-safe-swap.png', fullPage: true });
     await walletPage.getByRole('tab', { name: 'Unwrap', exact: true }).click();
     await walletPage.getByText('Privacy boundary', { exact: true }).waitFor();
     assert.equal(await walletPage.getByLabel('Safe unwrap token').inputValue(), 'cUSDC');
@@ -380,10 +388,12 @@ try {
     await walletPage.waitForURL(`${url}/app/safe?section=activity`);
     await walletPage.locator('.safe-activity-row').first().waitFor({ timeout: 30_000 });
     assert(await walletPage.locator('.safe-activity-row').count() >= 1, 'Safe Activity must render confirmed on-chain history');
+    assert.equal(await walletPage.locator('.safe-activity-grid .history-panel').count(), 1, 'Safe Activity must reuse the product history panel pattern');
     await walletPage.getByRole('tab', { name: 'Orders & Agent' }).click();
     await walletPage.waitForURL(`${url}/app/safe?section=orders`);
     await walletPage.locator('.safe-operation-tabs').waitFor();
     assert.equal(await walletPage.locator('.safe-operation-tabs [role="tab"]').count(), 2, 'Safe orders must separate manual order and Strategy Agent');
+    assert.equal(await walletPage.locator('.safe-orders-layout.orders-layout').count(), 1, 'Safe orders must reuse the product orders layout pattern');
     await walletPage.getByRole('tab', { name: 'Strategy Agent', exact: true }).click();
     await walletPage.getByLabel('Trading intent').fill('Sell 0.01 cETH when ETH reaches $2,500. Expire in 6 hours.');
     await walletPage.getByRole('button', { name: 'Generate private strategy draft' }).click();
@@ -393,6 +403,7 @@ try {
     assert.equal(await walletPage.getByLabel('Safe order amount').inputValue(), '0.01');
     assert.equal(await walletPage.getByLabel('Safe order trigger price').inputValue(), '2500');
     assert.equal(await walletPage.getByLabel('Safe order oracle tolerance').inputValue(), '100');
+    await walletPage.screenshot({ path: '/tmp/noxswap-safe-orders.png', fullPage: true });
     await walletPage.getByRole('tab', { name: 'Access & security' }).click();
     await walletPage.waitForURL(`${url}/app/safe?section=security`);
     await walletPage.getByRole('heading', { name: 'Grant a viewer' }).waitFor();
@@ -403,6 +414,8 @@ try {
     }));
     assert(safeLayout.scrollWidth <= safeLayout.clientWidth, 'Safe treasury view has horizontal overflow');
     await walletPage.screenshot({ path: '/tmp/noxswap-safe-treasury.png', fullPage: true });
+    await walletPage.getByRole('tab', { name: 'Swap & unwrap' }).click();
+    await walletPage.waitForURL(`${url}/app/safe`);
     await walletPage.setViewportSize({ width: 390, height: 844 });
     const safeMobileLayout = await walletPage.evaluate(() => ({
       clientWidth: document.documentElement.clientWidth,
@@ -434,6 +447,8 @@ try {
       safeUnwrapAvailable: true,
       safeMobileLayout,
       screenshot: '/tmp/noxswap-wallet.png',
+      safeSwapScreenshot: '/tmp/noxswap-safe-swap.png',
+      safeOrdersScreenshot: '/tmp/noxswap-safe-orders.png',
       safeTreasuryScreenshot: '/tmp/noxswap-safe-treasury.png',
       safeTreasuryMobileScreenshot: '/tmp/noxswap-safe-treasury-mobile.png',
       ownerOrderScreenshot: '/tmp/noxswap-order-owner.png',
