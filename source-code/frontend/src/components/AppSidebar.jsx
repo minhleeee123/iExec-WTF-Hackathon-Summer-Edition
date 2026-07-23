@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import PrivateWallet from './PrivateWallet';
 import { shorten } from '../lib/format';
+import useDialogFocus from '../hooks/useDialogFocus';
 
 const navigation = [
   { to: '/app/wallet', label: 'Wallet', description: 'Assets and access', icon: Boxes },
@@ -10,14 +11,18 @@ const navigation = [
   { to: '/app/activity', label: 'Activity', description: 'History and proofs', icon: Activity },
 ];
 
-function AccountControl({ account, busy, onAccountAction }) {
+function AccountControl({ account, busy, onAccountAction, onChangeWallet, walletName }) {
+  const accountLabel = account ? `${walletName ? `${walletName} · ` : ''}${shorten(account)}` : 'Connect wallet';
   return (
-    <button className="sidebar-account" onClick={onAccountAction} disabled={busy === 'connect'}>
-      {busy === 'connect'
-        ? <LoaderCircle className="spin" size={17} />
-        : account ? <Copy size={17} /> : <Wallet size={17} />}
-      <span>{account ? shorten(account) : 'Connect wallet'}</span>
-    </button>
+    <div className="account-control">
+      <button className="sidebar-account" onClick={onAccountAction} disabled={busy === 'connect'} title={account ? `Copy ${walletName || 'wallet'} address` : 'Connect wallet'} aria-label={account ? `Copy ${walletName || 'wallet'} address` : 'Connect wallet'}>
+        {busy === 'connect'
+          ? <LoaderCircle className="spin" size={17} />
+          : account ? <Copy size={17} /> : <Wallet size={17} />}
+        <span>{accountLabel}</span>
+      </button>
+      {account && <button className="account-switch" onClick={onChangeWallet} disabled={busy === 'connect'} aria-label="Change wallet provider" title="Change wallet provider">Change</button>}
+    </div>
   );
 }
 
@@ -34,9 +39,11 @@ function PrimaryNavigation({ onNavigate, testId }) {
   );
 }
 
-export default function AppSidebar({ account, busy, onAccountAction, walletProps }) {
+export default function AppSidebar({ account, busy, onAccountAction, onChangeWallet, walletName, walletProps }) {
   const [mobileWalletOpen, setMobileWalletOpen] = useState(false);
   const location = useLocation();
+  const closeMobileWallet = () => setMobileWalletOpen(false);
+  const drawerRef = useDialogFocus(mobileWalletOpen, closeMobileWallet);
 
   useEffect(() => setMobileWalletOpen(false), [location.pathname]);
 
@@ -54,7 +61,7 @@ export default function AppSidebar({ account, busy, onAccountAction, walletProps
         <PrimaryNavigation testId="desktop-primary-nav" />
 
         <div className="sidebar-wallet">
-          <AccountControl account={account} busy={busy} onAccountAction={onAccountAction} />
+          <AccountControl account={account} busy={busy} onAccountAction={onAccountAction} onChangeWallet={onChangeWallet} walletName={walletName} />
           <PrivateWallet {...walletProps} compact />
         </div>
 
@@ -73,7 +80,7 @@ export default function AppSidebar({ account, busy, onAccountAction, walletProps
           <span className="brand-mark"><LockKeyhole size={18} /></span>
           <span>Nox<span className="brand-accent">Swap</span></span>
         </Link>
-        <button className="mobile-wallet-toggle" onClick={() => setMobileWalletOpen(true)} aria-label="Open private wallet">
+        <button className="mobile-wallet-toggle" onClick={() => setMobileWalletOpen(true)} aria-label={`Open private wallet${walletName ? ` (${walletName})` : ''}`} title={walletName ? `Connected with ${walletName}` : 'Open private wallet'}>
           <Wallet size={18} />
           <span>{account ? shorten(account, 5, 4) : 'Connect'}</span>
         </button>
@@ -90,12 +97,12 @@ export default function AppSidebar({ account, busy, onAccountAction, walletProps
 
       {mobileWalletOpen && (
         <div className="mobile-wallet-overlay" role="presentation" onMouseDown={() => setMobileWalletOpen(false)}>
-          <aside className="mobile-wallet-drawer" role="dialog" aria-modal="true" aria-label="Private wallet" onMouseDown={(event) => event.stopPropagation()}>
+          <aside ref={drawerRef} className="mobile-wallet-drawer" tabIndex="-1" role="dialog" aria-modal="true" aria-label="Private wallet" onMouseDown={(event) => event.stopPropagation()}>
             <div className="drawer-heading">
               <strong>Private wallet</strong>
-              <button className="icon-button" onClick={() => setMobileWalletOpen(false)} aria-label="Close private wallet"><X size={18} /></button>
+              <button className="icon-button" onClick={closeMobileWallet} aria-label="Close private wallet"><X size={18} /></button>
             </div>
-            <AccountControl account={account} busy={busy} onAccountAction={onAccountAction} />
+            <AccountControl account={account} busy={busy} onAccountAction={onAccountAction} onChangeWallet={onChangeWallet} walletName={walletName} />
             <PrivateWallet {...walletProps} compact />
           </aside>
         </div>

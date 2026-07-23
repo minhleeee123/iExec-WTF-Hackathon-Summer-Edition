@@ -140,12 +140,26 @@ try {
       assert.equal(await page.title(), 'Trade | NoxSwap');
       const getNav = () => page.getByTestId(viewport.width <= 900 ? 'mobile-primary-nav' : 'desktop-primary-nav');
       assert(await getNav().isVisible(), `${viewport.name} primary navigation is not visible`);
+      assert.equal(await page.locator('[role="tab"][aria-selected="true"]').count(), 1, `${viewport.name} must expose one selected workflow tab`);
+      assert.equal(await page.locator('[role="tabpanel"][aria-labelledby]').count(), 1, `${viewport.name} workflow panel must be labelled by its tab`);
       if (viewport.width > 900) {
         assert(await page.locator('.app-sidebar .compact-wallet').isVisible(), 'desktop private wallet is not persistent');
+        const connectButton = page.getByRole('button', { name: 'Connect wallet' }).first();
+        await connectButton.click();
+        const walletDialog = page.getByRole('dialog', { name: /connect your web3 wallet/i });
+        await walletDialog.waitFor();
+        assert.equal(await walletDialog.evaluate((element) => element.contains(document.activeElement)), true, 'wallet dialog must receive focus');
+        assert.equal(await page.evaluate(() => document.body.style.overflow), 'hidden', 'wallet dialog must lock background scroll');
+        await page.keyboard.press('Escape');
+        await walletDialog.waitFor({ state: 'hidden' });
+        assert.equal(await page.evaluate(() => document.body.style.overflow), '', 'wallet dialog must restore background scroll');
       } else {
         await page.getByRole('button', { name: 'Open private wallet' }).click();
-        await page.locator('.mobile-wallet-drawer .compact-wallet').waitFor();
-        await page.getByRole('button', { name: 'Close private wallet' }).click();
+        const walletDrawer = page.getByRole('dialog', { name: 'Private wallet' });
+        await walletDrawer.waitFor();
+        assert.equal(await walletDrawer.evaluate((element) => element.contains(document.activeElement)), true, 'mobile wallet drawer must receive focus');
+        await page.keyboard.press('Escape');
+        await walletDrawer.waitFor({ state: 'hidden' });
       }
 
       await page.getByRole('tab', { name: 'Strategy Agent' }).click();
@@ -212,7 +226,8 @@ try {
       }));
       assert(drawerLayout.scrollWidth <= drawerLayout.clientWidth, `${viewport.name} order detail has horizontal overflow`);
       await page.screenshot({ path: `/tmp/noxswap-order-detail-${viewport.name}.png` });
-      await page.getByRole('button', { name: 'Close order details' }).click();
+      await page.keyboard.press('Escape');
+      await page.getByRole('dialog', { name: /order \d+ details/i }).waitFor({ state: 'hidden' });
 
       await page.goto(`${url}/app/wallet`);
       await page.locator('.page-heading h1').filter({ hasText: 'Wallet' }).waitFor();

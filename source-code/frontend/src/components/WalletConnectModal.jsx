@@ -1,4 +1,5 @@
 import { ExternalLink, ShieldCheck, X } from 'lucide-react';
+import useDialogFocus from '../hooks/useDialogFocus';
 
 const WALLET_OPTIONS = [
   {
@@ -37,12 +38,15 @@ export default function WalletConnectModal({
   onSelectWallet,
   show,
 }) {
+  const dialogRef = useDialogFocus(show, onClose);
   if (!show) return null;
 
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div
+        ref={dialogRef}
         className="modal wallet-connect-modal"
+        tabIndex="-1"
         onMouseDown={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"

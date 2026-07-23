@@ -44,6 +44,24 @@ const ActivityPage = lazy(() => import('./pages/ActivityPage'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const TradePage = lazy(() => import('./pages/TradePage'));
 const WalletPage = lazy(() => import('./pages/WalletPage'));
+const WALLET_PREFERENCE_KEY = 'noxswap.wallet-provider';
+const WALLET_LABELS = { metamask: 'MetaMask', coinbase: 'Coinbase', rabby: 'Rabby', injected: 'Injected wallet' };
+
+function providerLabel(provider, preferredWallet = '') {
+  if (preferredWallet && WALLET_LABELS[preferredWallet]) return WALLET_LABELS[preferredWallet];
+  if (provider?.isCoinbaseWallet) return 'Coinbase';
+  if (provider?.isRabby) return 'Rabby';
+  if (provider?.isMetaMask) return 'MetaMask';
+  return 'Injected wallet';
+}
+
+function readWalletPreference() {
+  try { return window.localStorage.getItem(WALLET_PREFERENCE_KEY) ?? ''; } catch { return ''; }
+}
+
+function writeWalletPreference(walletId) {
+  try { window.localStorage.setItem(WALLET_PREFERENCE_KEY, walletId); } catch { /* Storage can be disabled in privacy mode. */ }
+}
 
 export default function App() {
   const location = useLocation();
@@ -83,6 +101,8 @@ export default function App() {
   const [gatewayEvidence, setGatewayEvidence] = useState(null);
   const [executionComparison, setExecutionComparison] = useState(null);
   const [walletProvider, setWalletProvider] = useState(null);
+  const [walletAvailable, setWalletAvailable] = useState(() => Boolean(window.ethereum));
+  const [walletName, setWalletName] = useState('');
 
   const connected = Boolean(account);
   const correctNetwork = chainId === deployment.chainId;
@@ -163,9 +183,12 @@ export default function App() {
     try {
       setBusy('connect');
       const selectedProvider = await discoverWalletProvider(walletId);
+      setWalletAvailable(true);
       await selectedProvider.request({ method: 'eth_requestAccounts' });
       const wallet = await getWallet(selectedProvider);
+      writeWalletPreference(walletId);
       setWalletProvider(selectedProvider);
+      setWalletName(providerLabel(selectedProvider, walletId));
       setAccount(wallet.address);
       setChainId(Number((await wallet.provider.getNetwork()).chainId));
       setShowWalletModal(false);
@@ -286,14 +309,43 @@ export default function App() {
 
   useEffect(() => {
     loadMarket().catch(fail);
-    if (!walletProvider && window.ethereum) {
-      window.ethereum.request({ method: 'eth_accounts' })
-        .then((accounts) => {
-          if (accounts.length > 0) setWalletProvider(window.ethereum);
-        })
-        .catch(() => {});
-    }
+    if (walletProvider) return undefined;
+    let active = true;
+    const restoreWallet = async () => {
+      const preferredWallet = readWalletPreference();
+      const provider = preferredWallet
+        ? await discoverWalletProvider(preferredWallet).catch(() => null)
+        : window.ethereum;
+      if (!active || !provider) return;
+      try {
+        const accounts = await provider.request({ method: 'eth_accounts' });
+        if (active && accounts.length > 0) {
+          setWalletAvailable(true);
+          setWalletProvider(provider);
+          setWalletName(providerLabel(provider, preferredWallet));
+        }
+      } catch {
+        // A locked wallet remains available through the explicit connect flow.
+      }
+    };
+    restoreWallet();
+    return () => { active = false; };
   }, [walletProvider]);
+
+  useEffect(() => {
+    const onProvider = (event) => {
+      if (event?.detail?.provider) setWalletAvailable(true);
+    };
+    window.addEventListener('eip6963:announceProvider', onProvider);
+    window.dispatchEvent(new Event('eip6963:requestProvider'));
+    const timer = window.setTimeout(() => {
+      window.removeEventListener('eip6963:announceProvider', onProvider);
+    }, 400);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('eip6963:announceProvider', onProvider);
+    };
+  }, []);
 
   useEffect(() => {
     if (!walletProvider) return undefined;
@@ -799,12 +851,12 @@ export default function App() {
         </>
       ) : (
         <div className="product-layout">
-          <AppSidebar account={account} busy={busy} onAccountAction={handleAccountAction} walletProps={walletProps} />
+          <AppSidebar account={account} busy={busy} onAccountAction={handleAccountAction} onChangeWallet={openWalletModal} walletName={walletName} walletProps={walletProps} />
           <div className="product-main">
             <div className="global-notices">
               <NoticeBanner notice={notice} onDismiss={() => setNotice(null)} />
-              {!window.ethereum && <NoticeBanner notice={{ type: 'error', text: 'No injected wallet was detected. Read-only market data remains available.' }} />}
-              {connected && !correctNetwork && <NoticeBanner notice={{ type: 'error', text: 'Switch MetaMask to Ethereum Sepolia to use NoxSwap.' }} />}
+              {!walletAvailable && <NoticeBanner notice={{ type: 'error', text: 'No compatible wallet was detected. Read-only market data remains available.' }} />}
+              {connected && !correctNetwork && <NoticeBanner notice={{ type: 'error', text: 'Switch your connected wallet to Ethereum Sepolia to use NoxSwap.' }} />}
             </div>
             <Suspense fallback={<div className="route-loading"><LoaderCircle className="spin" size={24} /><span>Loading NoxSwap</span></div>}>
               <Routes>

@@ -1,8 +1,11 @@
 import { ExternalLink, HelpCircle, X } from 'lucide-react';
 import { useState } from 'react';
+import useDialogFocus from '../hooks/useDialogFocus';
 
 export function CardHelpButton({ category, description, title, steps = [] }) {
   const [open, setOpen] = useState(false);
+  const close = () => setOpen(false);
+  const dialogRef = useDialogFocus(open, close);
 
   return (
     <>
@@ -20,7 +23,9 @@ export function CardHelpButton({ category, description, title, steps = [] }) {
       {open && (
         <div className="modal-backdrop" onMouseDown={() => setOpen(false)}>
           <div
+            ref={dialogRef}
             className="modal card-help-modal"
+            tabIndex="-1"
             onMouseDown={(event) => event.stopPropagation()}
             role="dialog"
             aria-modal="true"
@@ -31,7 +36,7 @@ export function CardHelpButton({ category, description, title, steps = [] }) {
                 <p className="eyebrow">{category ?? 'FEATURE GUIDE'}</p>
                 <h2>{title} Guide</h2>
               </div>
-              <button className="icon-button" onClick={() => setOpen(false)} aria-label="Close guide modal">
+              <button className="icon-button" onClick={close} aria-label="Close guide modal">
                 <X size={18} />
               </button>
             </div>

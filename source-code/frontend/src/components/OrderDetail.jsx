@@ -3,6 +3,7 @@ import { ethers } from 'ethers';
 import { useState } from 'react';
 import { formatDuration, shorten } from '../lib/format';
 import { getOrderPermissions, getOrderSide } from '../lib/orders.js';
+import useDialogFocus from '../hooks/useDialogFocus';
 import OrderReadiness from './OrderReadiness';
 
 function Fact({ label, children }) {
@@ -20,6 +21,7 @@ export default function OrderDetail({ account, actions, blockTimestamp, busy, on
     permissions.canCancel && 'cancel',
   ].filter(Boolean);
   const [actionChoice, setActionChoice] = useState(null);
+  const dialogRef = useDialogFocus(true, onClose);
   const selectedAction = availableActions.includes(actionChoice) ? actionChoice : availableActions[0] ?? null;
 
   const checks = selectedAction ? actions.actionChecks(order, selectedAction) : [];
@@ -34,7 +36,7 @@ export default function OrderDetail({ account, actions, blockTimestamp, busy, on
 
   return (
     <div className="order-detail-backdrop" onMouseDown={onClose} role="presentation">
-      <aside className="order-detail-drawer" role="dialog" aria-modal="true" aria-label={`Order ${order.id} details`} onMouseDown={(event) => event.stopPropagation()}>
+      <aside ref={dialogRef} className="order-detail-drawer" tabIndex="-1" role="dialog" aria-modal="true" aria-label={`Order ${order.id} details`} onMouseDown={(event) => event.stopPropagation()}>
         <div className="drawer-heading">
           <div><p className="eyebrow">PUBLIC ORDER #{order.id}</p><h2>{side === 'buy' ? 'Buy ETH' : 'Sell ETH'}</h2></div>
           <button className="icon-button" onClick={onClose} aria-label="Close order details"><X size={18} /></button>

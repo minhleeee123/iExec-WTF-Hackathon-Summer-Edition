@@ -6,7 +6,7 @@ export default function OrderReadiness({ checks, loading = false, title = 'Trans
     <section className="readiness-panel" aria-label={title}>
       <div className="readiness-heading">
         <div><ShieldCheck size={17} /><strong>{title}</strong></div>
-        <span className={blockers.length === 0 ? 'ready' : 'blocked'}>{loading ? 'Checking' : blockers.length === 0 ? 'Ready' : `${blockers.length} blocked`}</span>
+        <span className={blockers.length === 0 ? 'ready' : 'blocked'} aria-live="polite">{loading ? 'Checking' : blockers.length === 0 ? 'Ready' : `${blockers.length} blocked`}</span>
       </div>
       <div className="readiness-list">
         {checks.map((check) => (

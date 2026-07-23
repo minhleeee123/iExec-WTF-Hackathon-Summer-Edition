@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
 import { Copy, ExternalLink, X } from 'lucide-react';
+import useDialogFocus from '../hooks/useDialogFocus';
 
 export default function AppModals({
   lastProof,
@@ -9,22 +9,14 @@ export default function AppModals({
   showProof,
   showReceipt,
 }) {
-  useEffect(() => {
-    if (!showProof && !showReceipt) return undefined;
-    const onKeyDown = (event) => {
-      if (event.key !== 'Escape') return;
-      if (showProof) onCloseProof();
-      if (showReceipt) onCloseReceipt();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [onCloseProof, onCloseReceipt, showProof, showReceipt]);
+  const proofRef = useDialogFocus(showProof && Boolean(lastProof), onCloseProof);
+  const receiptRef = useDialogFocus(showReceipt && Boolean(receipt), onCloseReceipt);
 
   return (
     <>
       {showProof && lastProof && (
         <div className="modal-backdrop" onMouseDown={onCloseProof}>
-          <div className="modal" onMouseDown={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label="Privacy proof inspector">
+          <div ref={proofRef} className="modal" tabIndex="-1" onMouseDown={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label="Privacy proof inspector">
             <div className="section-heading"><div><p className="eyebrow">TRANSACTION EVIDENCE</p><h2>Privacy proof inspector</h2></div><button className="icon-button" onClick={onCloseProof} aria-label="Close proof inspector"><X size={18} /></button></div>
             <dl className="proof-list">
               <div><dt>Transaction</dt><dd>{lastProof.transactionHash}</dd></div>
@@ -46,7 +38,7 @@ export default function AppModals({
 
       {showReceipt && receipt && (
         <div className="modal-backdrop" onMouseDown={onCloseReceipt}>
-          <div className="modal receipt-modal" onMouseDown={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label="Receipt NFT">
+          <div ref={receiptRef} className="modal receipt-modal" tabIndex="-1" onMouseDown={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label="Receipt NFT">
             <div className="section-heading"><div><p className="eyebrow">ERC-721 ON SEPOLIA</p><h2>Receipt #{receipt.id}</h2></div><button className="icon-button" onClick={onCloseReceipt} aria-label="Close receipt"><X size={18} /></button></div>
             {receipt.image && <img src={receipt.image} alt={`On-chain NoxSwap receipt ${receipt.id}`} />}
             <p>Owner <code>{receipt.owner}</code></p>

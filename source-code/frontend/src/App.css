@@ -2,11 +2,12 @@
   --ink: #080808;
   --paper: #f1f2f4;
   --white: #ffffff;
-  --purple: #8b5cf6;
+  --purple: #8050e8;
   --lime: #a3e635;
   --pink: #f472b6;
   --yellow: #fcd34d;
-  --red: #e83e68;
+  --red: #d32652;
+  --danger: #d32652;
   --muted: #62636a;
   --line: #c9cbd0;
   --soft-purple: #eee9ff;
@@ -25,7 +26,7 @@ body {
 h1, h2, h3, p { margin-top: 0; }
 h1, h2, h3 { letter-spacing: 0; }
 code, .eyebrow, .contract-strip, .wallet-line, .landing-terminal, .live-label { font-family: 'Space Mono', monospace; }
-button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--purple); outline-offset: 2px; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; box-shadow: 0 0 0 5px var(--yellow); }
 button:disabled { cursor: not-allowed; opacity: .48; box-shadow: none !important; transform: none !important; }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -512,8 +513,11 @@ footer a { display: inline-flex; align-items: center; gap: 5px; }
 .app-primary-nav strong { font-size: 14px; }
 .app-primary-nav small { overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .sidebar-wallet { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line); }
+.account-control { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
 .sidebar-account { width: 100%; min-height: 42px; padding: 0 11px; display: flex; align-items: center; gap: 8px; color: white; background: var(--ink); border: 2px solid var(--ink); border-radius: 7px; cursor: pointer; }
 .sidebar-account span { min-width: 0; overflow: hidden; font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.account-switch { min-height: 42px; padding: 0 9px; color: var(--ink); background: var(--white); border: 2px solid var(--ink); border-radius: 7px; font-size: 10px; font-weight: 700; cursor: pointer; }
+.account-switch:hover:not(:disabled) { background: var(--soft-purple); }
 .sidebar-wallet .account-panel { margin-top: 10px; padding: 0; background: transparent; border: 0; border-radius: 0; box-shadow: none; }
 .compact-wallet .section-heading { margin-bottom: 8px; align-items: center; }
 .compact-wallet .section-heading h2 { margin-bottom: 0; font-size: 15px; }

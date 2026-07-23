@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 export default function NoticeBanner({ notice, onDismiss }) {
   if (!notice) return null;
   return (
-    <div className={`notice ${notice.type}`} role={notice.type === 'error' ? 'alert' : 'status'}>
+    <div className={`notice ${notice.type}`} role={notice.type === 'error' ? 'alert' : 'status'} aria-atomic="true">
       <span>{notice.text}</span>
       {onDismiss && (
         <button className="icon-button" onClick={onDismiss} aria-label="Dismiss notification">
