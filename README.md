@@ -256,4 +256,4 @@ The current script is an extension deployment: it reuses the original nUSDC/nWET
 
 ## License
 
-MIT
+[MIT](./LICENSE)

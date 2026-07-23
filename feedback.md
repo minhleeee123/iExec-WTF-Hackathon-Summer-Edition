@@ -14,7 +14,10 @@
 
 NoxSwap is a confidential DeFi application deployed on Ethereum Sepolia. It leverages official iExec Nox ERC-7984 token wrappers (`cUSDC`, `cETH`, `cWBTC`, `cSOL`), encrypted constant-product pool reserves inside a TEE-backed Router V2, an automated OrderBook executing permissionless limit orders via Chainlink Oracles, and a Groq LLM-powered Intent Strategy Co-Pilot.
 
-During implementation, we conducted extensive unit testing (41 frontend tests, 27 backend tests), Playwright automated UI testing across 4 viewports, and live on-chain Sepolia transaction verification using real EIP-712 signatures.
+During implementation, we conducted extensive unit testing (46 frontend tests,
+38 contract/keeper/MCP tests, plus one Docker-gated Nox runtime suite),
+headless-browser UI testing across desktop and mobile viewports, and live
+on-chain Sepolia transaction verification using real EIP-712 signatures.
 
 This feedback document details what worked exceptionally well, technical friction points encountered during development, exact runtime errors, and actionable recommendations for the iExec Nox team.
 
