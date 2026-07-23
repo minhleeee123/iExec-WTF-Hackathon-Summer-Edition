@@ -147,7 +147,8 @@ Treasury provides smart-account-owned balances and allowlisted operations, and
 Activity contains personal history plus verification evidence. Private balances
 and session controls stay in the desktop sidebar or the mobile wallet drawer.
 
-Safe Treasury is available at `/app/safe` with URL-addressable `Overview`,
+Safe Treasury is available at `/app/safe` with a compact custody header for Safe
+identity, module state, balances, reveal, and funding, followed by URL-addressable
 `Swap & unwrap`, `Orders & Agent`, `Activity`, and `Access & security` sections.
 The legacy `/app/wallet?tab=safe` URL redirects to the new first-level workspace.
 

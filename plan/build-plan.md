@@ -132,7 +132,7 @@ Failure handling:
 - [x] Reuse Strategy Agent as a Safe limit-order draft tool without giving it balance, proof, signature, or transaction authority.
 - [x] Add an allowlisted Safe unwrap request restricted to the Safe or its owners, plus recoverable Nox proof finalization.
 - [x] Upgrade only the Safe module on Sepolia, retain the existing orderbook, and validate the full unwrap lifecycle with a one-base-unit live test.
-- [x] Promote Safe Treasury from a Wallet tab to a first-level `/app/safe` workspace with Overview, Swap & Unwrap, Orders & Agent, Activity, and Access & Security sections.
+- [x] Promote Safe Treasury from a Wallet tab to a first-level `/app/safe` workspace with a compact custody header plus Swap & Unwrap, Orders & Agent, Activity, and Access & Security sections.
 
 ## 6. Verification matrix
 

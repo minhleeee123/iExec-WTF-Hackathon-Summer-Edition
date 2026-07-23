@@ -5,12 +5,12 @@
 
 ## 1. Trạng thái hiện tại
 
-- Giai đoạn hiện tại: Phase 6 — Safe Treasury information architecture
+- Giai đoạn hiện tại: Phase 6 — Safe Treasury compact workspace
 - Trạng thái: Waiting for approval
-- Bước tiếp theo: User reviews the first-level Safe Treasury workspace locally, then decides when to publish the updated frontend; production frontend deployment remains deferred.
+- Bước tiếp theo: User reviews the compact Safe Treasury workspace locally, then decides when to publish the updated frontend; production frontend deployment remains deferred.
 - Blocker hiện tại: Không có blocker kỹ thuật. Direct Safe faucet, owner execute-order, and browser multisig remain explicitly out of scope.
 - Đang chờ phê duyệt từ: User.
-- Cập nhật lần cuối: 2026-07-24T13:05:00+07:00
+- Cập nhật lần cuối: 2026-07-24T13:29:00+07:00
 
 Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for approval`, `Blocked`, `Completed`, `Skipped`.
 
@@ -49,6 +49,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 | Core Development & Sepolia Deploy | Reopened | User | 2026-07-22 | Audit xác định deployment cũ không dùng Nox SDK/TEE thật; người dùng yêu cầu remediation và cho phép redeploy bằng ví test. |
 | Safe Treasury parity extension | Approved | User | 2026-07-24T00:10:25+07:00 | Implement in order: configurable Safe swap tolerance/deadline, Safe activity, draft-only Safe Strategy Agent, and Safe unwrap; keep direct Safe faucet, owner execute-order, and browser multisig out of scope. |
 | Safe Treasury first-level workspace | Approved | User | 2026-07-24T12:45:00+07:00 | Move Safe out of Wallet into the primary navigation while retaining every existing Wallet, Trade, Activity, and Safe capability with matching visual language. |
+| Safe Treasury compact workspace | Approved | User | 2026-07-24T13:29:00+07:00 | Remove the redundant Overview and execution-context grid; retain Safe identity, threshold, module/signer state, four balances, reveal, and funding in a compact header above the four operational sections. |
 | Final submission | Pending |  |  |  |
 
 ## 5. Blockers và câu hỏi mở
@@ -60,7 +61,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 
 ## 6. Bước tiếp theo
 
-1. User reviews the completed Safe Treasury parity extension.
+1. User reviews the completed compact Safe Treasury workspace.
 2. Deploy the updated frontend when the user lifts the existing deployment deferral, then confirm the final MetaMask flow on the production URL.
 3. Mark Phase 6 completed, then record the demo and write the X submission post.
 
@@ -91,7 +92,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 - [x] Frontend production đã deploy và public read-only smoke test đã pass tại `https://noxswap-iexec.vercel.app`.
 - [x] Safe v1.4.1 treasury, allowlisted Nox module, private swap, selective viewer, module revoke/re-enable and confidential order create/cancel have live Sepolia evidence.
 - [x] Safe swap tolerance/deadline, on-chain Activity, draft-only Strategy Agent, and recoverable Safe unwrap have unit, responsive, contract, and live Sepolia evidence.
-- [x] Safe Treasury is a first-level desktop/mobile workspace with five URL-addressable sections; Wallet, Trade, Activity, Landing, and Docs retain their prior content and pass responsive regression.
+- [x] Safe Treasury is a first-level desktop/mobile workspace with a compact custody header and four URL-addressable sections; Wallet, Trade, Activity, Landing, and Docs retain their prior content and pass responsive regression.
 - [x] Đã tạo file README.md chính thức và feedback.md ở root repository.
 - [ ] Submission checklist canonical đã hoàn thành.
 - [ ] Bài nộp đã được final review.
