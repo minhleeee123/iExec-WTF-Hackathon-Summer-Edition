@@ -205,9 +205,11 @@ Polling mode exposes `GET /health` on port `8787` by default and supports an
 optional `NOTIFICATION_WEBHOOK_URL`. See
 [`source-code/backend/.env.example`](./source-code/backend/.env.example) and
 [`source-code/backend/README.md`](./source-code/backend/README.md).
-Set `KEEPER_AI_OBSERVER_URL` to the deployed `/api/agent/observe` endpoint to add
-public structured explanations. Observer output never changes the deterministic
-keeper decision and failures do not block settlement.
+Set `KEEPER_AI_OBSERVER_URL` and `KEEPER_AI_OBSERVER_TOKEN` to the deployed
+`/api/agent/observe` endpoint and its shared secret to add keeper-only structured
+explanations. The endpoint also enforces a five-request-per-minute client limit
+and a bounded request body. Observer output never changes the deterministic keeper
+decision and failures do not block settlement.
 
 ## MCP Server
 

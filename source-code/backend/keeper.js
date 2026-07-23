@@ -43,7 +43,10 @@ const config = {
 };
 const health = createHealthState({ keeperAddress: signer?.address ?? null, minBalanceWei: config.minBalanceWei });
 const notify = createNotifier({ webhookUrl: process.env.NOTIFICATION_WEBHOOK_URL ?? '', log: writeStructuredLog });
-const observe = createRemoteKeeperObserver({ endpoint: process.env.KEEPER_AI_OBSERVER_URL ?? '' });
+const observe = createRemoteKeeperObserver({
+  endpoint: process.env.KEEPER_AI_OBSERVER_URL ?? '',
+  token: process.env.KEEPER_AI_OBSERVER_TOKEN ?? '',
+});
 const deploymentReceipt = await provider.getTransactionReceipt(deployment.deploymentTransactions.limitOrderBook);
 if (!deploymentReceipt) throw new Error('LimitOrderBook deployment receipt is unavailable.');
 const orderSource = createKeeperOrderSource({

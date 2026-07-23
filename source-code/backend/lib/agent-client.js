@@ -9,14 +9,17 @@ function assertEndpoint(endpoint) {
   return url.toString();
 }
 
-async function postJson(endpoint, body, { fetchImpl = fetch, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
+async function postJson(endpoint, body, { fetchImpl = fetch, timeoutMs = DEFAULT_TIMEOUT_MS, token = '' } = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   let response;
   try {
     response = await fetchImpl(assertEndpoint(endpoint), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
@@ -38,10 +41,10 @@ export async function requestStrategyPlan({ endpoint, intent, market, fetchImpl,
   return payload;
 }
 
-export function createRemoteKeeperObserver({ endpoint, fetchImpl = fetch, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
-  if (!endpoint) return null;
+export function createRemoteKeeperObserver({ endpoint, token = '', fetchImpl = fetch, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
+  if (!endpoint || !token) return null;
   return async (event) => {
-    const payload = await postJson(endpoint, { event }, { fetchImpl, timeoutMs });
+    const payload = await postJson(endpoint, { event }, { fetchImpl, timeoutMs, token });
     if (!payload?.observation || payload.observation.version !== 1) {
       throw new Error('Agent endpoint returned an invalid keeper observation.');
     }

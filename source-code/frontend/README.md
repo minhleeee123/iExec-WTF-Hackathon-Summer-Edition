@@ -72,8 +72,10 @@ available through `import.meta.env`. Do not rename it with a `VITE_` prefix.
 
 `POST /api/agent/plan` accepts only `intent` plus public `ethPriceUsd`,
 `oracleUpdatedAt`, and `blockTimestamp`. `POST /api/agent/observe` accepts only
-public keeper decision/result metadata. Neither endpoint accepts a wallet address,
-balance, handle, proof, signature, or private key.
+public keeper decision/result metadata and requires the server-side
+`KEEPER_OBSERVER_SECRET`. The observer is limited to five requests per minute and
+bounded request bodies. Neither endpoint accepts a wallet address, balance, handle,
+proof, signature, or private key.
 
 ## Private balances
 
