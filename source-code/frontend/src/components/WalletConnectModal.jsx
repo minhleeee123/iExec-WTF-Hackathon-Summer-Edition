@@ -1,4 +1,4 @@
-import { ExternalLink, ShieldCheck, Wallet, X } from 'lucide-react';
+import { ExternalLink, ShieldCheck, X } from 'lucide-react';
 
 const WALLET_OPTIONS = [
   {

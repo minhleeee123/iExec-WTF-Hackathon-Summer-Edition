@@ -1,4 +1,4 @@
-import { Activity, ArrowUpRight, ExternalLink, FileKey2, History } from 'lucide-react';
+import { Activity, ArrowUpRight, ExternalLink, FileKey2 } from 'lucide-react';
 import { shorten } from '../lib/format';
 import { CardHelpButton } from './CardHelpModal';
 

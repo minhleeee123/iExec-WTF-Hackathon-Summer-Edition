@@ -724,6 +724,7 @@ export default function App() {
   const activityProps = {
     history,
     logs,
+    onOpenReceipt: openHistoryReceipt,
     onRefreshHistory: refresh,
   };
   const evidenceProps = {
