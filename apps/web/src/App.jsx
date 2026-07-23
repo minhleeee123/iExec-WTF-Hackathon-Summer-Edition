@@ -48,6 +48,7 @@ import './App.css';
 const ActivityPage = lazy(() => import('./pages/ActivityPage'));
 const DocsPage = lazy(() => import('./pages/DocsPage'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
+const SafePage = lazy(() => import('./pages/SafePage'));
 const TradePage = lazy(() => import('./pages/TradePage'));
 const WalletPage = lazy(() => import('./pages/WalletPage'));
 const WALLET_PREFERENCE_KEY = 'noxswap.wallet-provider';
@@ -415,6 +416,7 @@ export default function App() {
       '/app/trade': 'Trade | NoxSwap',
       '/app/wallet': 'Wallet | NoxSwap',
       '/app/activity': 'Activity | NoxSwap',
+      '/app/safe': 'Safe Treasury | NoxSwap',
     };
     document.title = routeTitles[location.pathname] ?? 'NoxSwap | Confidential DeFi';
   }, [location.pathname]);
@@ -1383,12 +1385,14 @@ export default function App() {
             <Suspense fallback={<div className="route-loading"><LoaderCircle className="spin" size={24} /><span>Loading NoxSwap</span></div>}>
               <Routes>
                 <Route path="/app/trade" element={<TradePage orderContext={orderContext} swapProps={swapProps} />} />
-                <Route path="/app/wallet" element={<WalletPage aclProps={aclProps} assetProps={assetProps} safeProps={safeProps} />} />
+                <Route path="/app/wallet" element={<WalletPage aclProps={aclProps} assetProps={assetProps} />} />
+                <Route path="/app/safe" element={<SafePage safeProps={safeProps} />} />
                 <Route path="/app/activity" element={<ActivityPage activityProps={activityProps} evidenceProps={evidenceProps} />} />
                 <Route path="/swap" element={<Navigate replace to="/app/trade" />} />
                 <Route path="/orders" element={<Navigate replace to="/app/trade?mode=orders" />} />
                 <Route path="/assets" element={<Navigate replace to="/app/wallet" />} />
                 <Route path="/privacy" element={<Navigate replace to="/app/wallet?tab=access" />} />
+                <Route path="/safe" element={<Navigate replace to="/app/safe" />} />
                 <Route path="/activity" element={<Navigate replace to="/app/activity" />} />
                 <Route path="*" element={<Navigate replace to="/" />} />
               </Routes>

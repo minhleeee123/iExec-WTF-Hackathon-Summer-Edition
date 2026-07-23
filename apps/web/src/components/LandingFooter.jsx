@@ -3,6 +3,7 @@ import deployment from '../deployment.json';
 
 const repositoryUrl = 'https://github.com/minhleeee123/iExec-WTF-Hackathon-Summer-Edition';
 const orderBookExplorerUrl = `https://sepolia.etherscan.io/address/${deployment.contracts.limitOrderBook}`;
+const safeExplorerUrl = `https://sepolia.etherscan.io/address/${deployment.safe.address}`;
 const sourcifyUrl = `https://repo.sourcify.dev/11155111/${deployment.contracts.noxSwapRouter}`;
 
 export default function LandingFooter() {
@@ -13,6 +14,7 @@ export default function LandingFooter() {
         <a href={repositoryUrl} target="_blank" rel="noreferrer"><GitFork size={15} /> GitHub</a>
         <a href={deployment.explorerUrl} target="_blank" rel="noreferrer">Router <ExternalLink size={14} /></a>
         <a href={orderBookExplorerUrl} target="_blank" rel="noreferrer">OrderBook <ExternalLink size={14} /></a>
+        <a href={safeExplorerUrl} target="_blank" rel="noreferrer">Safe <ExternalLink size={14} /></a>
         <a href={sourcifyUrl} target="_blank" rel="noreferrer">Verified source <ExternalLink size={14} /></a>
       </nav>
     </footer>

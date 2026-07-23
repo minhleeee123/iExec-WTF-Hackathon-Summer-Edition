@@ -1,4 +1,4 @@
-import { Activity, ArrowLeft, ArrowLeftRight, BookOpen, Boxes, Copy, ExternalLink, LoaderCircle, LockKeyhole, Wallet, X } from 'lucide-react';
+import { Activity, ArrowLeft, ArrowLeftRight, BookOpen, Boxes, Copy, ExternalLink, LoaderCircle, LockKeyhole, ShieldCheck, Wallet, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import PrivateWallet from './PrivateWallet';
@@ -8,6 +8,7 @@ import useDialogFocus from '../hooks/useDialogFocus';
 const navigation = [
   { to: '/app/wallet', label: 'Wallet', description: 'Assets and access', icon: Boxes },
   { to: '/app/trade', label: 'Trade', description: 'Swap and orders', icon: ArrowLeftRight },
+  { to: '/app/safe', label: 'Safe Treasury', mobileLabel: 'Safe', description: 'Smart account custody', icon: ShieldCheck },
   { to: '/app/activity', label: 'Activity', description: 'History and proofs', icon: Activity },
 ];
 
@@ -91,7 +92,7 @@ export default function AppSidebar({ account, busy, onAccountAction, onChangeWal
         {navigation.map((item) => (
           <NavLink key={item.to} to={item.to}>
             <item.icon size={19} />
-            <span>{item.label}</span>
+            <span>{item.mobileLabel ?? item.label}</span>
           </NavLink>
         ))}
       </nav>

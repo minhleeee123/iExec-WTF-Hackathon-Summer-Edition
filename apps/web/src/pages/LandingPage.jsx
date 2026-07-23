@@ -33,6 +33,13 @@ const capabilities = [
     text: 'Reveal balances only after wallet authorization or grant an auditor access to a specific current handle.',
     to: '/app/wallet?tab=access',
   },
+  {
+    icon: ShieldCheck,
+    number: '05',
+    title: 'Safe Treasury',
+    text: 'Keep confidential assets in Safe custody while an allowlisted Nox module routes reviewed swaps, orders, unwraps, and access controls.',
+    to: '/app/safe',
+  },
 ];
 
 const onboardingSteps = [
@@ -40,7 +47,7 @@ const onboardingSteps = [
   { icon: Coins, title: 'Fund test assets', text: 'Claim public nUSDC, nWETH, nWBTC, or nSOL from the demo faucets. Claims have a one-hour cooldown.' },
   { icon: LockKeyhole, title: 'Wrap into c-assets', text: 'Wrap n-assets 1:1 into ERC-7984 c-assets whose balances are represented by encrypted handles.' },
   { icon: FileKey2, title: 'Open private balances', text: 'Sign the Nox Gateway authorization once per current session and balance handle. No transaction or gas is required.' },
-  { icon: Workflow, title: 'Trade or automate', text: 'Submit protected swaps or private orders. Owners settle privately; any wallet may execute a ready order.' },
+  { icon: Workflow, title: 'Choose the custody flow', text: 'Trade from your personal wallet or open Safe Treasury for smart-account-owned swaps, orders, unwraps, and access controls.' },
 ];
 
 const publicData = [
@@ -48,6 +55,7 @@ const publicData = [
   'Trading pair, trigger price, expiry, and status',
   'Transaction hashes and encrypted handle identifiers',
   'Chainlink reference price and permissionless actions',
+  'Safe owners, threshold, module status, and public lifecycle events',
 ];
 
 const privateData = [
@@ -94,6 +102,10 @@ const faqs = [
     question: 'What does the Strategy Agent send to Groq, and can AI trade for me?',
     answer: 'Groq receives only the intent text you enter and public Chainlink price, oracle time, and block time. NoxSwap does not send your wallet address, balance, handles, proofs, or signature. AI only drafts fields; Nox encryption stays local and MetaMask confirmation is always required.',
   },
+  {
+    question: 'What is the difference between my Wallet and Safe Treasury?',
+    answer: 'Wallet and Trade use confidential assets owned by your connected EOA. Safe Treasury uses assets owned by the deployed Safe smart account: your connected wallet signs as a Safe owner, while only the allowlisted Nox module can route supported operations. The browser flow is intentionally limited to the 1-of-1 Sepolia demo Safe.',
+  },
 ];
 
 export default function LandingPage({ ethPrice }) {
@@ -107,6 +119,7 @@ export default function LandingPage({ ethPrice }) {
           <p className="hero-summary">Trade without publishing amount, balance, minOut, output, or pool reserves as plaintext on-chain.</p>
           <div className="hero-actions">
             <Link className="launch-button" to="/app/trade">Launch app <ArrowRight size={20} /></Link>
+            <Link className="outline-button" to="/app/safe">Open Safe Treasury <ShieldCheck size={18} /></Link>
             <a className="outline-button" href={deployment.explorerUrl} target="_blank" rel="noreferrer">View contracts <ExternalLink size={18} /></a>
           </div>
           <div className="hero-checks">
@@ -119,12 +132,13 @@ export default function LandingPage({ ethPrice }) {
         <div className="landing-terminal" aria-label="Live protocol status">
           <div><span>ROUTER V2</span><strong>{shorten(deployment.contracts.noxSwapRouter, 10, 8)}</strong></div>
           <div><span>ENCRYPTED POOLS</span><strong>3 initialized</strong></div>
+          <div><span>SAFE MODULE</span><strong>{shorten(deployment.safe.module, 10, 8)}</strong></div>
           <div><span>ETH / USD</span><strong>{ethPrice ? `$${ethPrice.toLocaleString()}` : 'Loading'}</strong></div>
         </div>
       </section>
 
       <section className="landing-stats" aria-label="Deployment statistics">
-        <div><strong>10</strong><span>Sepolia contracts</span></div>
+        <div><strong>14</strong><span>Core + Safe contracts</span></div>
         <div><strong>3</strong><span>Encrypted pools</span></div>
         <div><strong>4</strong><span>ERC-7984 assets</span></div>
         <div><strong>9</strong><span>Live MCP tools</span></div>
@@ -158,7 +172,7 @@ export default function LandingPage({ ethPrice }) {
       <section className="landing-capabilities" id="workflows">
         <div className="landing-section-title">
           <p className="eyebrow">CONFIDENTIAL DEFI, END TO END</p>
-          <h2>One privacy layer. Four real workflows.</h2>
+          <h2>One privacy layer. Five real workflows.</h2>
         </div>
         <div className="capability-list">
           {capabilities.map((item) => (
@@ -183,6 +197,28 @@ export default function LandingPage({ ethPrice }) {
           <span><Eye size={19} /><strong>Wallet-free reads</strong><small>Real events, handles, state, and explorer links.</small></span>
           <span><Workflow size={19} /><strong>Permissionless settlement</strong><small>Any wallet may execute or refund when ready.</small></span>
           <span><Bot size={19} /><strong>Optional keeper</strong><small>Automation never decrypts order terms.</small></span>
+        </div>
+      </section>
+
+      <section className="landing-safe" id="safe-treasury" aria-labelledby="safe-composability-title">
+        <div className="landing-safe-copy">
+          <p className="eyebrow">SAFE CUSTODY × NOX CONFIDENTIAL EXECUTION</p>
+          <h2 id="safe-composability-title">A separate treasury workspace with an explicit trust boundary.</h2>
+          <p>The connected wallet is the signer, the Safe owns the confidential assets, and the immutable allowlist limits the Nox module to supported routers, wrappers, viewers, operators, and recovery controls.</p>
+          <Link className="launch-button dark" to="/app/safe">Open Safe Treasury <ArrowRight size={18} /></Link>
+        </div>
+        <div className="landing-safe-flow" aria-label="Safe Treasury execution model">
+          <span><Wallet size={19} /><strong>Owner wallet</strong><small>Reviews and signs</small></span>
+          <ArrowRight size={18} />
+          <span><ShieldCheck size={19} /><strong>Safe account</strong><small>Owns encrypted balances</small></span>
+          <ArrowRight size={18} />
+          <span><LockKeyhole size={19} /><strong>Nox module</strong><small>Routes allowlisted calls only</small></span>
+        </div>
+        <div className="landing-safe-facts">
+          <span><CheckCircle2 size={16} /> Protected swaps with tolerance and deadline</span>
+          <span><CheckCircle2 size={16} /> Confidential orders and draft-only Agent</span>
+          <span><CheckCircle2 size={16} /> Recoverable unwrap proof finalization</span>
+          <span><CheckCircle2 size={16} /> Event-derived activity and emergency recovery</span>
         </div>
       </section>
 

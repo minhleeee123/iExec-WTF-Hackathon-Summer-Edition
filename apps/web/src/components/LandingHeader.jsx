@@ -14,6 +14,7 @@ export default function LandingHeader() {
       </Link>
       <nav className="landing-header-nav" aria-label="Landing page navigation">
         <a href={landingAnchor('how-it-works')}>How it works</a>
+        <a href={landingAnchor('safe-treasury')}>Safe Treasury</a>
         <a href={landingAnchor('privacy')}>Privacy</a>
         <a href={landingAnchor('faq')}>FAQ</a>
         <Link className="landing-header-docs" to="/docs" aria-current={location.pathname === '/docs' ? 'page' : undefined}>Docs</Link>

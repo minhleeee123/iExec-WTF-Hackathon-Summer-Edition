@@ -11,7 +11,7 @@ import {
   UserRoundPlus,
 } from 'lucide-react';
 import { ethers } from 'ethers';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import AgentStrategy from './AgentStrategy';
 import { formatToken, isHandle, shorten } from '../lib/format';
 import { DEFAULT_LIMIT_ORDER_PROTECTION_BPS, DEFAULT_SWAP_PROTECTION_BPS, deriveLimitOrderMinOut, deriveSwapMinOut } from '../lib/min-out';
@@ -31,6 +31,7 @@ export default function SafeTreasury({
   onFinalizeUnwrap,
   onFund,
   onGrantViewer,
+  onNavigate,
   onNotice,
   onRefresh,
   onReveal,
@@ -45,6 +46,7 @@ export default function SafeTreasury({
   safePendingUnwraps = [],
   ethPrice,
   tokens,
+  view = 'overview',
 }) {
   const [swapTokenIn, setSwapTokenIn] = useState('cUSDC');
   const [swapTokenOut, setSwapTokenOut] = useState('cETH');
@@ -67,6 +69,11 @@ export default function SafeTreasury({
   const [unwrapAmount, setUnwrapAmount] = useState('100');
   const [unwrapRecipientMode, setUnwrapRecipientMode] = useState('owner');
   const [operationMode, setOperationMode] = useState('swap');
+
+  useEffect(() => {
+    if (view === 'swap' && !['swap', 'unwrap'].includes(operationMode)) setOperationMode('swap');
+    if (view === 'orders' && !['order', 'agent'].includes(operationMode)) setOperationMode('order');
+  }, [operationMode, view]);
 
   const enabled = Boolean(safe?.moduleEnabled);
   const suggestedSwapMinOut = useMemo(() => deriveSwapMinOut({ amountIn: swapAmount, ethPrice, outputDecimals: tokens[swapTokenOut].decimals, slippageBps: swapProtectionBps, tokenIn: swapTokenIn, tokenOut: swapTokenOut }), [ethPrice, swapAmount, swapProtectionBps, swapTokenIn, swapTokenOut, tokens]);
@@ -113,8 +120,8 @@ export default function SafeTreasury({
       <header className="safe-command-header">
         <div>
           <p className="eyebrow">SAFE TREASURY · NOX COMPOSABILITY</p>
-          <h2>Private operations under Safe control</h2>
-          <p>The Safe owns every encrypted balance. Its allowlisted module can route only approved swaps, orders, operators, viewers, and revoke operations.</p>
+          <h2>Safe execution context</h2>
+          <p>The connected wallet signs as an owner; the Safe owns every encrypted balance; the allowlisted Nox module routes only reviewed operations.</p>
         </div>
         <div className="safe-heading-actions">
           <button className="icon-button" onClick={onRefresh} disabled={Boolean(busy)} aria-label="Refresh Safe treasury" title="Refresh Safe treasury"><RefreshCw className={busy === 'safe-refresh' ? 'spin' : ''} size={17} /></button>
@@ -142,9 +149,9 @@ export default function SafeTreasury({
             </div>
           )}
 
-          <section className="safe-balance-card">
+          {view === 'overview' && <section className="safe-balance-card">
             <div className="safe-card-heading">
-              <div><p className="eyebrow">01 · TREASURY</p><h3>Encrypted balances</h3><p className="safe-helper">Reveal grants this owner viewer access through a Safe transaction. Plaintext remains in the current browser session.</p></div>
+              <div><p className="eyebrow">TREASURY OVERVIEW</p><h3>Encrypted balances</h3><p className="safe-helper">Reveal grants this owner viewer access through a Safe transaction. Plaintext remains in the current browser session.</p></div>
               <button className="primary-action compact" onClick={onReveal} disabled={!enabled || Boolean(busy) || !safe.isOwner}>{busy === 'safe-reveal' ? <LoaderCircle className="spin" size={17} /> : <Eye size={17} />} Reveal balances</button>
             </div>
             <div className="safe-balance-grid">{Object.values(tokens).map((token) => {
@@ -157,17 +164,33 @@ export default function SafeTreasury({
               <label><span>Asset</span><select value={fundToken} onChange={(event) => setFundToken(event.target.value)} aria-label="Safe funding token">{Object.values(tokens).map((token) => <option key={token.symbol} value={token.symbol}>{token.publicSymbol}</option>)}</select></label>
               <button className="outline-mini-button" onClick={() => onFund({ token: fundToken, amount: fundAmount })} disabled={!safe.isOwner || Boolean(busy)}>{busy === 'safe-fund' ? <LoaderCircle className="spin" size={15} /> : <Plus size={15} />} Wrap to Safe</button>
             </div>
-          </section>
+          </section>}
 
-          <div className="safe-dashboard-grid">
+          {view === 'overview' && (
+            <section className="safe-overview-actions" aria-label="Safe Treasury quick actions">
+              <button type="button" onClick={() => onNavigate('swap')}><ArrowAction icon={<ShieldCheck size={19} />} label="Swap & unwrap" detail="Move or exit Safe-owned confidential value." /></button>
+              <button type="button" onClick={() => onNavigate('orders')}><ArrowAction icon={<Plus size={19} />} label="Orders & Agent" detail={`${openOrders.length} open order${openOrders.length === 1 ? '' : 's'} · Review drafts before signing.`} /></button>
+              <button type="button" onClick={() => onNavigate('activity')}><ArrowAction icon={<Activity size={19} />} label="Treasury activity" detail={`${safeActivity.length} confirmed event${safeActivity.length === 1 ? '' : 's'} · ${safePendingUnwraps.length} pending unwrap${safePendingUnwraps.length === 1 ? '' : 's'}.`} /></button>
+              <button type="button" onClick={() => onNavigate('security')}><ArrowAction icon={<KeyRound size={19} />} label="Access & security" detail="Viewers, token operators, recovery and revoke." /></button>
+            </section>
+          )}
+
+          {['swap', 'orders'].includes(view) && <div className={`safe-dashboard-grid safe-dashboard-${view}`}>
             <section className="safe-operation-card safe-action-workspace">
               <div className="safe-action-header">
-                <div><p className="eyebrow">02 · PRIVATE OPERATIONS</p><h3>Move treasury value</h3></div>
+                <div><p className="eyebrow">PRIVATE OPERATIONS</p><h3>{view === 'swap' ? 'Swap or unwrap treasury value' : 'Create and manage Safe orders'}</h3></div>
                 <div className="safe-operation-tabs" role="tablist" aria-label="Safe private operation">
-                  <button type="button" role="tab" aria-selected={operationMode === 'swap'} className={operationMode === 'swap' ? 'active' : ''} onClick={() => setOperationMode('swap')}>Swap</button>
-                  <button type="button" role="tab" aria-selected={operationMode === 'order'} className={operationMode === 'order' ? 'active' : ''} onClick={() => setOperationMode('order')}>Limit order</button>
-                  <button type="button" role="tab" aria-selected={operationMode === 'unwrap'} className={operationMode === 'unwrap' ? 'active' : ''} onClick={() => setOperationMode('unwrap')}>Unwrap</button>
-                  <button type="button" role="tab" aria-selected={operationMode === 'agent'} className={operationMode === 'agent' ? 'active' : ''} onClick={() => setOperationMode('agent')}>Agent draft</button>
+                  {view === 'swap' ? (
+                    <>
+                      <button type="button" role="tab" aria-selected={operationMode === 'swap'} className={operationMode === 'swap' ? 'active' : ''} onClick={() => setOperationMode('swap')}>Protected swap</button>
+                      <button type="button" role="tab" aria-selected={operationMode === 'unwrap'} className={operationMode === 'unwrap' ? 'active' : ''} onClick={() => setOperationMode('unwrap')}>Unwrap</button>
+                    </>
+                  ) : (
+                    <>
+                      <button type="button" role="tab" aria-selected={operationMode === 'order'} className={operationMode === 'order' ? 'active' : ''} onClick={() => setOperationMode('order')}>Limit order</button>
+                      <button type="button" role="tab" aria-selected={operationMode === 'agent'} className={operationMode === 'agent' ? 'active' : ''} onClick={() => setOperationMode('agent')}>Strategy Agent</button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -234,25 +257,17 @@ export default function SafeTreasury({
               )}
             </section>
 
-            <aside className="safe-side-stack">
+            {view === 'orders' && <aside className="safe-side-stack">
               <section className="safe-operation-card safe-orders-card">
-                <div className="safe-card-heading"><div><p className="eyebrow">03 · OPEN ORDERS</p><h3>Order control</h3></div><span className="safe-count-badge">{openOrders.length}</span></div>
+                <div className="safe-card-heading"><div><p className="eyebrow">OPEN ORDERS</p><h3>Order control</h3></div><span className="safe-count-badge">{openOrders.length}</span></div>
                 {openOrders.length === 0 ? <div className="safe-compact-empty"><Ban size={17} /><span>No open Safe orders.</span></div> : <div className="safe-order-list">{openOrders.map((order) => <div className="safe-order-row" key={order.id}><span><strong>Order #{order.id}</strong><small>{order.tokenIn} → {order.tokenOut} · expires {new Date(order.expiry * 1000).toLocaleString()}</small></span><button className="outline-mini-button" onClick={() => onCancelOrder(order.id)} disabled={Boolean(busy)}>{busy === `safe-cancel-${order.id}` ? <LoaderCircle className="spin" size={15} /> : <Ban size={15} />} Cancel</button></div>)}</div>}
               </section>
+            </aside>}
+          </div>}
 
-              <section className="safe-operation-card safe-access-card">
-                <div className="safe-card-heading"><div><p className="eyebrow">04 · AUDITOR ACCESS</p><h3>Grant a viewer</h3></div><UserRoundPlus size={19} /></div>
-                <p className="safe-helper">Read-only access applies only to the selected encrypted handle.</p>
-                <label className="safe-field"><span>Balance handle</span><select value={viewerHandle} onChange={(event) => setViewerHandle(event.target.value)} aria-label="Safe handle for viewer">{Object.values(tokens).map((token) => <option key={token.symbol} value={token.symbol}>{token.symbol} balance handle</option>)}</select></label>
-                <label className="safe-field"><span>Viewer address</span><input value={viewer} onChange={(event) => setViewer(event.target.value)} placeholder="0x auditor address" aria-label="Safe auditor address" /></label>
-                <button className="primary-action compact" onClick={() => onGrantViewer({ handle: viewerHandleValue, viewer })} disabled={!enabled || !safe.isOwner || !ethersAddress(viewer) || Boolean(busy) || !canGrantViewer}>{busy === 'safe-viewer' ? <LoaderCircle className="spin" size={17} /> : <KeyRound size={17} />} Grant viewer via Safe</button>
-              </section>
-            </aside>
-          </div>
-
-          <section className="safe-activity-panel">
+          {view === 'activity' && <section className="safe-activity-panel safe-section-panel">
             <div className="safe-card-heading">
-              <div><p className="eyebrow">05 · SAFE ACTIVITY</p><h3>Treasury history</h3><p className="safe-helper">Confirmed Sepolia events only. Confidential amounts and minimum outputs remain encrypted.</p></div>
+              <div><p className="eyebrow">SAFE ACTIVITY</p><h3>Treasury history</h3><p className="safe-helper">Confirmed Sepolia events only. Confidential amounts and minimum outputs remain encrypted.</p></div>
               <span className="safe-count-badge">{safeActivity.length}</span>
             </div>
             {safeActivity.length === 0 ? (
@@ -268,13 +283,22 @@ export default function SafeTreasury({
                 ))}
               </div>
             )}
-          </section>
+          </section>}
 
-          <section className="safe-security-panel">
-            <div className="safe-security-copy"><p className="eyebrow">06 · MODULE SECURITY</p><h3>Operator access & emergency controls</h3><p>Operator authorization is token-specific. Revoking the module pauses every Nox operation but never changes Safe owners, threshold, or balances.</p></div>
-            <div className="safe-operator-group"><span>Token operators</span><div>{Object.values(tokens).slice(0, 2).map((token) => <button className="outline-mini-button" key={token.symbol} onClick={() => onSetOperator(token.symbol)} disabled={!enabled || !safe.isOwner || Boolean(busy)}>{busy === `safe-operator-${token.symbol}` ? <LoaderCircle className="spin" size={15} /> : <ShieldCheck size={15} />} Authorize {token.symbol}</button>)}</div></div>
-            <div className="safe-danger-zone"><div><strong>Emergency revoke</strong><span>Requires a Safe owner recovery action to enable the module again.</span></div><button className="danger-action compact" onClick={() => onRevoke(SENTINEL)} disabled={!enabled || !safe.isOwner || Boolean(busy)}>{busy === 'safe-revoke' ? <LoaderCircle className="spin" size={17} /> : <Ban size={17} />} Revoke module</button></div>
-          </section>
+          {view === 'security' && <div className="safe-security-workspace">
+            <section className="safe-operation-card safe-access-card">
+              <div className="safe-card-heading"><div><p className="eyebrow">AUDITOR ACCESS</p><h3>Grant a viewer</h3></div><UserRoundPlus size={19} /></div>
+              <p className="safe-helper">Read-only access applies only to the selected encrypted handle and never grants spending authority.</p>
+              <label className="safe-field"><span>Balance handle</span><select value={viewerHandle} onChange={(event) => setViewerHandle(event.target.value)} aria-label="Safe handle for viewer">{Object.values(tokens).map((token) => <option key={token.symbol} value={token.symbol}>{token.symbol} balance handle</option>)}</select></label>
+              <label className="safe-field"><span>Viewer address</span><input value={viewer} onChange={(event) => setViewer(event.target.value)} placeholder="0x auditor address" aria-label="Safe auditor address" /></label>
+              <button className="primary-action compact" onClick={() => onGrantViewer({ handle: viewerHandleValue, viewer })} disabled={!enabled || !safe.isOwner || !ethersAddress(viewer) || Boolean(busy) || !canGrantViewer}>{busy === 'safe-viewer' ? <LoaderCircle className="spin" size={17} /> : <KeyRound size={17} />} Grant viewer via Safe</button>
+            </section>
+            <section className="safe-security-panel">
+              <div className="safe-security-copy"><p className="eyebrow">MODULE SECURITY</p><h3>Operator access & emergency controls</h3><p>Operator authorization is token-specific. Revoking the module pauses every Nox operation but never changes Safe owners, threshold, or balances.</p></div>
+              <div className="safe-operator-group"><span>Token operators</span><div>{Object.values(tokens).slice(0, 2).map((token) => <button className="outline-mini-button" key={token.symbol} onClick={() => onSetOperator(token.symbol)} disabled={!enabled || !safe.isOwner || Boolean(busy)}>{busy === `safe-operator-${token.symbol}` ? <LoaderCircle className="spin" size={15} /> : <ShieldCheck size={15} />} Authorize {token.symbol}</button>)}</div></div>
+              <div className="safe-danger-zone"><div><strong>Emergency revoke</strong><span>Requires a Safe owner recovery action to enable the module again.</span></div><button className="danger-action compact" onClick={() => onRevoke(SENTINEL)} disabled={!enabled || !safe.isOwner || Boolean(busy)}>{busy === 'safe-revoke' ? <LoaderCircle className="spin" size={17} /> : <Ban size={17} />} Revoke module</button></div>
+            </section>
+          </div>}
         </>
       )}
     </section>
@@ -283,4 +307,8 @@ export default function SafeTreasury({
 
 function ethersAddress(value) {
   return /^0x[a-fA-F0-9]{40}$/.test(value.trim());
+}
+
+function ArrowAction({ detail, icon, label }) {
+  return <><span className="safe-overview-action-icon">{icon}</span><span><strong>{label}</strong><small>{detail}</small></span><span aria-hidden="true">→</span></>;
 }

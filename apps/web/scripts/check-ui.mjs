@@ -128,12 +128,32 @@ try {
       assert.equal(await page.locator('.mobile-bottom-nav').count(), 0, 'landing must not render application navigation');
       assert.equal(await page.getByRole('button', { name: /connect wallet/i }).count(), 0, 'landing must not request a wallet connection');
       assert.equal(await page.locator('.onboarding-flow li').count(), 5, 'landing onboarding must contain five real workflow steps');
+      assert.equal(await page.locator('.capability-row').count(), 5, 'landing must expose all five product workflows');
+      assert.equal(await page.locator('.landing-safe-flow > span').count(), 3, 'landing must explain the Safe signer, custody, and module boundary');
+      assert.equal(await page.getByRole('link', { name: /Open Safe Treasury/i }).count() >= 1, true, 'landing must link directly to Safe Treasury');
       assert.equal(await page.locator('.privacy-matrix > div').count(), 2, 'landing must explain public and encrypted data');
-      assert.equal(await page.locator('.faq-list details').count(), 9, 'landing must contain the complete FAQ set');
+      assert.equal(await page.locator('.faq-list details').count(), 10, 'landing must contain the complete FAQ set');
       await page.locator('.faq-list summary').first().click();
       assert(await page.locator('.faq-list details').first().evaluate((element) => element.open), 'FAQ disclosure must open');
       assert.match(await page.locator('.landing-footer').textContent(), /Testnet only/i);
 
+      await page.goto(`${url}/docs`, { waitUntil: 'domcontentloaded' });
+      await page.getByRole('heading', { name: 'Private trading, explained clearly.' }).waitFor();
+      assert.equal(await page.locator('.docs-toc a').count(), 9, 'docs must expose all canonical sections');
+      assert.equal(await page.locator('#safe .docs-order-grid > div').count(), 3, 'docs must map all Safe workspace responsibilities');
+      assert.match(await page.locator('#safe').textContent(), /Signer is not custody/i);
+      assert.equal(await page.getByRole('link', { name: /Open Safe Treasury/i }).count(), 1, 'docs must link directly to Safe Treasury');
+      await page.locator('.docs-toc a[href="#safe"]').click();
+      await page.waitForFunction(() => document.querySelector('.docs-toc a[href="#safe"]')?.classList.contains('active'));
+      const docsLayout = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      }));
+      assert(docsLayout.scrollWidth <= docsLayout.clientWidth, `${viewport.name} docs has horizontal overflow`);
+      await page.screenshot({ path: `/tmp/noxswap-docs-${viewport.name}.png`, fullPage: true });
+
+      await page.goto(url, { waitUntil: 'domcontentloaded' });
+      await page.locator('.landing-hero .launch-button').waitFor();
       await page.locator('.landing-hero .launch-button').click();
       await page.waitForURL(`${url}/app/trade`);
       await page.locator('.page-heading h1').filter({ hasText: 'Trade' }).waitFor();
@@ -232,9 +252,14 @@ try {
       await page.goto(`${url}/app/wallet`);
       await page.locator('.page-heading h1').filter({ hasText: 'Wallet' }).waitFor();
       assert.equal(await page.title(), 'Wallet | NoxSwap');
+      assert.equal(await page.locator('.workflow-tabs [role="tab"]').count(), 2, 'Wallet must retain Assets and Auditor access only');
+      assert.equal(await page.getByRole('tab', { name: 'Safe treasury' }).count(), 0, 'Safe Treasury must not remain nested inside Wallet');
       await page.getByRole('tab', { name: 'Auditor access' }).click();
       await page.waitForURL(`${url}/app/wallet?tab=access`);
       await page.getByRole('heading', { name: 'Grant an auditor access' }).waitFor();
+      await page.goto(`${url}/app/wallet?tab=safe`);
+      await page.waitForURL(`${url}/app/safe`);
+      await page.getByRole('heading', { name: 'Safe Treasury', exact: true }).waitFor();
 
       await page.goto(`${url}/app/activity`);
       await page.locator('.page-heading h1').filter({ hasText: 'Activity' }).waitFor();
@@ -252,9 +277,11 @@ try {
         publicOrderCount,
         drawerLayout,
         agentLayout,
+        docsLayout,
         landingScreenshot: `/tmp/noxswap-${viewport.name}.png`,
         appScreenshot: `/tmp/noxswap-app-${viewport.name}.png`,
         agentScreenshot: `/tmp/noxswap-agent-${viewport.name}.png`,
+        docsScreenshot: `/tmp/noxswap-docs-${viewport.name}.png`,
         orderDetailScreenshot: `/tmp/noxswap-order-detail-${viewport.name}.png`,
       });
       await page.close();
@@ -319,8 +346,11 @@ try {
     }));
     assert(walletLayout.scrollWidth <= walletLayout.clientWidth, 'connected wallet view has horizontal overflow');
     await walletPage.screenshot({ path: '/tmp/noxswap-wallet.png', fullPage: true });
-    await walletPage.getByRole('tab', { name: 'Safe treasury' }).click();
-    await walletPage.getByRole('heading', { name: 'Private operations under Safe control' }).waitFor({ timeout: 30_000 });
+    assert.equal(await walletPage.locator('.workflow-tabs [role="tab"]').count(), 2, 'connected Wallet must preserve only Assets and Auditor access');
+    await walletPage.getByTestId('desktop-primary-nav').getByRole('link', { name: /Safe Treasury/ }).click();
+    await walletPage.waitForURL(`${url}/app/safe`);
+    await walletPage.getByRole('heading', { name: 'Safe Treasury', exact: true }).waitFor();
+    await walletPage.getByRole('heading', { name: 'Safe execution context' }).waitFor({ timeout: 30_000 });
     await walletPage.locator('.safe-status-grid').getByText(/Enabled|Revoked/, { exact: true }).waitFor();
     await walletPage.locator('.safe-status-grid').getByText('Safe owner', { exact: true }).waitFor();
     const safeModuleEnabled = await walletPage.locator('.safe-status-grid').getByText('Enabled', { exact: true }).count() > 0;
@@ -330,16 +360,27 @@ try {
       assert.equal(await walletPage.locator('.safe-status-grid').getByText('Revoked', { exact: true }).count(), 1, 'revoked Safe must expose its module state');
       await walletPage.getByRole('button', { name: 'Enable Nox module' }).waitFor();
     }
-    assert.equal(await walletPage.locator('.safe-operation-tabs [role="tab"]').count(), 4, 'Safe workspace must expose four explicit operation modes');
+    assert.equal(await walletPage.locator('.safe-workflow-tabs [role="tab"]').count(), 5, 'Safe workspace must expose five first-level sections');
+    assert.equal(await walletPage.locator('.safe-overview-actions > button').count(), 4, 'Safe overview must expose all core quick actions');
+    await walletPage.getByRole('tab', { name: 'Swap & unwrap' }).click();
+    await walletPage.waitForURL(`${url}/app/safe?section=swap`);
+    await walletPage.locator('.safe-operation-tabs').waitFor();
+    assert.equal(await walletPage.locator('.safe-operation-tabs [role="tab"]').count(), 2, 'Safe movement must separate swap and unwrap');
     assert.equal(await walletPage.getByLabel('Safe swap oracle tolerance').inputValue(), '1000');
     assert.equal(await walletPage.getByLabel('Safe swap deadline minutes').inputValue(), '20');
-    await walletPage.locator('.safe-activity-row').first().waitFor({ timeout: 30_000 });
-    assert(await walletPage.locator('.safe-activity-row').count() >= 1, 'Safe Activity must render confirmed on-chain history');
     await walletPage.getByRole('tab', { name: 'Unwrap', exact: true }).click();
     await walletPage.getByText('Privacy boundary', { exact: true }).waitFor();
     assert.equal(await walletPage.getByLabel('Safe unwrap token').inputValue(), 'cUSDC');
     assert.match(await walletPage.getByLabel('Safe unwrap recipient').inputValue(), /owner/);
-    await walletPage.getByRole('tab', { name: 'Agent draft' }).click();
+    await walletPage.getByRole('tab', { name: 'Activity', exact: true }).click();
+    await walletPage.waitForURL(`${url}/app/safe?section=activity`);
+    await walletPage.locator('.safe-activity-row').first().waitFor({ timeout: 30_000 });
+    assert(await walletPage.locator('.safe-activity-row').count() >= 1, 'Safe Activity must render confirmed on-chain history');
+    await walletPage.getByRole('tab', { name: 'Orders & Agent' }).click();
+    await walletPage.waitForURL(`${url}/app/safe?section=orders`);
+    await walletPage.locator('.safe-operation-tabs').waitFor();
+    assert.equal(await walletPage.locator('.safe-operation-tabs [role="tab"]').count(), 2, 'Safe orders must separate manual order and Strategy Agent');
+    await walletPage.getByRole('tab', { name: 'Strategy Agent', exact: true }).click();
     await walletPage.getByLabel('Trading intent').fill('Sell 0.01 cETH when ETH reaches $2,500. Expire in 6 hours.');
     await walletPage.getByRole('button', { name: 'Generate private strategy draft' }).click();
     await walletPage.getByText('DRAFT READY').waitFor();
@@ -348,6 +389,10 @@ try {
     assert.equal(await walletPage.getByLabel('Safe order amount').inputValue(), '0.01');
     assert.equal(await walletPage.getByLabel('Safe order trigger price').inputValue(), '2500');
     assert.equal(await walletPage.getByLabel('Safe order oracle tolerance').inputValue(), '100');
+    await walletPage.getByRole('tab', { name: 'Access & security' }).click();
+    await walletPage.waitForURL(`${url}/app/safe?section=security`);
+    await walletPage.getByRole('heading', { name: 'Grant a viewer' }).waitFor();
+    await walletPage.getByRole('button', { name: 'Revoke module' }).waitFor();
     const safeLayout = await walletPage.evaluate(() => ({
       clientWidth: document.documentElement.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,
