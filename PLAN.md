@@ -8,7 +8,7 @@
 - Giai đoạn hiện tại: Phase 6 — Development
 - Trạng thái: Completed
 - Bước tiếp theo: Người dùng bắt đầu Phase 7 bằng MetaMask production rehearsal, quay video tối đa bốn phút và hoàn tất submission.
-- Blocker hiện tại: Không có blocker Phase 6. Safe Module V5, Safe public orderbook và dual-book keeper có live write evidence; production smoke sẽ được làm mới sau thay đổi UI cuối.
+- Blocker hiện tại: Không có blocker Phase 6. Safe Module V5, Safe public orderbook và dual-book keeper có live write evidence; production desktop/mobile smoke đã pass.
 - Đang chờ phê duyệt từ: Không.
 - Cập nhật lần cuối: 2026-07-24T21:10:00+07:00
 

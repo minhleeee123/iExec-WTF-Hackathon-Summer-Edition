@@ -4,7 +4,7 @@ Date: 2026-07-24
 
 Production frontend: [https://noxswap-iexec.vercel.app](https://noxswap-iexec.vercel.app)
 
-Current optimized production deployment: `dpl_2V4VBBFrYGfGfnD1qDouUo4STfiA` (Safe Module V5 production smoke: PASS).
+Current optimized production deployment: `dpl_8dW2gjqFQ6HJ6taKtq2mst2U6Uv8` (Safe Module V5 and public Safe orderbook production smoke: PASS).
 
 ## Converted to Real Features
 
