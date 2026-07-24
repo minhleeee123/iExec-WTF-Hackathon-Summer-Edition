@@ -329,3 +329,27 @@ test('Safe v1.4 accepts a browser personal-sign signature normalized to v=31/32'
   await transaction.wait();
   assert.equal(await router.swapCalls(), 1n);
 });
+
+test('Safe v1.4 accepts a prevalidated signature from the submitting 1-of-1 owner', async () => {
+  const fixture = await deployFixture();
+  const { ethers, owner, safe, module, router } = fixture;
+  const data = module.interface.encodeFunctionData('confidentialSwap', [
+    await fixture.token.getAddress(),
+    await fixture.tokenOut.getAddress(),
+    ethers.zeroPadValue('0x08', 32),
+    ethers.zeroPadValue('0x09', 32),
+    owner.address,
+    4_000_000_000n,
+  ]);
+  const signature = ethers.concat([
+    ethers.zeroPadValue(owner.address, 32),
+    ethers.ZeroHash,
+    '0x01',
+  ]);
+  const transaction = await safe.connect(owner).execTransaction(
+    await module.getAddress(), 0, data, 0, 0, 0, 0,
+    ethers.ZeroAddress, ethers.ZeroAddress, signature,
+  );
+  await transaction.wait();
+  assert.equal(await router.swapCalls(), 1n);
+});

@@ -25,6 +25,10 @@ export const CONFIDENTIAL_TOKEN_ABI = [
   'event BalanceViewerGranted(address indexed holder,address indexed viewer,bytes32 balance)',
 ];
 
+export const NOX_COMPUTE_ABI = [
+  'function isAllowed(bytes32 handle,address viewer) view returns (bool)',
+];
+
 export const NOX_SWAP_ABI = [
   'function confidentialSwap(address tokenIn,address tokenOut,bytes32 encryptedAmountIn,bytes inputProof,bytes32 encryptedMinOut,bytes minOutProof,uint64 deadline) returns (bytes32 encryptedAmountOut,bytes32 encryptedRefund,uint256 receiptId)',
   'function getPoolHandles(address tokenA,address tokenB) view returns (address token0,address token1,bytes32 reserve0,bytes32 reserve1)',

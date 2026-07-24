@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ethers } from 'ethers';
-import { normalizeSafeEthSign } from './safe.js';
+import { createPrevalidatedSafeSignature, normalizeSafeEthSign } from './safe.js';
 
 test('Safe browser signature is normalized to the eth_sign v=31/32 format', async () => {
   const owner = ethers.Wallet.createRandom();
@@ -11,4 +11,13 @@ test('Safe browser signature is normalized to the eth_sign v=31/32 format', asyn
   const safeV = Number.parseInt(normalized.slice(-2), 16);
   assert.ok(safeV === 31 || safeV === 32);
   assert.equal(ethers.recoverAddress(ethers.hashMessage(ethers.getBytes(hash)), personal), owner.address);
+});
+
+test('Safe prevalidated signature encodes the submitting 1-of-1 owner', () => {
+  const owner = ethers.Wallet.createRandom().address;
+  const signature = createPrevalidatedSafeSignature(owner);
+  assert.equal(ethers.dataLength(signature), 65);
+  assert.equal(ethers.getAddress(ethers.dataSlice(signature, 12, 32)), owner);
+  assert.equal(ethers.dataSlice(signature, 32, 64), ethers.ZeroHash);
+  assert.equal(signature.slice(-2), '01');
 });

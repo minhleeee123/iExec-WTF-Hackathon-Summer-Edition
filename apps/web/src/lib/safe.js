@@ -17,15 +17,23 @@ export function createSafeContracts(provider, safeAddress, moduleAddress) {
  * Browser wallets expose signMessage rather than the owner's private key, so
  * normalize the returned ECDSA signature to Safe's approved eth_sign mode.
  */
-async function signSafeHash(signer, safeTxHash) {
-  const raw = await signer.signMessage(ethers.getBytes(safeTxHash));
-  return normalizeSafeEthSign(raw);
-}
-
 export function normalizeSafeEthSign(rawSignature) {
   const signature = ethers.Signature.from(rawSignature);
   const v = Number(signature.v) + 4;
   return ethers.concat([signature.r, signature.s, ethers.toBeHex(v, 1)]);
+}
+
+/**
+ * Safe accepts a prevalidated signature (v=1) when the transaction sender is
+ * the same 1-of-1 owner encoded in r. This preserves Safe's owner check while
+ * avoiding a redundant personal-sign popup before the transaction popup.
+ */
+export function createPrevalidatedSafeSignature(owner) {
+  return ethers.concat([
+    ethers.zeroPadValue(ethers.getAddress(owner), 32),
+    ethers.ZeroHash,
+    '0x01',
+  ]);
 }
 
 export async function executeSafeTransaction({ signer, safeAddress, to, data, value = 0n }) {
@@ -52,7 +60,7 @@ export async function executeSafeTransaction({ signer, safeAddress, to, data, va
     ZERO_ADDRESS,
     nonce,
   );
-  const signature = await signSafeHash(signer, safeTxHash);
+  const signature = createPrevalidatedSafeSignature(owner);
   const transaction = await safe.execTransaction(
     to,
     value,

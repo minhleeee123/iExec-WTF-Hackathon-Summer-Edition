@@ -8,6 +8,7 @@ import {
   CHAINLINK_FEED_ABI,
   CONFIDENTIAL_TOKEN_ABI,
   LIMIT_ORDER_ABI,
+  NOX_COMPUTE_ABI,
   NOX_SWAP_ABI,
   SAFE_ABI,
   SAFE_MODULE_ABI,
@@ -796,9 +797,12 @@ export default function App() {
       const wrapper = new ethers.Contract(token.wrapper, CONFIDENTIAL_TOKEN_ABI, wallet.signer);
       const liveBalance = await underlying.balanceOf(wallet.address);
       if (value > liveBalance) throw new Error(`Amount exceeds your public ${token.publicSymbol} balance.`);
-      const approval = await underlying.approve(token.wrapper, value);
-      addLog(`Approve ${token.publicSymbol} funding`, approval.hash);
-      await approval.wait();
+      const allowance = await underlying.allowance(wallet.address, token.wrapper);
+      if (allowance < value) {
+        const approval = await underlying.approve(token.wrapper, ethers.MaxUint256);
+        addLog(`Approve reusable ${token.publicSymbol} funding`, approval.hash);
+        await approval.wait();
+      }
       const transaction = await wrapper.wrap(safeState.address, value);
       addLog(`Wrap ${amount} ${token.publicSymbol} to Safe`, transaction.hash);
       await transaction.wait();
@@ -811,24 +815,35 @@ export default function App() {
     }
   };
 
-  const decryptSafeSnapshot = async (wallet, snapshot) => {
+  const decryptSafeSnapshot = async (wallet, snapshot, tokenSymbols = Object.keys(TOKENS)) => {
     const client = await createHandleClient(wallet.signer);
     const next = { ...snapshot };
-    for (const token of Object.values(TOKENS)) {
+    const tokens = tokenSymbols.map((symbol) => TOKENS[symbol]).filter(Boolean);
+    const initialized = tokens.filter((token) => isHandle(snapshot[token.symbol]?.handle));
+    const compute = new ethers.Contract(deployment.contracts.noxCompute, NOX_COMPUTE_ABI, wallet.provider);
+    const permissions = await Promise.all(
+      initialized.map((token) => compute.isAllowed(snapshot[token.symbol].handle, wallet.address)),
+    );
+    const missingHandles = initialized
+      .filter((_, index) => !permissions[index])
+      .map((token) => snapshot[token.symbol].handle);
+    if (missingHandles.length > 0) {
+      const grant = await executeSafeModule({
+        signer: wallet.signer,
+        safeAddress: safeState.address,
+        moduleAddress: safeState.moduleAddress,
+        method: 'addViewers',
+        args: [missingHandles, wallet.address],
+      });
+      addLog(`Grant Safe owner access to ${missingHandles.length} balance handle${missingHandles.length === 1 ? '' : 's'}`, grant.transaction.hash);
+      await grant.transaction.wait();
+    }
+    for (const token of tokens) {
       const handle = snapshot[token.symbol].handle;
       if (!isHandle(handle)) {
         next[token.symbol] = { ...snapshot[token.symbol], decrypted: 0n };
         continue;
       }
-      const grant = await executeSafeModule({
-        signer: wallet.signer,
-        safeAddress: safeState.address,
-        moduleAddress: safeState.moduleAddress,
-        method: 'addViewer',
-        args: [handle, wallet.address],
-      });
-      addLog(`Grant Safe owner viewer for ${token.symbol}`, grant.transaction.hash);
-      await grant.transaction.wait();
       const decrypted = await retry(() => client.decrypt(handle), 6, 3000);
       next[token.symbol] = { ...snapshot[token.symbol], decrypted: decrypted.value };
     }
@@ -910,7 +925,7 @@ export default function App() {
       const [snapshot] = await Promise.all([loadSafeAccount(), loadAccount(wallet.address)]);
       if (restoreSafeBalances) {
         try {
-          await decryptSafeSnapshot(wallet, snapshot);
+          await decryptSafeSnapshot(wallet, snapshot, [tokenSymbol]);
         } catch (revealError) {
           setNotice({ type: 'info', text: `Safe unwrap completed. Refreshed balances need a manual reveal: ${revealError.shortMessage ?? revealError.message}` });
         }
@@ -957,18 +972,19 @@ export default function App() {
       const deadlineMinutesValue = Number(requestedDeadline);
       if (deadlineMinutesValue < 1 || deadlineMinutesValue > 1440) throw new Error('Safe swap deadline must be between 1 minute and 24 hours.');
       const deadline = chainNow + deadlineMinutesValue * 60;
-      await ensureSafeOperator(wallet, tokenInSymbol, deployment.contracts.noxSwapRouter, 'safe-swap');
       const client = await createHandleClient(wallet.signer);
       const [encrypted, encryptedMinimum] = await Promise.all([
         client.encryptInput(amountValue, 'uint256', safeState.moduleAddress),
         client.encryptInput(minimumValue, 'uint256', safeState.moduleAddress),
       ]);
       const module = new ethers.Contract(safeState.moduleAddress, SAFE_MODULE_ABI, wallet.signer);
-      for (const prepared of [encrypted, encryptedMinimum]) {
-        const preparation = await module.prepareInput(prepared.handle, prepared.handleProof, deployment.contracts.noxSwapRouter);
-        addLog('Prepare Safe swap ciphertext ACL', preparation.hash);
-        await preparation.wait();
-      }
+      const preparation = await module.prepareInputs(
+        [encrypted.handle, encryptedMinimum.handle],
+        [encrypted.handleProof, encryptedMinimum.handleProof],
+        deployment.contracts.noxSwapRouter,
+      );
+      addLog('Prepare Safe swap ciphertext ACL', preparation.hash);
+      await preparation.wait();
       const execution = await executeSafeModule({
         signer: wallet.signer,
         safeAddress: safeState.address,
@@ -981,10 +997,6 @@ export default function App() {
       confirmedTransactionHash = execution.transaction.hash;
       const event = parseSafeModuleEvent(mined, module, 'SafeSwapExecuted');
       if (!event) throw new Error('SafeSwapExecuted event was not found.');
-      for (const handle of [event.args.encryptedOutput, event.args.encryptedRefund]) {
-        const grant = await executeSafeModule({ signer: wallet.signer, safeAddress: safeState.address, moduleAddress: safeState.moduleAddress, method: 'addViewer', args: [handle, wallet.address] });
-        await grant.transaction.wait();
-      }
       const [decrypted, refund] = await Promise.all([
         retry(() => client.decrypt(event.args.encryptedOutput), 6, 3000),
         retry(() => client.decrypt(event.args.encryptedRefund), 6, 3000),
@@ -994,7 +1006,7 @@ export default function App() {
       setNotice({ type: 'success', text: `Safe swap confirmed. Received ${received} ${output.symbol}; refund ${returned} ${input.symbol}.` });
       const [snapshot] = await Promise.all([loadSafeAccount(), loadAccount(wallet.address)]);
       try {
-        await decryptSafeSnapshot(wallet, snapshot);
+        await decryptSafeSnapshot(wallet, snapshot, [tokenInSymbol, tokenOutSymbol]);
       } catch (revealError) {
         setNotice({ type: 'info', text: `Safe swap confirmed. Received ${received} ${output.symbol}; refund ${returned} ${input.symbol}. Refreshed balances need a manual reveal: ${revealError.shortMessage ?? revealError.message}` });
       }
@@ -1023,18 +1035,19 @@ export default function App() {
       const trigger = ethers.parseUnits(triggerPrice, 8);
       const expiry = chainNow + Math.max(1, Number(expiryHours)) * 60 * 60;
       if (!safeState.orderBook) throw new Error('Safe limit-order book is not configured.');
-      await ensureSafeOperator(wallet, tokenInSymbol, safeState.orderBook, 'safe-order');
       const client = await createHandleClient(wallet.signer);
       const [encrypted, encryptedMinimum] = await Promise.all([
         client.encryptInput(amountValue, 'uint256', safeState.moduleAddress),
         client.encryptInput(minimumValue, 'uint256', safeState.moduleAddress),
       ]);
       const module = new ethers.Contract(safeState.moduleAddress, SAFE_MODULE_ABI, wallet.signer);
-      for (const prepared of [encrypted, encryptedMinimum]) {
-        const preparation = await module.prepareInput(prepared.handle, prepared.handleProof, safeState.orderBook);
-        addLog('Prepare Safe order ciphertext ACL', preparation.hash);
-        await preparation.wait();
-      }
+      const preparation = await module.prepareInputs(
+        [encrypted.handle, encryptedMinimum.handle],
+        [encrypted.handleProof, encryptedMinimum.handleProof],
+        safeState.orderBook,
+      );
+      addLog('Prepare Safe order ciphertext ACL', preparation.hash);
+      await preparation.wait();
       const execution = await executeSafeModule({
         signer: wallet.signer,
         safeAddress: safeState.address,
