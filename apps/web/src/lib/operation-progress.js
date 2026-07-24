@@ -30,6 +30,7 @@ function operationLabel(busyKey) {
 
 function initialStep(busyKey) {
   if (/^(refresh)$/.test(busyKey)) return 'Reading the latest Sepolia state…';
+  if (/^faucet-/.test(busyKey)) return 'Checking faucet eligibility and cooldown…';
   if (/^(decrypt|safe-reveal|reveal-order-)/.test(busyKey)) return 'Requesting authorized Nox decryption…';
   if (/^connect$/.test(busyKey)) return 'Waiting for the selected wallet…';
   return 'Preparing the request; review your wallet when prompted…';

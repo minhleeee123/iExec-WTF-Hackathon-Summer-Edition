@@ -351,7 +351,8 @@ try {
     const cooldownButton = cooldownRow.getByRole('button');
     await walletPage.waitForFunction((button) => !button.disabled, await cooldownButton.elementHandle());
     await cooldownButton.click();
-    await walletPage.getByText(new RegExp(`${cooldownSymbol} faucet is cooling down`)).waitFor();
+    await walletPage.locator('.toast-info').getByText(new RegExp(`${cooldownSymbol} faucet is cooling down`)).waitFor();
+    assert(await walletPage.locator('.toast-steps .toast-step').count() >= 2, 'operation progress must retain multiple stages');
     const cooldownNotice = await walletPage.locator('.toast-info').textContent();
     const faucetCooldowns = await walletPage.locator('.faucet-item .cooldown').allTextContents();
 

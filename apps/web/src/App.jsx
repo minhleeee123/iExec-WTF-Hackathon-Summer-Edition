@@ -26,6 +26,11 @@ import {
 import { createHandleClient, retry } from './lib/nox';
 import { queryRecentSwapEvents } from './lib/history';
 import { DEFAULT_SWAP_PROTECTION_BPS, deriveSwapMinOut } from './lib/min-out';
+import {
+  appendOperationStep,
+  createOperationProgress,
+  finishOperationProgress,
+} from './lib/operation-progress';
 import { discoverWalletProvider } from './lib/wallet-providers';
 import { executeSafeModule, executeSafeTransaction, parseSafeModuleEvent, SAFE_SENTINEL_MODULE } from './lib/safe';
 import { querySafeActivity } from './lib/safe-activity';
@@ -123,7 +128,9 @@ export default function App() {
   const [safePendingUnwraps, setSafePendingUnwraps] = useState([]);
   const [safeBalancesVisible, setSafeBalancesVisible] = useState(false);
   const [safeBalanceRefreshFailed, setSafeBalanceRefreshFailed] = useState(false);
+  const [operationProgress, setOperationProgress] = useState(null);
   const safeRevealSession = useRef(false);
+  const activeOperation = useRef('');
 
   const connected = Boolean(account);
   const correctNetwork = chainId === deployment.chainId;
@@ -180,6 +187,14 @@ export default function App() {
 
   const addLog = (message, transactionHash = '') => {
     setLogs((current) => [{ time: new Date().toLocaleTimeString(), message, transactionHash }, ...current]);
+    if (transactionHash) {
+      setNotice({
+        type: 'info',
+        text: `${message} submitted. Waiting for Sepolia confirmation…`,
+        href: `https://sepolia.etherscan.io/tx/${transactionHash}`,
+        actionLabel: 'View transaction',
+      });
+    }
   };
 
   const fail = (error) => {
@@ -195,6 +210,40 @@ export default function App() {
     }, timeout);
     return () => window.clearTimeout(timer);
   }, [busy, notice]);
+
+  useEffect(() => {
+    const previous = activeOperation.current;
+    if (busy && busy !== previous) {
+      activeOperation.current = busy;
+      setOperationProgress({ ...createOperationProgress(busy), ignoredNotice: notice });
+      return;
+    }
+    if (!busy && previous) {
+      activeOperation.current = '';
+      setOperationProgress((current) => {
+        const withOutcome = notice?.text && current?.ignoredNotice !== notice
+          ? appendOperationStep(current, notice)
+          : current;
+        return finishOperationProgress(withOutcome, notice?.type === 'error');
+      });
+    }
+  }, [busy, notice]);
+
+  useEffect(() => {
+    if (!busy || !notice?.text) return;
+    setOperationProgress((current) => {
+      if (!current || current.ignoredNotice === notice) return current;
+      return { ...appendOperationStep(current, notice), ignoredNotice: null };
+    });
+  }, [busy, notice]);
+
+  useEffect(() => {
+    if (!operationProgress?.complete || operationProgress.type === 'error') return undefined;
+    const timer = window.setTimeout(() => {
+      setOperationProgress((current) => current === operationProgress ? null : current);
+    }, 7000);
+    return () => window.clearTimeout(timer);
+  }, [operationProgress]);
 
   const getWallet = async (providerOverride = walletProvider) => {
     if (!providerOverride) throw new Error('Connect an injected wallet before using write operations.');
@@ -1541,12 +1590,18 @@ export default function App() {
       {!onPublicPage && (
         <ToastViewport
           notices={[
-            ...(notice ? [{ ...notice, id: 'operation', pending: Boolean(busy) && notice.type === 'info', dismissible: true }] : []),
+            ...(operationProgress ? [{
+              ...operationProgress,
+              pending: !operationProgress.complete,
+              dismissible: operationProgress.complete,
+            }] : []),
+            ...(notice && !busy ? [{ ...notice, id: 'operation', dismissible: true }] : []),
             ...(!walletAvailable ? [{ id: 'wallet-unavailable', type: 'error', text: 'No compatible wallet was detected. Read-only market data remains available.' }] : []),
             ...(connected && !correctNetwork ? [{ id: 'wrong-network', type: 'error', text: 'Switch your connected wallet to Ethereum Sepolia to use NoxSwap.' }] : []),
           ]}
           onDismiss={(id) => {
             if (id === 'operation') setNotice(null);
+            if (id === 'progress') setOperationProgress(null);
           }}
         />
       )}
