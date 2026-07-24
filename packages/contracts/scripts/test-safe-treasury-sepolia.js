@@ -12,6 +12,7 @@ const rpcUrl = process.env.SEPOLIA_RPC_URL ?? process.env.SEPOLIA_RPC ?? 'https:
 const privateKey = process.env.PRIVATE_KEY;
 const runUnwrap = process.env.SAFE_UNWRAP_E2E === 'true';
 const runPromptOptimization = process.env.SAFE_PROMPT_E2E === 'true';
+const runSwap = process.env.SAFE_SWAP_E2E === 'true';
 if (!privateKey) throw new Error('Set PRIVATE_KEY in the environment.');
 
 const artifact = (name) => JSON.parse(
@@ -47,7 +48,7 @@ async function executeSafe({ safe, signer, target, data }) {
     nonce,
   );
   const signature = `0x${signer.address.slice(2).padStart(64, '0')}${'0'.repeat(64)}01`;
-  return send('Execute Safe unwrap request', safe.execTransaction(
+  return send('Execute Safe transaction', safe.execTransaction(
     target,
     0,
     data,
@@ -143,6 +144,89 @@ async function main() {
       });
     }
     console.log('Safe prompt-optimization writes: PASS');
+  }
+
+  if (runSwap) {
+    const client = await createEthersHandleClient(wallet);
+    const tokenOut = new Contract(
+      deployment.contracts.cETH,
+      artifact('NoxConfidentialToken').abi,
+      wallet,
+    );
+    const compute = new Contract(
+      deployment.contracts.noxCompute,
+      ['function isAllowed(bytes32 handle,address viewer) view returns (bool)'],
+      wallet,
+    );
+    const revokeOperatorData = module.interface.encodeFunctionData('setTokenOperator', [
+      deployment.contracts.cUSDC,
+      deployment.contracts.noxSwapRouter,
+      0,
+    ]);
+    await executeSafe({
+      safe,
+      signer: wallet,
+      target: deployment.safe.module,
+      data: revokeOperatorData,
+    });
+    assert.equal(
+      await wrapper.isOperator(deployment.safe.address, deployment.contracts.noxSwapRouter),
+      false,
+      'router operator must be revoked before testing automatic restoration',
+    );
+
+    const [amount, minOut] = await Promise.all([
+      client.encryptInput(1_000_000n, 'uint256', deployment.safe.module),
+      client.encryptInput(0n, 'uint256', deployment.safe.module),
+    ]);
+    await send(
+      'Prepare Safe swap inputs',
+      module.prepareInputs(
+        [amount.handle, minOut.handle],
+        [amount.handleProof, minOut.handleProof],
+        deployment.contracts.noxSwapRouter,
+      ),
+    );
+    const latestBlock = await provider.getBlock('latest');
+    const swapData = module.interface.encodeFunctionData('confidentialSwap', [
+      deployment.contracts.cUSDC,
+      deployment.contracts.cETH,
+      amount.handle,
+      minOut.handle,
+      wallet.address,
+      latestBlock.timestamp + 1200,
+    ]);
+    const swapReceipt = await executeSafe({
+      safe,
+      signer: wallet,
+      target: deployment.safe.module,
+      data: swapData,
+    });
+    const swap = eventFrom(module, swapReceipt, 'SafeSwapExecuted');
+    assert(swap, 'SafeSwapExecuted must be emitted');
+    assert.equal(
+      await wrapper.isOperator(deployment.safe.address, deployment.contracts.noxSwapRouter),
+      true,
+      'swap must restore the router operator in the same Safe execution',
+    );
+    const [inputBalanceHandle, outputBalanceHandle] = await Promise.all([
+      wrapper.confidentialBalanceOf(deployment.safe.address),
+      tokenOut.confidentialBalanceOf(deployment.safe.address),
+    ]);
+    for (const handle of [
+      swap.args.encryptedOutput,
+      swap.args.encryptedRefund,
+      inputBalanceHandle,
+      outputBalanceHandle,
+    ]) {
+      assert.equal(await compute.isAllowed(handle, wallet.address), true, `owner ACL missing for ${handle}`);
+    }
+    const [output, refund] = await Promise.all([
+      client.decrypt(swap.args.encryptedOutput),
+      client.decrypt(swap.args.encryptedRefund),
+    ]);
+    assert.equal(output.value > 0n || refund.value === 1_000_000n, true, 'swap must settle or fully refund');
+    console.log(`Safe auto-operator/ACL swap: PASS (receipt ${swap.args.receiptId})`);
   }
 
   if (!runUnwrap) {
