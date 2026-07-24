@@ -134,7 +134,7 @@ export default function DocsPage() {
             <div className="docs-card-grid">
               <article className="docs-card"><Wallet size={22} /><h3>Connect</h3><p>Connecting exposes the selected wallet address for public reads and transaction signing. It does not reveal balances.</p></article>
               <article className="docs-card"><FileKey2 size={22} /><h3>Reveal</h3><p>Reveal uses the Nox Gateway authorization flow to decrypt the current handle in the browser session. No gas is charged for the signature.</p></article>
-              <article className="docs-card"><Workflow size={22} /><h3>Wrap / unwrap</h3><p>Wrap moves public n-assets into ERC-7984 confidential assets. Unwrap returns public n-assets after the confidential operation completes.</p></article>
+              <article className="docs-card"><Workflow size={22} /><h3>Wrap / unwrap</h3><p>The first wrap grants the official test wrapper a reusable allowance; later wraps need only one transaction. Unwrap returns public n-assets after the confidential operation completes.</p></article>
             </div>
             <div className="docs-callout docs-callout-warning"><CircleAlert size={18} /><p><strong>Reveal is session state.</strong> After a balance-changing operation, account change, network change, or handle change, reveal the refreshed balance again. NoxSwap does not persist plaintext balances.</p></div>
           </section>

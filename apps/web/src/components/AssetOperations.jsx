@@ -43,10 +43,10 @@ export default function AssetOperations({
           steps={[
             { heading: 'Step 1 - Gas Fee', detail: 'Claims, wrapping, and unwrapping require Sepolia ETH for gas. Click "Get ETH" if your ETH balance is low.' },
             { heading: 'Step 2 - Test Faucets', detail: 'Claim nUSDC, nWETH, nWBTC, nSOL test tokens (1-hour cooldown).' },
-            { heading: 'Step 3 - Wrap & Unwrap', detail: 'Approve and wrap 1:1 into confidential form, or request unwrap with Nox public decryption proof.' },
+            { heading: 'Step 3 - Wrap & Unwrap', detail: 'Approve the official test wrapper once and wrap 1:1 into confidential form, or request unwrap with a Nox public decryption proof.' },
           ]}
         />
-        <p>Test faucets enforce a one-hour cooldown. Wrapping is 1:1; unwrapping finalizes with a Nox public decryption proof.</p>
+        <p>Test faucets enforce a one-hour cooldown. The first wrap may request a reusable wrapper approval; later wraps need only the wrap transaction. Unwrapping finalizes with a Nox public decryption proof.</p>
       </div>
       <div className="asset-layout">
         <div className="faucet-list">

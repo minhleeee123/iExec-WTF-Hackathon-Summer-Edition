@@ -572,9 +572,12 @@ export default function App() {
       if (assetMode === 'wrap') {
         const liveBalance = await underlying.balanceOf(wallet.address);
         if (amount > liveBalance) throw new Error('Amount exceeds your current public balance. Refresh and try again.');
-        const approval = await underlying.approve(token.wrapper, amount);
-        addLog(`Approve ${token.publicSymbol}`, approval.hash);
-        await approval.wait();
+        const allowance = await underlying.allowance(wallet.address, token.wrapper);
+        if (allowance < amount) {
+          const approval = await underlying.approve(token.wrapper, ethers.MaxUint256);
+          addLog(`Approve reusable ${token.publicSymbol} wrapping`, approval.hash);
+          await approval.wait();
+        }
         const transaction = await wrapper.wrap(wallet.address, amount);
         addLog(`Wrap ${assetAmount} ${token.publicSymbol}`, transaction.hash);
         await transaction.wait();
