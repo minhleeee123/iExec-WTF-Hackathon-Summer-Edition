@@ -76,11 +76,6 @@ function writeWalletPreference(walletId) {
   try { window.localStorage.setItem(WALLET_PREFERENCE_KEY, walletId); } catch { /* Storage can be disabled in privacy mode. */ }
 }
 
-function tokenSymbolForAddress(address) {
-  const match = Object.values(TOKENS).find((token) => token.wrapper.toLowerCase() === address.toLowerCase());
-  return match?.symbol ?? address;
-}
-
 export default function App() {
   const location = useLocation();
   const [account, setAccount] = useState('');
@@ -123,7 +118,6 @@ export default function App() {
   const [walletName, setWalletName] = useState('');
   const [safeState, setSafeState] = useState({ address: deployment.safe?.address ?? '', moduleAddress: deployment.safe?.module ?? '', orderBook: deployment.safe?.orderBook ?? '', moduleEnabled: false, owners: [], threshold: 0, isOwner: false });
   const [safeBalances, setSafeBalances] = useState(() => createInitialBalances());
-  const [safeOrders, setSafeOrders] = useState([]);
   const [safeActivity, setSafeActivity] = useState([]);
   const [safePendingUnwraps, setSafePendingUnwraps] = useState([]);
   const [safeBalancesVisible, setSafeBalancesVisible] = useState(false);
@@ -382,28 +376,6 @@ export default function App() {
       };
     }));
     const safeOrderBookAddress = configuredSafe.orderBook ?? deployment.contracts.limitOrderBook;
-    const orderBook = new ethers.Contract(safeOrderBookAddress, LIMIT_ORDER_ABI, provider);
-    const nextOrderId = await orderBook.nextOrderId();
-    const orders = [];
-    for (let id = 1n; id < nextOrderId && id - 1n < 500n; id++) {
-      try {
-        const order = await orderBook.getOrder(id);
-        if (order.owner.toLowerCase() !== configuredSafe.address.toLowerCase()) continue;
-        orders.push({
-          id: id.toString(),
-          owner: order.owner,
-          tokenIn: tokenSymbolForAddress(order.tokenIn),
-          tokenOut: tokenSymbolForAddress(order.tokenOut),
-          amountHandle: order.encryptedAmountIn,
-          minOutHandle: order.encryptedMinOut,
-          triggerPrice: order.triggerPrice,
-          expiry: Number(order.expiry),
-          status: Number(order.status),
-        });
-      } catch (error) {
-        console.warn(`Safe order ${id} could not be read.`, error);
-      }
-    }
     const nextState = {
       address: configuredSafe.address,
       moduleAddress: configuredSafe.module,
@@ -426,7 +398,6 @@ export default function App() {
       }
       return merged;
     });
-    setSafeOrders(orders.sort((left, right) => Number(right.id) - Number(left.id)));
     try {
       const moduleDeploymentHashes = Object.entries(deployment.deploymentTransactions ?? {})
         .filter(([key]) => /^noxSafeModule(?:V\d+)?$/.test(key))
@@ -576,7 +547,6 @@ export default function App() {
       setExecutionComparison(null);
       setSafeState({ address: deployment.safe?.address ?? '', moduleAddress: deployment.safe?.module ?? '', orderBook: deployment.safe?.orderBook ?? '', moduleEnabled: false, owners: [], threshold: 0, isOwner: false });
       setSafeBalances(createInitialBalances());
-      setSafeOrders([]);
       setAccount(accounts[0] ?? '');
     };
     const onChain = (chain) => {
@@ -593,7 +563,6 @@ export default function App() {
         setHistory([]);
         setSafeState({ address: deployment.safe?.address ?? '', moduleAddress: deployment.safe?.module ?? '', orderBook: deployment.safe?.orderBook ?? '', moduleEnabled: false, owners: [], threshold: 0, isOwner: false });
         setSafeBalances(createInitialBalances());
-        setSafeOrders([]);
         setSafeActivity([]);
         setSafePendingUnwraps([]);
       }
@@ -1258,6 +1227,57 @@ export default function App() {
     }
   };
 
+  const safeSettleOrder = async (order, action) => {
+    let confirmedTransactionHash = '';
+    const restoreSafeBalances = safeRevealSession.current;
+    try {
+      if (!['execute', 'expire'].includes(action)) throw new Error('Unsupported Safe order settlement action.');
+      setBusy(`${action}-safe-order-${order.id}`);
+      const wallet = await getWallet();
+      const orderBook = new ethers.Contract(safeState.orderBook, LIMIT_ORDER_ABI, wallet.signer);
+      const latest = await orderBook.getOrder(order.id);
+      if (Number(latest.status) !== 0) throw new Error('Safe order state changed before submission. Refresh and try again.');
+      if (action === 'execute') {
+        const [executable] = await orderBook.canExecute(order.id);
+        if (!executable) throw new Error('The Safe order Chainlink trigger is no longer ready.');
+        await orderBook.executeOrder.estimateGas(order.id);
+      } else {
+        const latestBlock = await wallet.provider.getBlock('latest');
+        if (Number(latest.expiry) >= latestBlock.timestamp) throw new Error('The Safe order has not expired yet.');
+        await orderBook.expireOrder.estimateGas(order.id);
+      }
+      const transaction = action === 'execute'
+        ? await orderBook.executeOrder(order.id)
+        : await orderBook.expireOrder(order.id);
+      addLog(`${action === 'execute' ? 'Execute' : 'Expire'} Safe order #${order.id}`, transaction.hash);
+      await transaction.wait();
+      confirmedTransactionHash = transaction.hash;
+      const snapshot = await loadSafeAccount();
+      const restored = restoreSafeBalances ? await restoreSafeRevealSession(wallet, snapshot) : false;
+      const outcome = action === 'execute' ? 'executed permissionlessly' : 'expired and refunded';
+      setNotice({
+        type: restored || !restoreSafeBalances ? 'success' : 'info',
+        text: restored
+          ? `Safe order #${order.id} ${outcome}. Treasury balances refreshed.`
+          : `Safe order #${order.id} ${outcome}.${restoreSafeBalances ? ' Use Reveal again to refresh treasury balances.' : ' Settlement remains encrypted to the Safe.'}`,
+        href: `https://sepolia.etherscan.io/tx/${transaction.hash}`,
+      });
+    } catch (error) {
+      if (confirmedTransactionHash) {
+        console.error(error);
+        setNotice({
+          type: 'info',
+          text: `Safe order settlement ${shorten(confirmedTransactionHash, 12, 10)} is final, but the refreshed Safe state is temporarily unavailable.`,
+          href: `https://sepolia.etherscan.io/tx/${confirmedTransactionHash}`,
+        });
+      } else {
+        fail(error);
+      }
+    } finally {
+      setBusy('');
+    }
+  };
+
   const safeGrantViewer = async ({ handle, viewer }) => {
     try {
       if (!isHandle(handle) || !ethers.isAddress(viewer)) throw new Error('Choose an initialized handle and enter a valid viewer address.');
@@ -1509,7 +1529,9 @@ export default function App() {
     account,
     balances,
     busy,
+    chainId,
     connected,
+    ethBalance,
     onCancelOrder: safeCancelOrder,
     onConnect: openWalletModal,
     onCreateOrder: safeCreateOrder,
@@ -1522,6 +1544,7 @@ export default function App() {
     onReveal: safeReveal,
     onRevoke: safeRevoke,
     onSetOperator: safeSetOperator,
+    onSettleOrder: safeSettleOrder,
     onSwap: safeSwap,
     onUnwrap: safeUnwrap,
     safe: safeState,
@@ -1529,7 +1552,6 @@ export default function App() {
     safeBalances,
     safeBalancesVisible,
     safeBalanceRefreshFailed,
-    safeOrders,
     safePendingUnwraps,
     agentMarket: orderContext.agentMarket,
     ethPrice,

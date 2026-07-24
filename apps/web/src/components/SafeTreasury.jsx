@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import AgentStrategy from './AgentStrategy';
+import SafeOrderBook from './SafeOrderBook';
 import { formatToken, isHandle, shorten } from '../lib/format';
 import { DEFAULT_LIMIT_ORDER_PROTECTION_BPS, DEFAULT_SWAP_PROTECTION_BPS, deriveLimitOrderMinOut, deriveSwapMinOut } from '../lib/min-out';
 import { validateMinimumOutput, validateTokenAmount } from '../lib/validation';
@@ -24,7 +25,9 @@ export default function SafeTreasury({
   account,
   agentMarket,
   busy,
+  chainId,
   connected,
+  ethBalance,
   onCancelOrder,
   onConnect,
   onCreateOrder,
@@ -35,12 +38,12 @@ export default function SafeTreasury({
   onReveal,
   onRevoke,
   onSetOperator,
+  onSettleOrder,
   onSwap,
   onUnwrap,
   safe,
   safeActivity = [],
   safeBalances,
-  safeOrders,
   safePendingUnwraps = [],
   ethPrice,
   tokens,
@@ -94,7 +97,6 @@ export default function SafeTreasury({
   const orderMin = orderMinOut || suggestedOrderMinOut || '';
   const viewerHandleValue = safeBalances?.[viewerHandle]?.handle;
   const canGrantViewer = isHandle(viewerHandleValue) && viewer.trim().length > 0;
-  const openOrders = useMemo(() => safeOrders.filter((order) => order.status === 0), [safeOrders]);
   const swapBalance = safeBalances?.[swapTokenIn]?.decrypted;
   const orderBalance = safeBalances?.[orderTokenIn]?.decrypted;
   const unwrapBalance = safeBalances?.[unwrapToken]?.decrypted;
@@ -241,10 +243,7 @@ export default function SafeTreasury({
                     <button className="primary-action compact" onClick={() => onCreateOrder({ tokenIn: orderTokenIn, tokenOut: orderTokenOut, amount: orderAmount, minOut: orderMin, triggerPrice, expiryHours })} disabled={!enabled || !safe.isOwner || Boolean(busy) || !canSpendOrder || !validOrderTerms}>{busy === 'safe-order' ? <LoaderCircle className="spin" size={18} /> : <Plus size={18} />} Encrypt and escrow Safe order</button>
                   </div>
                 )}
-                <section className="orders-list safe-orders-card">
-                  <div className="section-heading compact-heading"><div><p className="eyebrow">OPEN SAFE ORDERS</p><h2>Order control</h2></div><span className="safe-count-badge">{openOrders.length}</span></div>
-                  {openOrders.length === 0 ? <p className="empty-state">No open Safe orders.</p> : <div className="safe-order-list">{openOrders.map((order) => <div className="safe-order-row" key={order.id}><span><strong>Order #{order.id}</strong><small>{order.tokenIn} → {order.tokenOut} · expires {new Date(order.expiry * 1000).toLocaleString()}</small></span><button className="outline-mini-button" onClick={() => onCancelOrder(order.id)} disabled={Boolean(busy)}>{busy === `safe-cancel-${order.id}` ? <LoaderCircle className="spin" size={15} /> : <Ban size={15} />} Cancel</button></div>)}</div>}
-                </section>
+                <SafeOrderBook account={account} busy={busy} chainId={chainId} ethBalance={ethBalance} onCancelOrder={onCancelOrder} onConnect={onConnect} onNotice={onNotice} onSettleOrder={onSettleOrder} safe={safe} />
               </div>
             </section>
           )}

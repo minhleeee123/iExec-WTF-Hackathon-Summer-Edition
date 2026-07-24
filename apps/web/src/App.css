@@ -1126,7 +1126,12 @@ footer a { display: inline-flex; align-items: center; gap: 5px; }
 .safe-native-field select { width: 100%; min-height: 46px; padding: 0 12px; color: var(--ink); background: var(--white); border: 2px solid var(--ink); border-radius: 7px; font: 700 11px 'Space Mono', monospace; }
 .safe-orders-intro { align-items: center; }
 .safe-orders-intro .safe-operation-tabs { justify-self: end; }
-.safe-orders-layout { grid-template-columns: minmax(340px, .8fr) minmax(320px, .7fr); }
+.safe-orders-layout { grid-template-columns: minmax(380px, .78fr) minmax(0, 1.22fr); }
+.safe-orders-layout .public-order-row { min-height: 108px; grid-template-columns: minmax(100px, 1fr) minmax(120px, 1.15fr) auto; }
+.safe-orders-layout .public-order-row > span:nth-child(3), .safe-orders-layout .public-order-row code { grid-row: 2; }
+.safe-orders-layout .public-order-row code { grid-column: 2; }
+.safe-orders-layout .public-order-row .order-status { grid-column: 3; grid-row: 1; }
+.safe-orders-layout .order-row-links { grid-column: 3; grid-row: 2; }
 .safe-order-form .protected-input select { min-width: 100px; height: 100%; padding: 0 8px; color: var(--ink); background: var(--white); border: 0; border-left: 1px solid var(--ink); font-weight: 700; }
 .safe-orders-card { min-height: 280px; }
 .safe-unwrap-disclosure { margin-top: 14px; padding: 11px 12px; background: #fff8d9; border: 1px solid var(--ink); border-radius: 6px; }

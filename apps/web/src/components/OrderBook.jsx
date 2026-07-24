@@ -9,13 +9,28 @@ import { formatDuration, shorten } from '../lib/format';
 import KeeperStatus from './KeeperStatus';
 import OrderDetail from './OrderDetail';
 
-export default function OrderBook({ account, actions, blockFetchedAt, blockTimestamp, book, busy, onConnect }) {
+export default function OrderBook({
+  account,
+  actions,
+  basePath = '/app/trade',
+  baseQuery = null,
+  blockFetchedAt,
+  blockTimestamp,
+  book,
+  busy,
+  eyebrow = 'ON-CHAIN ORDERBOOK',
+  onConnect,
+  ownerFilterAddress = account,
+  ownerFilterLabel = 'My orders',
+  showKeeper = true,
+  title = 'Public execution, private terms',
+}) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [clock, setClock] = useState(() => Date.now());
   const [copiedOrderId, setCopiedOrderId] = useState(null);
   const filters = useMemo(() => parseOrderUrlState(searchParams), [searchParams]);
   const selected = filters.order ? book.orders.find((order) => Number(order.id) === filters.order) : null;
-  const selectedOrders = useMemo(() => selectOrders(book.orders, filters, account), [account, book.orders, filters]);
+  const selectedOrders = useMemo(() => selectOrders(book.orders, filters, ownerFilterAddress), [book.orders, filters, ownerFilterAddress]);
   const chainNow = blockTimestamp + Math.max(0, Math.floor((clock - blockFetchedAt) / 1000));
 
   useEffect(() => {
@@ -23,15 +38,24 @@ export default function OrderBook({ account, actions, blockFetchedAt, blockTimes
     return () => window.clearInterval(timer);
   }, []);
 
+  const scopedParams = (state) => {
+    const params = serializeOrderUrlState(state);
+    if (baseQuery) {
+      params.delete('mode');
+      Object.entries(baseQuery).forEach(([key, value]) => params.set(key, value));
+    }
+    return params;
+  };
+
   const updateFilters = (patch, options) => {
     const shouldResetPage = patch.page === undefined && patch.order === undefined;
     const nextPatch = shouldResetPage ? { ...patch, page: 1 } : patch;
-    setSearchParams(serializeOrderUrlState(updateOrderUrlState(filters, nextPatch)), options);
+    setSearchParams(scopedParams(updateOrderUrlState(filters, nextPatch)), options);
   };
 
   const orderLink = (order) => {
-    const params = serializeOrderUrlState({ ...filters, order: Number(order.id) });
-    return `${window.location.origin}/app/trade?${params.toString()}`;
+    const params = scopedParams({ ...filters, order: Number(order.id) });
+    return `${window.location.origin}${basePath}?${params.toString()}`;
   };
 
   const copyOrder = async (order) => {
@@ -46,10 +70,10 @@ export default function OrderBook({ account, actions, blockFetchedAt, blockTimes
   return (
     <div className="orders-list public-orderbook">
       <div className="orderbook-toolbar">
-        <div><p className="eyebrow">ON-CHAIN ORDERBOOK</p><h2>Public execution, private terms</h2></div>
+        <div><p className="eyebrow">{eyebrow}</p><h2>{title}</h2></div>
         <button className="icon-button" onClick={() => book.refresh()} disabled={book.refreshing} aria-label="Refresh orderbook" title="Refresh orderbook"><RefreshCw className={book.refreshing ? 'spin' : ''} size={18} /></button>
       </div>
-      <KeeperStatus notificationsEnabled={book.notificationsEnabled} onEnableNotifications={book.enableNotifications} />
+      {showKeeper && <KeeperStatus notificationsEnabled={book.notificationsEnabled} onEnableNotifications={book.enableNotifications} />}
 
       <div className="order-filters" aria-label="Orderbook filters">
         <SlidersHorizontal size={17} />
@@ -57,7 +81,7 @@ export default function OrderBook({ account, actions, blockFetchedAt, blockTimes
           <option value="all">All</option><option value="open">Open</option><option value="executable">Executable</option><option value="expired">Expired</option><option value="executed">Executed</option><option value="cancelled">Cancelled</option><option value="oracle-unavailable">Oracle unavailable</option>
         </select></label>
         <label><span>Owner</span><select aria-label="Order owner" value={filters.owner} onChange={(event) => updateFilters({ owner: event.target.value })}>
-          <option value="all">All orders</option><option value="mine" disabled={!account}>My orders</option>
+          <option value="all">All orders</option><option value="mine" disabled={!ownerFilterAddress}>{ownerFilterLabel}</option>
         </select></label>
         <label><span>Side</span><select aria-label="Order side" value={filters.side} onChange={(event) => updateFilters({ side: event.target.value })}>
           <option value="all">All</option><option value="buy">Buy ETH</option><option value="sell">Sell ETH</option>

@@ -11,7 +11,8 @@ function Fact({ label, children }) {
 }
 
 export default function OrderDetail({ account, actions, blockTimestamp, busy, onClose, onConnect, onCopy, oracle, order }) {
-  const permissions = getOrderPermissions({ account, contractStatus: order.contractStatus, owner: order.owner, state: order.state });
+  const permissions = actions.getPermissions?.(order)
+    ?? getOrderPermissions({ account, contractStatus: order.contractStatus, owner: order.owner, state: order.state });
   const remaining = Math.max(0, order.expiry - blockTimestamp);
   const side = getOrderSide(order.tokenIn);
   const terms = actions.revealedTerms[order.id];
@@ -27,9 +28,9 @@ export default function OrderDetail({ account, actions, blockTimestamp, busy, on
   const checks = selectedAction ? actions.actionChecks(order, selectedAction) : [];
   const actionReady = checks.length > 0 && checks.every((check) => check.pass);
   const actionDetails = {
-    execute: { icon: Play, label: 'Execute order', busyKey: `execute-order-${order.id}`, className: 'primary-action compact' },
-    expire: { icon: RotateCcw, label: 'Expire and refund', busyKey: `expire-order-${order.id}`, className: 'primary-action compact' },
-    cancel: { icon: XCircle, label: 'Cancel order', busyKey: `cancel-order-${order.id}`, className: 'secondary-action danger-action' },
+    execute: { icon: Play, label: 'Execute order', busyKey: actions.getBusyKey?.('execute', order) ?? `execute-order-${order.id}`, className: 'primary-action compact' },
+    expire: { icon: RotateCcw, label: 'Expire and refund', busyKey: actions.getBusyKey?.('expire', order) ?? `expire-order-${order.id}`, className: 'primary-action compact' },
+    cancel: { icon: XCircle, label: 'Cancel order', busyKey: actions.getBusyKey?.('cancel', order) ?? `cancel-order-${order.id}`, className: 'secondary-action danger-action' },
   };
   const selectedDetails = selectedAction ? actionDetails[selectedAction] : null;
   const SelectedIcon = selectedDetails?.icon;
@@ -55,7 +56,7 @@ export default function OrderDetail({ account, actions, blockTimestamp, busy, on
           <Fact label="Trigger">{side === 'buy' ? 'At or below' : 'At or above'} ${Number(ethers.formatUnits(order.triggerPrice, 8)).toLocaleString()}</Fact>
           <Fact label="Chainlink now">{oracle.available ? `$${oracle.price.toLocaleString()}` : 'Unavailable'}</Fact>
           <Fact label="Expiry">{remaining > 0 ? `${formatDuration(remaining)} remaining` : 'Passed'}</Fact>
-          <Fact label="Caller">{permissions.isOwner ? 'Owner' : account ? 'Permissionless executor' : 'Read only'}</Fact>
+          <Fact label="Caller">{actions.getCallerLabel?.(permissions) ?? (permissions.isOwner ? 'Owner' : account ? 'Permissionless executor' : 'Read only')}</Fact>
         </div>
 
         <div className="handle-list">

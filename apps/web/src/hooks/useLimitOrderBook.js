@@ -42,7 +42,12 @@ function addressToSymbol(address) {
   return Object.values(TOKENS).find((token) => token.wrapper.toLowerCase() === address.toLowerCase())?.symbol ?? address;
 }
 
-export default function useLimitOrderBook({ account, onOrderChange }) {
+export default function useLimitOrderBook({
+  account,
+  deploymentTransactionHash = deployment.deploymentTransactions.limitOrderBook,
+  onOrderChange,
+  orderBookAddress = deployment.contracts.limitOrderBook,
+}) {
   const [orders, setOrders] = useState([]);
   const [oracle, setOracle] = useState({ available: false, price: null, updatedAt: null, error: 'Loading oracle.' });
   const [blockTimestamp, setBlockTimestamp] = useState(0);
@@ -63,12 +68,12 @@ export default function useLimitOrderBook({ account, onOrderChange }) {
     try {
       const provider = new ethers.JsonRpcProvider(RPC_URL, deployment.chainId, { staticNetwork: true });
       const historyProvider = new ethers.JsonRpcProvider(ORDER_HISTORY_RPC_URL, deployment.chainId, { staticNetwork: true });
-      const orderBook = new ethers.Contract(deployment.contracts.limitOrderBook, LIMIT_ORDER_ABI, provider);
+      const orderBook = new ethers.Contract(orderBookAddress, LIMIT_ORDER_ABI, provider);
       const feed = new ethers.Contract(deployment.feeds.ethUsd, CHAINLINK_FEED_ABI, provider);
       const [latestBlock, historyLatestBlock, deploymentReceipt, priceDecimals, maxOracleAge] = await Promise.all([
         provider.getBlock('latest'),
         historyProvider.getBlockNumber(),
-        provider.getTransactionReceipt(deployment.deploymentTransactions.limitOrderBook),
+        provider.getTransactionReceipt(deploymentTransactionHash),
         orderBook.priceDecimals(),
         orderBook.MAX_ORACLE_AGE(),
       ]);
@@ -88,7 +93,7 @@ export default function useLimitOrderBook({ account, onOrderChange }) {
       }
       const identity = {
         chainId: deployment.chainId,
-        contractAddress: deployment.contracts.limitOrderBook,
+        contractAddress: orderBookAddress,
         deploymentBlock: deploymentReceipt.blockNumber,
       };
       let baseIndex = finalizedIndex.current
@@ -98,7 +103,7 @@ export default function useLimitOrderBook({ account, onOrderChange }) {
       const fromBlock = Math.max(deploymentReceipt.blockNumber, baseIndex.checkpointBlock + 1);
       const [eventsResult, oracleResult] = await Promise.allSettled([
         queryLogsInChunks(historyProvider, {
-          address: deployment.contracts.limitOrderBook,
+          address: orderBookAddress,
           topics: [lifecycleTopics],
         }, fromBlock, eventTip),
         feed.latestRoundData(),
@@ -124,7 +129,7 @@ export default function useLimitOrderBook({ account, onOrderChange }) {
         && fromBlock > deploymentReceipt.blockNumber
       ) {
         const rebuildLogs = await queryLogsInChunks(historyProvider, {
-          address: deployment.contracts.limitOrderBook,
+          address: orderBookAddress,
           topics: [lifecycleTopics],
         }, deploymentReceipt.blockNumber, eventTip);
         const rebuildEvents = rebuildLogs
@@ -224,9 +229,12 @@ export default function useLimitOrderBook({ account, onOrderChange }) {
         setRefreshing(false);
       }
     }
-  }, []);
+  }, [deploymentTransactionHash, orderBookAddress]);
 
   useEffect(() => {
+    finalizedIndex.current = null;
+    previousStates.current = null;
+    setLoading(true);
     refresh();
     const timer = window.setInterval(() => {
       if (document.visibilityState === 'visible') refresh({ quiet: true });

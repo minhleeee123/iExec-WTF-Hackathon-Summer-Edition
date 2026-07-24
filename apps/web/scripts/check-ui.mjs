@@ -417,6 +417,13 @@ try {
     await walletPage.locator('.safe-operation-tabs').waitFor();
     assert.equal(await walletPage.locator('.safe-operation-tabs [role="tab"]').count(), 2, 'Safe orders must separate manual order and Strategy Agent');
     assert.equal(await walletPage.locator('.safe-orders-layout.orders-layout').count(), 1, 'Safe orders must reuse the product orders layout pattern');
+    const safeOrderBook = walletPage.locator('.safe-orders-layout .public-orderbook');
+    await safeOrderBook.getByRole('heading', { name: 'Public execution, private terms' }).waitFor();
+    await safeOrderBook.locator('.public-order-row').first().waitFor({ timeout: 30_000 });
+    assert(await safeOrderBook.locator('.public-order-row').count() >= 1, 'Safe public orderbook must render indexed Sepolia orders');
+    assert.equal(await safeOrderBook.getByLabel('Order owner').locator('option[value="mine"]').textContent(), 'Safe orders');
+    const safeOrderBookLayout = await safeOrderBook.evaluate((element) => ({ clientWidth: element.clientWidth, scrollWidth: element.scrollWidth }));
+    assert(safeOrderBookLayout.scrollWidth <= safeOrderBookLayout.clientWidth, 'Safe public orderbook content must stay inside its card');
     await walletPage.getByRole('tab', { name: 'Strategy Agent', exact: true }).click();
     await walletPage.getByLabel('Trading intent').fill('Sell 0.01 cETH when ETH reaches $2,500. Expire in 6 hours.');
     await walletPage.getByRole('button', { name: 'Generate private strategy draft' }).click();

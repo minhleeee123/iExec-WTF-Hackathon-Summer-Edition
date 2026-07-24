@@ -17,6 +17,7 @@ const OPERATION_LABELS = [
   [/^safe-swap$/, 'Safe protected swap'],
   [/^safe-order$/, 'Safe limit order'],
   [/^safe-cancel-/, 'Safe order cancellation'],
+  [/^(execute|expire)-safe-order-/, 'Safe order settlement'],
   [/^safe-viewer$/, 'Safe viewer access'],
   [/^safe-operator-/, 'Safe operator authorization'],
   [/^safe-enable$/, 'Safe module enable'],
