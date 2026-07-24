@@ -118,7 +118,7 @@ export default function LandingPage({ ethPrice }) {
           <p className="hero-offer">Confidential execution for swaps, limit orders, and ERC-7984 assets.</p>
           <p className="hero-summary">Trade without publishing amount, balance, minOut, output, or pool reserves as plaintext on-chain.</p>
           <div className="hero-actions">
-            <Link className="launch-button" to="/app/trade">Launch app <ArrowRight size={20} /></Link>
+            <Link className="launch-button" to="/app/wallet">Launch app <ArrowRight size={20} /></Link>
             <Link className="outline-button" to="/app/safe">Open Safe Treasury <ShieldCheck size={18} /></Link>
             <a className="outline-button" href={deployment.explorerUrl} target="_blank" rel="noreferrer">View contracts <ExternalLink size={18} /></a>
           </div>

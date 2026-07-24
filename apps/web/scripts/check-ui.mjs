@@ -135,6 +135,8 @@ try {
       assert.equal(await page.locator('.capability-row').count(), 5, 'landing must expose all five product workflows');
       assert.equal(await page.locator('.landing-safe-flow > span').count(), 3, 'landing must explain the Safe signer, custody, and module boundary');
       assert.equal(await page.getByRole('link', { name: /Open Safe Treasury/i }).count() >= 1, true, 'landing must link directly to Safe Treasury');
+      const launchTargets = await page.getByRole('link', { name: /^Launch app/i }).evaluateAll((links) => links.map((link) => new URL(link.href).pathname));
+      assert(launchTargets.length >= 2 && launchTargets.every((target) => target === '/app/wallet'), 'all generic landing launch actions must start in Wallet');
       assert.equal(await page.locator('.privacy-matrix > div').count(), 2, 'landing must explain public and encrypted data');
       assert.equal(await page.locator('.faq-list details').count(), 10, 'landing must contain the complete FAQ set');
       await page.locator('.faq-list summary').first().click();
@@ -147,6 +149,8 @@ try {
       assert.equal(await page.locator('#safe .docs-order-grid > div').count(), 3, 'docs must map all Safe workspace responsibilities');
       assert.match(await page.locator('#safe').textContent(), /Signer is not custody/i);
       assert.equal(await page.getByRole('link', { name: /Open Safe Treasury/i }).count(), 1, 'docs must link directly to Safe Treasury');
+      assert.equal(await page.getByRole('link', { name: 'Open the app' }).getAttribute('href'), '/app/wallet', 'docs entry action must start in Wallet');
+      assert.equal(await page.getByRole('link', { name: /Launch NoxSwap/i }).getAttribute('href'), '/app/wallet', 'docs final launch action must start in Wallet');
       await page.locator('.docs-toc a[href="#safe"]').click();
       await page.waitForFunction(() => document.querySelector('.docs-toc a[href="#safe"]')?.classList.contains('active'));
       const docsLayout = await page.evaluate(() => ({
@@ -159,11 +163,17 @@ try {
       await page.goto(url, { waitUntil: 'domcontentloaded' });
       await page.locator('.landing-hero .launch-button').waitFor();
       await page.locator('.landing-hero .launch-button').click();
-      await page.waitForURL(`${url}/app/trade`);
-      await page.locator('.page-heading h1').filter({ hasText: 'Trade' }).waitFor();
-      assert.equal(await page.title(), 'Trade | NoxSwap');
+      await page.waitForURL(`${url}/app/wallet`);
+      await page.locator('.page-heading h1').filter({ hasText: 'Wallet' }).waitFor();
+      assert.equal(await page.title(), 'Wallet | NoxSwap');
       const getNav = () => page.getByTestId(viewport.width <= 900 ? 'mobile-primary-nav' : 'desktop-primary-nav');
       assert(await getNav().isVisible(), `${viewport.name} primary navigation is not visible`);
+      const primaryNavigationLabels = await getNav().locator('a').allTextContents();
+      assert(
+        primaryNavigationLabels.findIndex((label) => label.includes('Activity'))
+          < primaryNavigationLabels.findIndex((label) => label.includes('Safe')),
+        `${viewport.name} must place Activity before Safe Treasury`,
+      );
       assert.equal(await page.locator('[role="tab"][aria-selected="true"]').count(), 1, `${viewport.name} must expose one selected workflow tab`);
       assert.equal(await page.locator('[role="tabpanel"][aria-labelledby]').count(), 1, `${viewport.name} workflow panel must be labelled by its tab`);
       if (viewport.width > 900) {
@@ -186,6 +196,9 @@ try {
         await walletDrawer.waitFor({ state: 'hidden' });
       }
 
+      await getNav().getByRole('link', { name: /Trade/ }).click();
+      await page.waitForURL(`${url}/app/trade`);
+      await page.locator('.page-heading h1').filter({ hasText: 'Trade' }).waitFor();
       await page.getByRole('tab', { name: 'Strategy Agent' }).click();
       await page.waitForURL(`${url}/app/trade?mode=agent`);
       await page.getByLabel('Trading intent').fill('Sell 0.01 cETH when ETH reaches $2,500. Expire in 6 hours.');

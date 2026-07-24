@@ -90,7 +90,7 @@ export default function DocsPage() {
             manage confidential limit orders, and operate Safe-owned confidential assets without exposing private terms on-chain.
           </p>
           <div className="docs-hero-actions">
-            <Link className="launch-button" to="/app/trade">Open the app <ArrowRight size={18} /></Link>
+            <Link className="launch-button" to="/app/wallet">Open the app <ArrowRight size={18} /></Link>
             <Link className="outline-button" to="/app/safe">Open Safe Treasury <ShieldCheck size={18} /></Link>
             <a className="outline-button" href="#quickstart">Start with the guide</a>
           </div>
@@ -223,7 +223,7 @@ export default function DocsPage() {
             <div className="docs-contract-table" role="table" aria-label="NoxSwap Sepolia contracts">
               {contractRows.map(([label, address]) => <div className="docs-contract-row" role="row" key={label}><strong role="cell">{label}</strong><ContractAddress address={address} /></div>)}
             </div>
-            <div className="docs-dark-actions"><a className="outline-button" href={deployment.explorerUrl} target="_blank" rel="noreferrer">Open router on Etherscan <ExternalLink size={17} /></a><Link className="launch-button" to="/app/trade">Launch NoxSwap <ArrowRight size={17} /></Link></div>
+            <div className="docs-dark-actions"><a className="outline-button" href={deployment.explorerUrl} target="_blank" rel="noreferrer">Open router on Etherscan <ExternalLink size={17} /></a><Link className="launch-button" to="/app/wallet">Launch NoxSwap <ArrowRight size={17} /></Link></div>
           </section>
         </div>
       </div>

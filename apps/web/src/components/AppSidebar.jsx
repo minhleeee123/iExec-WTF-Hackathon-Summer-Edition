@@ -8,8 +8,8 @@ import useDialogFocus from '../hooks/useDialogFocus';
 const navigation = [
   { to: '/app/wallet', label: 'Wallet', description: 'Assets and access', icon: Boxes },
   { to: '/app/trade', label: 'Trade', description: 'Swap and orders', icon: ArrowLeftRight },
-  { to: '/app/safe', label: 'Safe Treasury', mobileLabel: 'Safe', description: 'Smart account custody', icon: ShieldCheck },
   { to: '/app/activity', label: 'Activity', description: 'History and proofs', icon: Activity },
+  { to: '/app/safe', label: 'Safe Treasury', mobileLabel: 'Safe', description: 'Smart account custody', icon: ShieldCheck },
 ];
 
 function AccountControl({ account, busy, onAccountAction, onChangeWallet, walletName }) {

@@ -18,7 +18,7 @@ export default function LandingHeader() {
         <a href={landingAnchor('privacy')}>Privacy</a>
         <a href={landingAnchor('faq')}>FAQ</a>
         <Link className="landing-header-docs" to="/docs" aria-current={location.pathname === '/docs' ? 'page' : undefined}>Docs</Link>
-        <Link className="landing-header-launch" to="/app/trade">Launch app <ArrowRight size={17} /></Link>
+        <Link className="landing-header-launch" to="/app/wallet">Launch app <ArrowRight size={17} /></Link>
       </nav>
     </header>
   );
