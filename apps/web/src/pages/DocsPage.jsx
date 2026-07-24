@@ -136,7 +136,7 @@ export default function DocsPage() {
               <article className="docs-card"><FileKey2 size={22} /><h3>Reveal</h3><p>Reveal uses the Nox Gateway authorization flow to decrypt the current handle in the browser session. No gas is charged for the signature.</p></article>
               <article className="docs-card"><Workflow size={22} /><h3>Wrap / unwrap</h3><p>The first wrap grants the official test wrapper a reusable allowance; later wraps need only one transaction. Unwrap returns public n-assets after the confidential operation completes.</p></article>
             </div>
-            <div className="docs-callout docs-callout-warning"><CircleAlert size={18} /><p><strong>Reveal is session state.</strong> After a balance-changing operation, account change, network change, or handle change, reveal the refreshed balance again. NoxSwap does not persist plaintext balances.</p></div>
+            <div className="docs-callout docs-callout-warning"><CircleAlert size={18} /><p><strong>Reveal is session state.</strong> If a balance was already visible, NoxSwap attempts to decrypt its refreshed handle after a balance-changing operation without adding another viewer grant. If that authorization is unavailable, the control changes to Reveal again. Reloading, changing account, or changing network clears plaintext state.</p></div>
           </section>
 
           <section className="docs-section" id="swaps">
@@ -149,7 +149,7 @@ export default function DocsPage() {
               <div><CheckCircle2 size={18} /><p><strong>A failed minimum refunds the input.</strong> If encrypted minOut rejects settlement, the router performs the protected refund path. The receipt records the attempt and the returned refund handle.</p></div>
               <div><CheckCircle2 size={18} /><p><strong>Zero protection is explicit.</strong> Entering zero requires the separate confirmation control. Use it only when accepting any positive output is intentional.</p></div>
             </div>
-            <div className="docs-callout docs-callout-info"><ShieldCheck size={18} /><p><strong>Recommended test flow:</strong> reveal the input balance, leave the suggested minOut and 10% tolerance unchanged, review the encrypted swap in MetaMask, then reveal the refreshed balance after settlement.</p></div>
+            <div className="docs-callout docs-callout-info"><ShieldCheck size={18} /><p><strong>Recommended test flow:</strong> reveal the input balance, leave the suggested minOut and 10% tolerance unchanged, then review the encrypted swap in MetaMask. After settlement, an already revealed balance refreshes automatically when its viewer authorization remains valid.</p></div>
           </section>
 
           <section className="docs-section docs-section-soft" id="orders">
@@ -213,7 +213,7 @@ export default function DocsPage() {
               <details><summary>The wrong wallet provider appears.</summary><p>Disconnect or close competing injected wallets, reopen the wallet picker, and select the intended provider explicitly. NoxSwap remembers your provider preference for the browser.</p></details>
               <details><summary>The app says the network is wrong.</summary><p>Switch the selected wallet to Ethereum Sepolia (chain ID 11155111). Read-only public data can load without a wallet, but writes require the correct network.</p></details>
               <details><summary>A swap is refunded by encrypted minOut.</summary><p>That is the protection path, not a lost transaction. Increase the oracle tolerance, use a lower manual minimum, or retry after the pool/reference price changes. Never disable protection without understanding the trade-off.</p></details>
-              <details><summary>The balance looks hidden after a swap.</summary><p>Settlement changes the encrypted handle. Use the eye control to request a fresh reveal for the new handle; the previous plaintext is intentionally not reused.</p></details>
+              <details><summary>The balance looks hidden after a swap or unwrap.</summary><p>NoxSwap normally refreshes balances that were already revealed in this session. If the new encrypted handle does not carry the existing viewer authorization or Gateway refresh is temporarily unavailable, use Reveal again. This fallback never exposes or persists the previous plaintext.</p></details>
               <details><summary>The orderbook or Chainlink status is unavailable.</summary><p>Wait for the public RPC and oracle reads to recover, then use Refresh. The orderbook is read-only without a wallet, and manual settlement remains available whenever readiness checks pass.</p></details>
               <details><summary>The Safe module is revoked.</summary><p>Safe balances, owners, and threshold remain unchanged, but Nox operations pause. Connect the configured Safe owner, open Safe Treasury, review the canonical module address, and use Enable Nox module.</p></details>
               <details><summary>A Safe unwrap request is waiting for finalization.</summary><p>Open Safe Treasury → Swap &amp; Unwrap. The confirmed request ID appears under pending proof finalization and can be retried without creating or signing a second unwrap request.</p></details>

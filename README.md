@@ -80,7 +80,7 @@ The router computes the 0.30% fee and constant-product quote using `Nox.mul`, `N
 - Read the Sepolia Chainlink ETH/USD feed for a clearly labeled UI reference estimate.
 - Draft a strict limit-order plan from natural language and public Chainlink context; private percentage math and Nox encryption remain in the browser and every transaction still requires MetaMask.
 - Select MetaMask, Coinbase Wallet, or Rabby through EIP-6963 provider discovery without falling back to a different injected wallet.
-- Configure a 0.5%-10% Chainlink-reference tolerance for swap `minOut` (10% default for the current test-pool/reference basis), then refresh and re-decrypt new balance handles after settlement.
+- Configure a 0.5%-10% Chainlink-reference tolerance for swap `minOut` (10% default for the current test-pool/reference basis); balances already revealed in the current session are automatically refreshed after settlement when the existing viewer authorization remains valid.
 - Revoke an ERC-7984 OrderBook operator authorization for the selected input token; already escrowed orders remain active until settlement or cancellation.
 - Fund a Safe-owned ERC-7984 treasury, prepare Nox ciphertext ACLs without spend authority, and settle protected swaps only through the Safe threshold.
 - Batch Safe amount/minOut preparation and missing viewer grants, automatically restore allowlisted router/order-book operators in the reviewed Safe execution, and use Safe's prevalidated 1-of-1 path so each Safe action needs only its transaction confirmation.

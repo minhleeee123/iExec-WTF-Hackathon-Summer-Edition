@@ -177,6 +177,12 @@ Rules:
 - Public balances are immediately readable after chain refresh.
 - Confidential balances display bullets until authorized.
 - Plaintext confidential balances remain session-only.
+- If balances were already revealed, balance-changing operations attempt to
+  decrypt the refreshed handles in the same session. They never create a new
+  viewer grant without an explicit user action; failed refreshes fall back to
+  `Reveal again`.
+- Reloading, changing the connected account, or changing the network clears
+  revealed balance state.
 - Faucet and wrap actions stay in the Wallet workspace, not in the sidebar.
 - The same balance hierarchy appears inside the mobile wallet drawer.
 
@@ -229,8 +235,12 @@ Higher-threshold execution belongs in the Safe Wallet interface.
 - Busy actions replace the relevant icon with a spinner and disable duplicate
   submission.
 
-Notices live in document flow above page content so they never cover headings or
-controls.
+Operation notices use a fixed toast viewport at the lower-right on desktop and
+above the bottom navigation on mobile. Pending notices remain visible until the
+operation changes state; success notices dismiss automatically; errors remain
+until resolved or dismissed. Buttons and cards still show their own busy state,
+while Activity preserves durable transaction history. A single operation
+updates one toast instead of stacking duplicate pending and success messages.
 
 Empty states must explain what is absent and, where useful, the action needed to
 create data. Do not use fake transactions or balances to fill an empty state.

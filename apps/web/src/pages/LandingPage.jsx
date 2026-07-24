@@ -68,7 +68,7 @@ const privateData = [
 const faqs = [
   {
     question: 'Why do I connect my wallet and then sign again to reveal a balance?',
-    answer: 'Connecting exposes your address but does not authorize plaintext access. The second EIP-712 signature authorizes the Nox Gateway for the current account, network, and balance handle. NoxSwap keeps the result only in React session state and asks again after those inputs change.',
+    answer: 'Connecting exposes your address but does not authorize plaintext access. Reveal authorizes the Nox Gateway for the current account, network, and balance handle. NoxSwap keeps plaintext only in React session state and automatically refreshes changed handles when the existing viewer authorization remains valid; otherwise it asks you to reveal again.',
   },
   {
     question: 'What is the difference between nUSDC and cUSDC?',
