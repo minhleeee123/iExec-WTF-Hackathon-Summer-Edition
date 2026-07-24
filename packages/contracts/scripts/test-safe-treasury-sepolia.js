@@ -87,6 +87,19 @@ async function publicDecryptWithRetry(client, handle, attempts = 12) {
   throw lastError;
 }
 
+async function privateDecryptWithRetry(client, handle, attempts = 12) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await client.decrypt(handle);
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, 5_000));
+    }
+  }
+  throw lastError;
+}
+
 async function main() {
   const provider = new JsonRpcProvider(rpcUrl, 11155111, { staticNetwork: true });
   const wallet = new Wallet(privateKey, provider);
@@ -222,8 +235,8 @@ async function main() {
       assert.equal(await compute.isViewer(handle, wallet.address), true, `owner viewer ACL missing for ${handle}`);
     }
     const [output, refund] = await Promise.all([
-      client.decrypt(swap.args.encryptedOutput),
-      client.decrypt(swap.args.encryptedRefund),
+      privateDecryptWithRetry(client, swap.args.encryptedOutput),
+      privateDecryptWithRetry(client, swap.args.encryptedRefund),
     ]);
     assert.equal(output.value > 0n || refund.value === 1_000_000n, true, 'swap must settle or fully refund');
     console.log(`Safe auto-operator/ACL swap: PASS (receipt ${swap.args.receiptId})`);

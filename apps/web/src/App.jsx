@@ -844,7 +844,7 @@ export default function App() {
         next[token.symbol] = { ...snapshot[token.symbol], decrypted: 0n };
         continue;
       }
-      const decrypted = await retry(() => client.decrypt(handle), 6, 3000);
+      const decrypted = await retry(() => client.decrypt(handle), 12, 4000);
       next[token.symbol] = { ...snapshot[token.symbol], decrypted: decrypted.value };
     }
     setSafeBalances(next);
@@ -872,7 +872,7 @@ export default function App() {
     const client = await createHandleClient(wallet.signer);
     const wrapper = new ethers.Contract(token.wrapper, CONFIDENTIAL_TOKEN_ABI, wallet.signer);
     setNotice({ type: 'info', text: `Waiting for the public ${token.symbol} unwrap proof from Nox Gateway...` });
-    const publicResult = await retry(() => client.publicDecrypt(requestId), 6, 3000);
+    const publicResult = await retry(() => client.publicDecrypt(requestId), 12, 4000);
     const finalize = await wrapper.finalizeUnwrap(requestId, publicResult.decryptionProof);
     addLog(`Finalize Safe unwrap: ${formatToken(publicResult.value, token.decimals)} ${token.publicSymbol}`, finalize.hash);
     await finalize.wait();
@@ -998,8 +998,8 @@ export default function App() {
       const event = parseSafeModuleEvent(mined, module, 'SafeSwapExecuted');
       if (!event) throw new Error('SafeSwapExecuted event was not found.');
       const [decrypted, refund] = await Promise.all([
-        retry(() => client.decrypt(event.args.encryptedOutput), 6, 3000),
-        retry(() => client.decrypt(event.args.encryptedRefund), 6, 3000),
+        retry(() => client.decrypt(event.args.encryptedOutput), 12, 4000),
+        retry(() => client.decrypt(event.args.encryptedRefund), 12, 4000),
       ]);
       const received = formatToken(decrypted.value, output.decimals);
       const returned = formatToken(refund.value, input.decimals);
