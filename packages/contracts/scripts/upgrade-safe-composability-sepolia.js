@@ -66,7 +66,15 @@ async function main() {
     [current.contracts.cUSDC, current.contracts.cETH, current.contracts.cWBTC, current.contracts.cSOL],
   ]);
 
-  if (await safe.isModuleEnabled(current.safe.module)) {
+  const enableData = safe.interface.encodeFunctionData('enableModule', [module.address]);
+  const enableReceipt = await safeExec(safe, wallet, current.safe.address, enableData);
+  if (!(await safe.isModuleEnabled(module.address))) throw new Error('Upgraded Nox Safe module is not enabled.');
+
+  let disableReceipt;
+  if (
+    current.safe.module.toLowerCase() !== module.address.toLowerCase()
+    && await safe.isModuleEnabled(current.safe.module)
+  ) {
     const page = await safe.getModulesPaginated(SENTINEL, 100);
     let previous = SENTINEL;
     let found = false;
@@ -79,23 +87,25 @@ async function main() {
     }
     if (!found) throw new Error('Enabled legacy module was not found in the Safe module list.');
     const disableData = safe.interface.encodeFunctionData('disableModule', [previous, current.safe.module]);
-    await safeExec(safe, wallet, current.safe.address, disableData);
+    disableReceipt = await safeExec(safe, wallet, current.safe.address, disableData);
+    if (await safe.isModuleEnabled(current.safe.module)) {
+      throw new Error('Legacy Nox Safe module is still enabled.');
+    }
   }
-  const enableData = safe.interface.encodeFunctionData('enableModule', [module.address]);
-  const enableReceipt = await safeExec(safe, wallet, current.safe.address, enableData);
-  if (!(await safe.isModuleEnabled(module.address))) throw new Error('Upgraded Nox Safe module is not enabled.');
 
   const next = {
     ...current,
     safe: {
       ...current.safe,
       module: module.address,
+      moduleVersion: 4,
       moduleEnabled: true,
     },
     deploymentTransactions: {
       ...current.deploymentTransactions,
-      noxSafeModuleV3: module.transactionHash,
-      noxSafeModuleV3Enable: enableReceipt.hash,
+      noxSafeModuleV4: module.transactionHash,
+      noxSafeModuleV4Enable: enableReceipt.hash,
+      ...(disableReceipt ? { noxSafeModuleV3Disable: disableReceipt.hash } : {}),
     },
     noxSafeModuleExplorerUrl: `https://sepolia.etherscan.io/address/${module.address}`,
     deployedAt: new Date().toISOString(),

@@ -11,6 +11,7 @@ const deployment = JSON.parse(fs.readFileSync(path.join(rootDir, 'deployment-sep
 const rpcUrl = process.env.SEPOLIA_RPC_URL ?? process.env.SEPOLIA_RPC ?? 'https://ethereum-sepolia-rpc.publicnode.com';
 const privateKey = process.env.PRIVATE_KEY;
 const runUnwrap = process.env.SAFE_UNWRAP_E2E === 'true';
+const runPromptOptimization = process.env.SAFE_PROMPT_E2E === 'true';
 if (!privateKey) throw new Error('Set PRIVATE_KEY in the environment.');
 
 const artifact = (name) => JSON.parse(
@@ -45,7 +46,7 @@ async function executeSafe({ safe, signer, target, data }) {
     '0x0000000000000000000000000000000000000000',
     nonce,
   );
-  const signature = signer.signingKey.sign(transactionHash).serialized;
+  const signature = `0x${signer.address.slice(2).padStart(64, '0')}${'0'.repeat(64)}01`;
   return send('Execute Safe unwrap request', safe.execTransaction(
     target,
     0,
@@ -103,6 +104,46 @@ async function main() {
     assert.equal(await module.immutableToken(deployment.contracts[token]), true, `${token} must be allowlisted`);
   }
   console.log(`Safe module configuration: PASS (${formatEther(await provider.getBalance(wallet.address))} Sepolia ETH)`);
+
+  if (runPromptOptimization) {
+    const client = await createEthersHandleClient(wallet);
+    const [first, second] = await Promise.all([
+      client.encryptInput(1n, 'uint256', deployment.safe.module),
+      client.encryptInput(1n, 'uint256', deployment.safe.module),
+    ]);
+    await send(
+      'Prepare two Safe inputs in one transaction',
+      module.prepareInputs(
+        [first.handle, second.handle],
+        [first.handleProof, second.handleProof],
+        deployment.contracts.cUSDC,
+      ),
+    );
+    const balanceHandles = await Promise.all(
+      ['cUSDC', 'cETH', 'cWBTC', 'cSOL'].map(async (symbol) => {
+        const token = new Contract(
+          deployment.contracts[symbol],
+          artifact('NoxConfidentialToken').abi,
+          wallet,
+        );
+        return token.confidentialBalanceOf(deployment.safe.address);
+      }),
+    );
+    const initializedHandles = balanceHandles.filter((handle) => handle !== `0x${'0'.repeat(64)}`);
+    if (initializedHandles.length > 0) {
+      const grantData = module.interface.encodeFunctionData('addViewers', [
+        initializedHandles,
+        wallet.address,
+      ]);
+      await executeSafe({
+        safe,
+        signer: wallet,
+        target: deployment.safe.module,
+        data: grantData,
+      });
+    }
+    console.log('Safe prompt-optimization writes: PASS');
+  }
 
   if (!runUnwrap) {
     console.log('Safe unwrap write test: SKIP (set SAFE_UNWRAP_E2E=true to run)');
