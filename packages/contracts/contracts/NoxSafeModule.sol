@@ -42,7 +42,7 @@ interface INoxSafeOperator {
 
 interface INoxSafeCompute {
     function addViewer(bytes32 handle, address viewer) external;
-    function isAllowed(bytes32 handle, address viewer) external view returns (bool);
+    function isViewer(bytes32 handle, address viewer) external view returns (bool);
 }
 
 /**
@@ -384,7 +384,7 @@ contract NoxSafeModule {
     }
 
     function _grantViewerIfNeeded(bytes32 handle, address viewer) private {
-        if (handle == bytes32(0) || INoxSafeCompute(noxCompute).isAllowed(handle, viewer)) return;
+        if (handle == bytes32(0) || INoxSafeCompute(noxCompute).isViewer(handle, viewer)) return;
         bytes memory data = abi.encodeWithSelector(INoxSafeCompute.addViewer.selector, handle, viewer);
         _safeCall(noxCompute, data);
         emit SafeViewerAdded(safe, handle, viewer);

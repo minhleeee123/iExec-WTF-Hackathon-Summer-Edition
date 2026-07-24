@@ -155,7 +155,7 @@ async function main() {
     );
     const compute = new Contract(
       deployment.contracts.noxCompute,
-      ['function isAllowed(bytes32 handle,address viewer) view returns (bool)'],
+      ['function isViewer(bytes32 handle,address viewer) view returns (bool)'],
       wallet,
     );
     const revokeOperatorData = module.interface.encodeFunctionData('setTokenOperator', [
@@ -219,7 +219,7 @@ async function main() {
       inputBalanceHandle,
       outputBalanceHandle,
     ]) {
-      assert.equal(await compute.isAllowed(handle, wallet.address), true, `owner ACL missing for ${handle}`);
+      assert.equal(await compute.isViewer(handle, wallet.address), true, `owner viewer ACL missing for ${handle}`);
     }
     const [output, refund] = await Promise.all([
       client.decrypt(swap.args.encryptedOutput),

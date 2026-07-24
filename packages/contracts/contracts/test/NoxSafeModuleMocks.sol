@@ -109,7 +109,7 @@ contract NoxSafeModuleMockCompute {
         allowed[handle][viewer] = true;
     }
 
-    function isAllowed(bytes32 handle, address viewer) external view returns (bool) {
+    function isViewer(bytes32 handle, address viewer) external view returns (bool) {
         return allowed[handle][viewer];
     }
 }

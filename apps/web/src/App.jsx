@@ -822,7 +822,7 @@ export default function App() {
     const initialized = tokens.filter((token) => isHandle(snapshot[token.symbol]?.handle));
     const compute = new ethers.Contract(deployment.contracts.noxCompute, NOX_COMPUTE_ABI, wallet.provider);
     const permissions = await Promise.all(
-      initialized.map((token) => compute.isAllowed(snapshot[token.symbol].handle, wallet.address)),
+      initialized.map((token) => compute.isViewer(snapshot[token.symbol].handle, wallet.address)),
     );
     const missingHandles = initialized
       .filter((_, index) => !permissions[index])

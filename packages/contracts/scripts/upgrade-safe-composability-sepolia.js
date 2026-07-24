@@ -98,14 +98,14 @@ async function main() {
     safe: {
       ...current.safe,
       module: module.address,
-      moduleVersion: 4,
+      moduleVersion: 5,
       moduleEnabled: true,
     },
     deploymentTransactions: {
       ...current.deploymentTransactions,
-      noxSafeModuleV4: module.transactionHash,
-      noxSafeModuleV4Enable: enableReceipt.hash,
-      ...(disableReceipt ? { noxSafeModuleV3Disable: disableReceipt.hash } : {}),
+      noxSafeModuleV5: module.transactionHash,
+      noxSafeModuleV5Enable: enableReceipt.hash,
+      ...(disableReceipt ? { noxSafeModuleV4Disable: disableReceipt.hash } : {}),
     },
     noxSafeModuleExplorerUrl: `https://sepolia.etherscan.io/address/${module.address}`,
     deployedAt: new Date().toISOString(),

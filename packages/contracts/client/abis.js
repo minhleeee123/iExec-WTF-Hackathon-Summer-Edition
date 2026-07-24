@@ -26,7 +26,7 @@ export const CONFIDENTIAL_TOKEN_ABI = [
 ];
 
 export const NOX_COMPUTE_ABI = [
-  'function isAllowed(bytes32 handle,address viewer) view returns (bool)',
+  'function isViewer(bytes32 handle,address viewer) view returns (bool)',
 ];
 
 export const NOX_SWAP_ABI = [
