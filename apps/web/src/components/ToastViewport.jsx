@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleAlert, ExternalLink, Info, LoaderCircle, X } from 'lucide-react';
+import { Check, CheckCircle2, CircleAlert, ExternalLink, Info, LoaderCircle, X } from 'lucide-react';
 
 function ToastIcon({ notice }) {
   if (notice.pending) return <LoaderCircle className="spin" size={18} />;
@@ -21,8 +21,21 @@ export default function ToastViewport({ notices = [], onDismiss }) {
         >
           <span className="toast-icon" aria-hidden="true"><ToastIcon notice={notice} /></span>
           <div className="toast-content">
-            <strong>{notice.pending ? 'In progress' : notice.type === 'success' ? 'Confirmed' : notice.type === 'error' ? 'Action needed' : 'Update'}</strong>
-            <p>{notice.text}</p>
+            <strong>{notice.title ?? (notice.pending ? 'In progress' : notice.type === 'success' ? 'Confirmed' : notice.type === 'error' ? 'Action needed' : 'Update')}</strong>
+            {notice.steps ? (
+              <ol className="toast-steps">
+                {notice.steps.map((step, index) => (
+                  <li className={`toast-step toast-step-${step.state}`} key={`${index}-${step.text}`}>
+                    <span aria-hidden="true">
+                      {step.state === 'complete' && <Check size={12} />}
+                      {step.state === 'failed' && <CircleAlert size={12} />}
+                      {step.state === 'active' && <LoaderCircle className="spin" size={12} />}
+                    </span>
+                    <p>{step.text}</p>
+                  </li>
+                ))}
+              </ol>
+            ) : <p>{notice.text}</p>}
             {notice.href && (
               <a href={notice.href} target="_blank" rel="noreferrer">
                 {notice.actionLabel ?? 'View receipt'} <ExternalLink size={12} />
