@@ -59,11 +59,26 @@ contract NoxSafeModuleMockToken {
     address public lastUnwrapRecipient;
     bytes32 public lastUnwrapAmount;
     uint48 public lastUntil;
+    bytes32 public balanceHandle = bytes32(uint256(0x7777));
+    mapping(address holder => mapping(address operator => uint48 until)) public operatorUntil;
 
     function setOperator(address operator, uint48 until) external {
         lastCaller = msg.sender;
         lastOperator = operator;
         lastUntil = until;
+        operatorUntil[msg.sender][operator] = until;
+    }
+
+    function isOperator(address holder, address operator) external view returns (bool) {
+        return operatorUntil[holder][operator] >= block.timestamp;
+    }
+
+    function confidentialBalanceOf(address) external view returns (bytes32) {
+        return balanceHandle;
+    }
+
+    function setBalanceHandle(bytes32 handle) external {
+        balanceHandle = handle;
     }
 
     function unwrap(
@@ -83,10 +98,18 @@ contract NoxSafeModuleMockCompute {
     address public lastCaller;
     bytes32 public lastHandle;
     address public lastViewer;
+    uint256 public viewerCalls;
+    mapping(bytes32 handle => mapping(address viewer => bool allowed)) public allowed;
 
     function addViewer(bytes32 handle, address viewer) external {
         lastCaller = msg.sender;
         lastHandle = handle;
         lastViewer = viewer;
+        viewerCalls++;
+        allowed[handle][viewer] = true;
+    }
+
+    function isAllowed(bytes32 handle, address viewer) external view returns (bool) {
+        return allowed[handle][viewer];
     }
 }

@@ -120,7 +120,7 @@ async function deployFixture() {
 
 test('NoxSafeModule executes a private swap through the Safe and preserves Safe custody', async () => {
   const fixture = await deployFixture();
-  const { ethers, owner, safe, module, router } = fixture;
+  const { ethers, owner, safe, module, router, compute } = fixture;
   const tokenIn = await fixture.token.getAddress();
   const tokenOut = await fixture.tokenOut.getAddress();
   const data = module.interface.encodeFunctionData('confidentialSwap', [
@@ -140,6 +140,11 @@ test('NoxSafeModule executes a private swap through the Safe and preserves Safe 
   assert.equal(await router.lastCaller(), await safe.getAddress());
   assert.equal(await router.lastTokenIn(), tokenIn);
   assert.equal(await router.swapCalls(), 1n);
+  assert.equal(await fixture.token.lastOperator(), await router.getAddress());
+  assert.equal(await fixture.token.lastUntil(), 281474976710655n);
+  assert.equal(await compute.allowed(ethers.zeroPadValue('0x1111', 32), owner.address), true);
+  assert.equal(await compute.allowed(ethers.zeroPadValue('0x2222', 32), owner.address), true);
+  assert.equal(await compute.allowed(ethers.zeroPadValue('0x7777', 32), owner.address), true);
 });
 
 test('NoxSafeModule routes order creation and operator authorization with Safe as msg.sender', async () => {
@@ -159,6 +164,8 @@ test('NoxSafeModule routes order creation and operator authorization with Safe a
   await safeExec(fixture, await module.getAddress(), orderData);
   assert.equal(await orderBook.lastCaller(), await safe.getAddress());
   assert.equal(await orderBook.orderCalls(), 1n);
+  assert.equal(await token.lastOperator(), await orderBook.getAddress());
+  assert.equal(await fixture.compute.allowed(ethers.zeroPadValue('0x7777', 32), owner.address), true);
 
   const operatorData = module.interface.encodeFunctionData('setTokenOperator', [
     tokenIn,
@@ -248,6 +255,12 @@ test('NoxSafeModule grants viewers through Safe custody and cannot be called by 
   assert.equal(await compute.lastHandle(), handle);
   assert.equal(await compute.lastViewer(), viewer);
 
+  const secondHandle = ethers.zeroPadValue('0x56', 32);
+  const batch = module.interface.encodeFunctionData('addViewers', [[handle, secondHandle], viewer]);
+  await safeExec(fixture, await module.getAddress(), batch);
+  assert.equal(await compute.allowed(secondHandle, viewer), true);
+  assert.equal(await compute.viewerCalls(), 2n, 'an existing viewer grant must be skipped');
+
   await assert.rejects(
     module.connect(owner).confidentialSwap(
       await fixture.token.getAddress(),
@@ -258,6 +271,18 @@ test('NoxSafeModule grants viewers through Safe custody and cannot be called by 
       4_000_000_000n,
     ),
     /OnlySafe|revert/i,
+  );
+});
+
+test('NoxSafeModule rejects empty viewer batches', async () => {
+  const fixture = await deployFixture();
+  const data = fixture.module.interface.encodeFunctionData('addViewers', [
+    [],
+    fixture.owner.address,
+  ]);
+  await assert.rejects(
+    safeExec(fixture, await fixture.module.getAddress(), data),
+    /revert|GS013/i,
   );
 });
 

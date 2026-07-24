@@ -36,10 +36,13 @@ interface INoxSafeHost {
 
 interface INoxSafeOperator {
     function setOperator(address operator, uint48 until) external;
+    function isOperator(address holder, address operator) external view returns (bool);
+    function confidentialBalanceOf(address holder) external view returns (bytes32);
 }
 
 interface INoxSafeCompute {
     function addViewer(bytes32 handle, address viewer) external;
+    function isAllowed(bytes32 handle, address viewer) external view returns (bool);
 }
 
 /**
@@ -61,6 +64,7 @@ contract NoxSafeModule {
     error InvalidOperator();
     error InvalidConsumer();
     error InvalidRecipient();
+    error InvalidBatch();
     error SafeCallFailed(address target, bytes data);
     error InvalidReturnData();
 
@@ -153,6 +157,32 @@ contract NoxSafeModule {
         bytes calldata inputProof,
         address consumer
     ) external onlySafeOwner onlyEnabled returns (bytes32 preparedHandle) {
+        preparedHandle = _prepareInput(encryptedInput, inputProof, consumer);
+    }
+
+    /**
+     * @notice Prepare multiple encrypted inputs for one reviewed operation.
+     *         This collapses amount/minOut preparation into one owner write
+     *         without granting any additional consumer authority.
+     */
+    function prepareInputs(
+        externalEuint256[] calldata encryptedInputs,
+        bytes[] calldata inputProofs,
+        address consumer
+    ) external onlySafeOwner onlyEnabled returns (bytes32[] memory preparedHandles) {
+        uint256 length = encryptedInputs.length;
+        if (length == 0 || length != inputProofs.length) revert InvalidBatch();
+        preparedHandles = new bytes32[](length);
+        for (uint256 i = 0; i < length; i++) {
+            preparedHandles[i] = _prepareInput(encryptedInputs[i], inputProofs[i], consumer);
+        }
+    }
+
+    function _prepareInput(
+        externalEuint256 encryptedInput,
+        bytes calldata inputProof,
+        address consumer
+    ) private returns (bytes32 preparedHandle) {
         if (consumer != router && consumer != orderBook && !immutableToken[consumer]) {
             revert InvalidConsumer();
         }
@@ -180,6 +210,7 @@ contract NoxSafeModule {
         _requireToken(tokenIn);
         _requireToken(tokenOut);
         if (!INoxSafeHost(safe).isOwner(receiptOwner)) revert OnlySafeOwner();
+        _ensureOperator(tokenIn, router);
         bytes memory data = abi.encodeWithSignature(
             "confidentialSwapAuthorized(address,address,bytes32,bytes32,address,address,address,uint64)",
             tokenIn,
@@ -194,6 +225,10 @@ contract NoxSafeModule {
         bytes memory returnData = _safeCallWithReturnData(router, data);
         if (returnData.length != 96) revert InvalidReturnData();
         (encryptedOutput, encryptedRefund, receiptId) = abi.decode(returnData, (bytes32, bytes32, uint256));
+        _grantViewerIfNeeded(encryptedOutput, receiptOwner);
+        _grantViewerIfNeeded(encryptedRefund, receiptOwner);
+        _grantBalanceViewerIfInitialized(tokenIn, receiptOwner);
+        _grantBalanceViewerIfInitialized(tokenOut, receiptOwner);
         emit SafeSwapExecuted(safe, tokenIn, tokenOut, encryptedOutput, encryptedRefund, receiptId);
     }
 
@@ -212,6 +247,7 @@ contract NoxSafeModule {
         _requireToken(tokenIn);
         _requireToken(tokenOut);
         if (!INoxSafeHost(safe).isOwner(receiptOwner)) revert OnlySafeOwner();
+        _ensureOperator(tokenIn, orderBook);
         bytes memory data = abi.encodeWithSignature(
             "createOrderAuthorized(address,address,bytes32,bytes32,address,uint256,uint64)",
             tokenIn,
@@ -225,6 +261,7 @@ contract NoxSafeModule {
         bytes memory returnData = _safeCallWithReturnData(orderBook, data);
         if (returnData.length != 32) revert InvalidReturnData();
         orderId = abi.decode(returnData, (uint256));
+        _grantBalanceViewerIfInitialized(tokenIn, receiptOwner);
         emit SafeOrderCreated(safe, orderId);
     }
 
@@ -271,6 +308,9 @@ contract NoxSafeModule {
         bytes memory returnData = _safeCallWithReturnData(token, data);
         if (returnData.length != 32) revert InvalidReturnData();
         unwrapRequestId = abi.decode(returnData, (bytes32));
+        if (INoxSafeHost(safe).isOwner(recipient)) {
+            _grantBalanceViewerIfInitialized(token, recipient);
+        }
         emit SafeUnwrapRequested(safe, token, recipient, unwrapRequestId);
     }
 
@@ -297,9 +337,19 @@ contract NoxSafeModule {
      */
     function addViewer(bytes32 handle, address viewer) external onlySafe onlyEnabled {
         if (viewer == address(0)) revert InvalidAddress();
-        bytes memory data = abi.encodeWithSelector(INoxSafeCompute.addViewer.selector, handle, viewer);
-        _safeCall(noxCompute, data);
-        emit SafeViewerAdded(safe, handle, viewer);
+        _grantViewerIfNeeded(handle, viewer);
+    }
+
+    /**
+     * @notice Grant one viewer access to several current Safe handles in one
+     *         threshold-approved transaction. Existing grants are skipped.
+     */
+    function addViewers(bytes32[] calldata handles, address viewer) external onlySafe onlyEnabled {
+        if (viewer == address(0)) revert InvalidAddress();
+        if (handles.length == 0) revert InvalidBatch();
+        for (uint256 i = 0; i < handles.length; i++) {
+            _grantViewerIfNeeded(handles[i], viewer);
+        }
     }
 
     /**
@@ -315,6 +365,29 @@ contract NoxSafeModule {
 
     function _requireToken(address token) private view {
         if (!immutableToken[token]) revert InvalidToken();
+    }
+
+    function _ensureOperator(address token, address operator) private {
+        if (INoxSafeOperator(token).isOperator(safe, operator)) return;
+        bytes memory data = abi.encodeWithSelector(
+            INoxSafeOperator.setOperator.selector,
+            operator,
+            type(uint48).max
+        );
+        _safeCall(token, data);
+        emit SafeTokenOperatorUpdated(safe, token, operator, type(uint48).max);
+    }
+
+    function _grantBalanceViewerIfInitialized(address token, address viewer) private {
+        bytes32 handle = INoxSafeOperator(token).confidentialBalanceOf(safe);
+        if (handle != bytes32(0)) _grantViewerIfNeeded(handle, viewer);
+    }
+
+    function _grantViewerIfNeeded(bytes32 handle, address viewer) private {
+        if (handle == bytes32(0) || INoxSafeCompute(noxCompute).isAllowed(handle, viewer)) return;
+        bytes memory data = abi.encodeWithSelector(INoxSafeCompute.addViewer.selector, handle, viewer);
+        _safeCall(noxCompute, data);
+        emit SafeViewerAdded(safe, handle, viewer);
     }
 
     function _safeCall(address target, bytes memory data) private {
