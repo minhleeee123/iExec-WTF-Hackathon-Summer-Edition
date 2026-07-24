@@ -17,6 +17,11 @@ export default function SafePage({ safeProps }) {
   const [fundToken, setFundToken] = useState('cUSDC');
   const fundAsset = safeProps.tokens[fundToken];
   const fundValidation = validateTokenAmount(fundAmount, fundAsset.decimals, safeProps.balances?.[fundToken]?.public ?? null);
+  const revealLabel = safeProps.safeBalanceRefreshFailed
+    ? 'Reveal again'
+    : safeProps.safeBalancesVisible
+      ? 'Refresh reveal'
+      : 'Reveal';
 
   const selectSection = (nextSection) => {
     setSearchParams(nextSection === 'swap' ? {} : { section: nextSection }, { replace: true });
@@ -77,7 +82,7 @@ export default function SafePage({ safeProps }) {
             })}
           </div>
           <button className="outline-mini-button safe-page-reveal" onClick={safeProps.onReveal} disabled={!enabled || !safeProps.safe?.isOwner || Boolean(safeProps.busy)}>
-            {safeProps.busy === 'safe-reveal' ? <LoaderCircle className="spin" size={15} /> : <Eye size={15} />} Reveal
+            {safeProps.busy === 'safe-reveal' ? <LoaderCircle className="spin" size={15} /> : <Eye size={15} />} {safeProps.busy === 'safe-reveal' ? 'Revealing…' : revealLabel}
           </button>
           <div className="safe-page-fund">
             <label><span>Fund treasury</span><input value={fundAmount} onChange={(event) => setFundAmount(event.target.value)} inputMode="decimal" aria-label="Safe funding amount" /></label>

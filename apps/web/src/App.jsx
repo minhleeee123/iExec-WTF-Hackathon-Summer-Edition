@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ethers } from 'ethers';
 import { LoaderCircle } from 'lucide-react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
@@ -43,7 +43,7 @@ import AppModals from './components/AppModals';
 import WalletConnectModal from './components/WalletConnectModal';
 import LandingFooter from './components/LandingFooter';
 import LandingHeader from './components/LandingHeader';
-import NoticeBanner from './components/NoticeBanner';
+import ToastViewport from './components/ToastViewport';
 import DocsPage from './pages/DocsPage';
 import LandingPage from './pages/LandingPage';
 import './App.css';
@@ -121,6 +121,9 @@ export default function App() {
   const [safeOrders, setSafeOrders] = useState([]);
   const [safeActivity, setSafeActivity] = useState([]);
   const [safePendingUnwraps, setSafePendingUnwraps] = useState([]);
+  const [safeBalancesVisible, setSafeBalancesVisible] = useState(false);
+  const [safeBalanceRefreshFailed, setSafeBalanceRefreshFailed] = useState(false);
+  const safeRevealSession = useRef(false);
 
   const connected = Boolean(account);
   const correctNetwork = chainId === deployment.chainId;
@@ -184,6 +187,15 @@ export default function App() {
     setNotice({ type: 'error', text: error.shortMessage ?? error.reason ?? error.message ?? 'Transaction failed.' });
   };
 
+  useEffect(() => {
+    if (!notice || busy || notice.type === 'error') return undefined;
+    const timeout = notice.type === 'success' ? 6000 : 9000;
+    const timer = window.setTimeout(() => {
+      setNotice((current) => current === notice ? null : current);
+    }, timeout);
+    return () => window.clearTimeout(timer);
+  }, [busy, notice]);
+
   const getWallet = async (providerOverride = walletProvider) => {
     if (!providerOverride) throw new Error('Connect an injected wallet before using write operations.');
     let browserProvider = new ethers.BrowserProvider(providerOverride);
@@ -207,6 +219,9 @@ export default function App() {
       writeWalletPreference(walletId);
       setWalletProvider(selectedProvider);
       setWalletName(providerLabel(selectedProvider, walletId));
+      safeRevealSession.current = false;
+      setSafeBalancesVisible(false);
+      setSafeBalanceRefreshFailed(false);
       setAccount(wallet.address);
       setChainId(Number((await wallet.provider.getNetwork()).chainId));
       setShowWalletModal(false);
@@ -350,7 +365,18 @@ export default function App() {
       isOwner: owners.some((owner) => owner.toLowerCase() === ownerAddress.toLowerCase()),
     };
     setSafeState(nextState);
-    setSafeBalances(nextBalances);
+    setSafeBalances((current) => {
+      if (!safeRevealSession.current) return nextBalances;
+      const merged = { ...nextBalances };
+      for (const token of Object.values(TOKENS)) {
+        const previous = current[token.symbol];
+        const refreshed = nextBalances[token.symbol];
+        if (previous?.handle === refreshed.handle && typeof previous.decrypted === 'bigint') {
+          merged[token.symbol] = { ...refreshed, decrypted: previous.decrypted };
+        }
+      }
+      return merged;
+    });
     setSafeOrders(orders.sort((left, right) => Number(right.id) - Number(left.id)));
     try {
       const moduleDeploymentHashes = Object.entries(deployment.deploymentTransactions ?? {})
@@ -405,7 +431,14 @@ export default function App() {
   const refresh = async () => {
     try {
       setBusy('refresh');
-      await Promise.all([loadMarket(), loadAccount(), loadSafeAccount()]);
+      const wallet = safeRevealSession.current ? await getWallet() : null;
+      const [, , safeSnapshot] = await Promise.all([loadMarket(), loadAccount(), loadSafeAccount()]);
+      if (wallet && safeSnapshot) {
+        const restored = await restoreSafeRevealSession(wallet, safeSnapshot);
+        if (!restored) {
+          setNotice({ type: 'info', text: 'Public data refreshed. Safe balances could not be decrypted automatically; use Reveal again.' });
+        }
+      }
     } catch (error) {
       fail(error);
     } finally {
@@ -480,6 +513,9 @@ export default function App() {
     };
     const onAccounts = (accounts) => {
       setPrivateBalancesVisible(false);
+      safeRevealSession.current = false;
+      setSafeBalancesVisible(false);
+      setSafeBalanceRefreshFailed(false);
       setBalances(createInitialBalances());
       setFaucets(createInitialFaucets());
       setEthBalance(0n);
@@ -498,6 +534,9 @@ export default function App() {
       const nextChainId = Number(BigInt(chain));
       setChainId(nextChainId);
       setPrivateBalancesVisible(false);
+      safeRevealSession.current = false;
+      setSafeBalancesVisible(false);
+      setSafeBalanceRefreshFailed(false);
       if (nextChainId !== deployment.chainId) {
         setBalances(createInitialBalances());
         setFaucets(createInitialFaucets());
@@ -798,6 +837,7 @@ export default function App() {
   };
 
   const safeFund = async ({ token: tokenSymbol, amount }) => {
+    const restoreSafeBalances = safeRevealSession.current;
     try {
       if (!safeState.address || !safeState.isOwner) throw new Error('The connected wallet must be a Safe owner to fund this treasury.');
       setBusy('safe-fund');
@@ -818,7 +858,16 @@ export default function App() {
       addLog(`Wrap ${amount} ${token.publicSymbol} to Safe`, transaction.hash);
       await transaction.wait();
       setNotice({ type: 'success', text: `${amount} ${token.publicSymbol} wrapped into the Safe treasury.` });
-      await loadSafeAccount();
+      const snapshot = await loadSafeAccount();
+      if (restoreSafeBalances) {
+        const restored = await restoreSafeRevealSession(wallet, snapshot);
+        setNotice({
+          type: restored ? 'success' : 'info',
+          text: restored
+            ? `${amount} ${token.publicSymbol} wrapped into the Safe treasury. Balances refreshed.`
+            : `${amount} ${token.publicSymbol} wrapped into the Safe treasury. Use Reveal again to refresh balances.`,
+        });
+      }
     } catch (error) {
       fail(error);
     } finally {
@@ -826,7 +875,7 @@ export default function App() {
     }
   };
 
-  const decryptSafeSnapshot = async (wallet, snapshot, tokenSymbols = Object.keys(TOKENS)) => {
+  const decryptSafeSnapshot = async (wallet, snapshot, tokenSymbols = Object.keys(TOKENS), { allowViewerGrant = true } = {}) => {
     const client = await createHandleClient(wallet.signer);
     const next = { ...snapshot };
     const tokens = tokenSymbols.map((symbol) => TOKENS[symbol]).filter(Boolean);
@@ -839,6 +888,9 @@ export default function App() {
       .filter((_, index) => !permissions[index])
       .map((token) => snapshot[token.symbol].handle);
     if (missingHandles.length > 0) {
+      if (!allowViewerGrant) {
+        throw new Error('The refreshed Safe handle needs a new viewer grant.');
+      }
       const grant = await executeSafeModule({
         signer: wallet.signer,
         safeAddress: safeState.address,
@@ -858,8 +910,34 @@ export default function App() {
       const decrypted = await retry(() => client.decrypt(handle), 12, 4000);
       next[token.symbol] = { ...snapshot[token.symbol], decrypted: decrypted.value };
     }
-    setSafeBalances(next);
+    setSafeBalances((current) => {
+      const merged = { ...snapshot };
+      for (const token of Object.values(TOKENS)) {
+        const refreshed = next[token.symbol];
+        const previous = current[token.symbol];
+        merged[token.symbol] = tokenSymbols.includes(token.symbol)
+          ? refreshed
+          : previous?.handle === refreshed.handle && typeof previous.decrypted === 'bigint'
+            ? { ...refreshed, decrypted: previous.decrypted }
+            : refreshed;
+      }
+      return merged;
+    });
+    setSafeBalancesVisible(true);
+    setSafeBalanceRefreshFailed(false);
     return next;
+  };
+
+  const restoreSafeRevealSession = async (wallet, snapshot, tokenSymbols = Object.keys(TOKENS)) => {
+    if (!safeRevealSession.current || !snapshot) return false;
+    try {
+      await decryptSafeSnapshot(wallet, snapshot, tokenSymbols, { allowViewerGrant: false });
+      return true;
+    } catch (error) {
+      console.warn('Safe balance auto-refresh is temporarily unavailable.', error);
+      setSafeBalanceRefreshFailed(true);
+      return false;
+    }
   };
 
   const safeReveal = async () => {
@@ -869,8 +947,12 @@ export default function App() {
       const snapshot = await loadSafeAccount();
       if (!snapshot) throw new Error('Safe treasury is not configured on this network.');
       await decryptSafeSnapshot(wallet, snapshot);
+      safeRevealSession.current = true;
+      setSafeBalancesVisible(true);
+      setSafeBalanceRefreshFailed(false);
       setNotice({ type: 'success', text: 'Safe balances revealed through Safe-controlled Nox viewer grants.' });
     } catch (error) {
+      setSafeBalanceRefreshFailed(true);
       fail(error);
     } finally {
       setBusy('');
@@ -892,7 +974,7 @@ export default function App() {
 
   const safeUnwrap = async ({ token: tokenSymbol, amount, recipient }) => {
     let confirmedRequestId = '';
-    const restoreSafeBalances = Object.values(safeBalances).every((balance) => balance.decrypted !== null && balance.decrypted !== undefined);
+    const restoreSafeBalances = safeRevealSession.current;
     try {
       if (!safeState.moduleEnabled || !safeState.isOwner) throw new Error('The connected wallet must be an owner of an enabled Safe module.');
       if (!ethers.isAddress(recipient)) throw new Error('Choose a valid Safe unwrap recipient.');
@@ -935,11 +1017,13 @@ export default function App() {
       setNotice({ type: 'success', text: `Safe unwrap completed. Released ${formatToken(released, token.decimals)} ${token.publicSymbol} to ${shorten(recipient)}.` });
       const [snapshot] = await Promise.all([loadSafeAccount(), loadAccount(wallet.address)]);
       if (restoreSafeBalances) {
-        try {
-          await decryptSafeSnapshot(wallet, snapshot, [tokenSymbol]);
-        } catch (revealError) {
-          setNotice({ type: 'info', text: `Safe unwrap completed. Refreshed balances need a manual reveal: ${revealError.shortMessage ?? revealError.message}` });
-        }
+        const restored = await restoreSafeRevealSession(wallet, snapshot);
+        setNotice({
+          type: restored ? 'success' : 'info',
+          text: restored
+            ? `Safe unwrap completed. Released ${formatToken(released, token.decimals)} ${token.publicSymbol}; balances refreshed.`
+            : `Safe unwrap completed. Released ${formatToken(released, token.decimals)} ${token.publicSymbol}. Use Reveal again to refresh balances.`,
+        });
       }
     } catch (error) {
       if (confirmedRequestId) {
@@ -955,13 +1039,20 @@ export default function App() {
   };
 
   const safeFinalizeUnwrap = async ({ tokenSymbol, requestId }) => {
+    const restoreSafeBalances = safeRevealSession.current;
     try {
       setBusy(`safe-finalize-${requestId}`);
       const wallet = await getWallet();
       const released = await finalizeSafeUnwrapRequest({ wallet, tokenSymbol, requestId });
       const token = TOKENS[tokenSymbol];
-      setNotice({ type: 'success', text: `Pending Safe unwrap finalized. Released ${formatToken(released, token.decimals)} ${token.publicSymbol}.` });
-      await Promise.all([loadSafeAccount(), loadAccount(wallet.address)]);
+      const [snapshot] = await Promise.all([loadSafeAccount(), loadAccount(wallet.address)]);
+      const restored = restoreSafeBalances ? await restoreSafeRevealSession(wallet, snapshot) : false;
+      setNotice({
+        type: restored || !restoreSafeBalances ? 'success' : 'info',
+        text: restored
+          ? `Pending Safe unwrap finalized. Released ${formatToken(released, token.decimals)} ${token.publicSymbol}; balances refreshed.`
+          : `Pending Safe unwrap finalized. Released ${formatToken(released, token.decimals)} ${token.publicSymbol}.${restoreSafeBalances ? ' Use Reveal again to refresh balances.' : ''}`,
+      });
     } catch (error) {
       fail(error);
     } finally {
@@ -971,6 +1062,7 @@ export default function App() {
 
   const safeSwap = async ({ tokenIn: tokenInSymbol, tokenOut: tokenOutSymbol, amount, minOut: minimum, deadlineMinutes: requestedDeadline }) => {
     let confirmedTransactionHash = '';
+    const restoreSafeBalances = safeRevealSession.current;
     try {
       if (!safeState.moduleEnabled || !safeState.isOwner) throw new Error('The connected wallet must be an owner of an enabled Safe module.');
       setBusy('safe-swap');
@@ -1016,10 +1108,14 @@ export default function App() {
       const returned = formatToken(refund.value, input.decimals);
       setNotice({ type: 'success', text: `Safe swap confirmed. Received ${received} ${output.symbol}; refund ${returned} ${input.symbol}.` });
       const [snapshot] = await Promise.all([loadSafeAccount(), loadAccount(wallet.address)]);
-      try {
-        await decryptSafeSnapshot(wallet, snapshot, [tokenInSymbol, tokenOutSymbol]);
-      } catch (revealError) {
-        setNotice({ type: 'info', text: `Safe swap confirmed. Received ${received} ${output.symbol}; refund ${returned} ${input.symbol}. Refreshed balances need a manual reveal: ${revealError.shortMessage ?? revealError.message}` });
+      if (restoreSafeBalances) {
+        const restored = await restoreSafeRevealSession(wallet, snapshot);
+        setNotice({
+          type: restored ? 'success' : 'info',
+          text: restored
+            ? `Safe swap confirmed. Received ${received} ${output.symbol}; refund ${returned} ${input.symbol}. Balances refreshed.`
+            : `Safe swap confirmed. Received ${received} ${output.symbol}; refund ${returned} ${input.symbol}. Use Reveal again to refresh balances.`,
+        });
       }
     } catch (error) {
       if (confirmedTransactionHash) {
@@ -1035,6 +1131,7 @@ export default function App() {
   };
 
   const safeCreateOrder = async ({ tokenIn: tokenInSymbol, tokenOut: tokenOutSymbol, amount, minOut: minimum, triggerPrice, expiryHours }) => {
+    const restoreSafeBalances = safeRevealSession.current;
     try {
       if (!safeState.moduleEnabled || !safeState.isOwner) throw new Error('The connected wallet must be an owner of an enabled Safe module.');
       setBusy('safe-order');
@@ -1069,7 +1166,16 @@ export default function App() {
       addLog('Safe confidential limit order submitted', execution.transaction.hash);
       await execution.transaction.wait();
       setNotice({ type: 'success', text: 'Safe limit order created. Amount and minOut remain encrypted.' });
-      await loadSafeAccount();
+      const snapshot = await loadSafeAccount();
+      if (restoreSafeBalances) {
+        const restored = await restoreSafeRevealSession(wallet, snapshot);
+        setNotice({
+          type: restored ? 'success' : 'info',
+          text: restored
+            ? 'Safe limit order created. Amount and minOut remain encrypted; balances refreshed.'
+            : 'Safe limit order created. Amount and minOut remain encrypted. Use Reveal again to refresh balances.',
+        });
+      }
     } catch (error) {
       fail(error);
     } finally {
@@ -1078,6 +1184,7 @@ export default function App() {
   };
 
   const safeCancelOrder = async (orderId) => {
+    const restoreSafeBalances = safeRevealSession.current;
     try {
       setBusy(`safe-cancel-${orderId}`);
       const wallet = await getWallet();
@@ -1085,7 +1192,16 @@ export default function App() {
       addLog(`Cancel Safe order #${orderId}`, execution.transaction.hash);
       await execution.transaction.wait();
       setNotice({ type: 'success', text: `Safe order #${orderId} cancelled and refunded.` });
-      await loadSafeAccount();
+      const snapshot = await loadSafeAccount();
+      if (restoreSafeBalances) {
+        const restored = await restoreSafeRevealSession(wallet, snapshot);
+        setNotice({
+          type: restored ? 'success' : 'info',
+          text: restored
+            ? `Safe order #${orderId} cancelled and refunded. Balances refreshed.`
+            : `Safe order #${orderId} cancelled and refunded. Use Reveal again to refresh balances.`,
+        });
+      }
     } catch (error) {
       fail(error);
     } finally {
@@ -1362,6 +1478,8 @@ export default function App() {
     safe: safeState,
     safeActivity,
     safeBalances,
+    safeBalancesVisible,
+    safeBalanceRefreshFailed,
     safeOrders,
     safePendingUnwraps,
     agentMarket: orderContext.agentMarket,
@@ -1402,11 +1520,6 @@ export default function App() {
         <div className="product-layout">
           <AppSidebar account={account} busy={busy} onAccountAction={handleAccountAction} onChangeWallet={openWalletModal} walletName={walletName} walletProps={walletProps} />
           <div className="product-main">
-            <div className="global-notices">
-              <NoticeBanner notice={notice} onDismiss={() => setNotice(null)} />
-              {!walletAvailable && <NoticeBanner notice={{ type: 'error', text: 'No compatible wallet was detected. Read-only market data remains available.' }} />}
-              {connected && !correctNetwork && <NoticeBanner notice={{ type: 'error', text: 'Switch your connected wallet to Ethereum Sepolia to use NoxSwap.' }} />}
-            </div>
             <Suspense fallback={<div className="route-loading"><LoaderCircle className="spin" size={24} /><span>Loading NoxSwap</span></div>}>
               <Routes>
                 <Route path="/app/trade" element={<TradePage orderContext={orderContext} swapProps={swapProps} />} />
@@ -1424,6 +1537,18 @@ export default function App() {
             </Suspense>
           </div>
         </div>
+      )}
+      {!onPublicPage && (
+        <ToastViewport
+          notices={[
+            ...(notice ? [{ ...notice, id: 'operation', pending: Boolean(busy) && notice.type === 'info', dismissible: true }] : []),
+            ...(!walletAvailable ? [{ id: 'wallet-unavailable', type: 'error', text: 'No compatible wallet was detected. Read-only market data remains available.' }] : []),
+            ...(connected && !correctNetwork ? [{ id: 'wrong-network', type: 'error', text: 'Switch your connected wallet to Ethereum Sepolia to use NoxSwap.' }] : []),
+          ]}
+          onDismiss={(id) => {
+            if (id === 'operation') setNotice(null);
+          }}
+        />
       )}
       <AppModals lastProof={lastProof} onCloseProof={() => setShowProof(false)} onCloseReceipt={() => setShowReceipt(false)} receipt={receipt} showProof={showProof} showReceipt={showReceipt} />
       <WalletConnectModal busy={busy} show={showWalletModal} onClose={() => setShowWalletModal(false)} onSelectWallet={connect} />

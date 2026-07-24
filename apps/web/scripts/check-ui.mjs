@@ -342,7 +342,7 @@ try {
     assert.deepEqual(publicAssetSymbols, ['nUSDC', 'nWETH', 'nWBTC', 'nSOL']);
     assert.equal(await walletPage.locator('.app-sidebar .public-balance-item strong').filter({ hasNotText: '—' }).count(), 4, 'connected wallet must render public n-asset balances');
     await walletPage.locator('.faucet-item .cooldown').first().waitFor({ timeout: 30_000 }).catch(async () => {
-      const noticeText = await walletPage.locator('.notice').allTextContents();
+      const noticeText = await walletPage.locator('.toast').allTextContents();
       throw new Error(`Live wallet state did not load a faucet cooldown. Notices: ${noticeText.join(' | ')}. Runtime: ${walletErrors.join(' | ')}`);
     });
     assert(await walletPage.locator('.faucet-item .cooldown').count() >= 2, 'live faucet cooldowns are not visible');
@@ -352,7 +352,7 @@ try {
     await walletPage.waitForFunction((button) => !button.disabled, await cooldownButton.elementHandle());
     await cooldownButton.click();
     await walletPage.getByText(new RegExp(`${cooldownSymbol} faucet is cooling down`)).waitFor();
-    const cooldownNotice = await walletPage.locator('.notice.info').textContent();
+    const cooldownNotice = await walletPage.locator('.toast-info').textContent();
     const faucetCooldowns = await walletPage.locator('.faucet-item .cooldown').allTextContents();
 
     const assetInput = walletPage.getByLabel('Asset amount');
