@@ -279,6 +279,12 @@ try {
       await page.goto(`${url}/app/wallet?tab=safe`);
       await page.waitForURL(`${url}/app/safe`);
       await page.getByRole('heading', { name: 'Safe Treasury', exact: true }).waitFor();
+      await page.goto(`${url}/app/safe?section=orders`);
+      const publicSafeOrderBook = page.locator('.safe-orders-layout .public-orderbook');
+      await publicSafeOrderBook.getByRole('heading', { name: 'Public execution, private terms' }).waitFor();
+      await publicSafeOrderBook.locator('.public-order-row').first().waitFor({ timeout: 30_000 });
+      assert(await publicSafeOrderBook.locator('.public-order-row').count() >= 1, 'Safe public orderbook must remain readable without a connected wallet');
+      assert.equal(await page.getByText('Connect the Safe owner wallet to continue.').count(), 0, 'wallet connection must not gate the public Safe orderbook');
 
       await page.goto(`${url}/app/activity`);
       await page.locator('.page-heading h1').filter({ hasText: 'Activity' }).waitFor();

@@ -139,13 +139,13 @@ export default function SafeTreasury({
 
   return (
     <section className="safe-treasury-workspace">
-      {!connected ? (
+      {!connected && view !== 'orders' ? (
         <div className="safe-empty-state"><ShieldCheck size={22} /><strong>Connect the Safe owner wallet to continue.</strong><button className="primary-action compact" onClick={onConnect}>Connect owner wallet</button></div>
       ) : !safe?.address ? (
         <div className="safe-empty-state"><ShieldCheck size={22} /><strong>No demo Safe is configured for this network.</strong><span>Deploy a Safe and module, then add their addresses to the Sepolia deployment manifest.</span></div>
       ) : (
         <>
-          {!enabled && (
+          {connected && !enabled && (
             <div className="safe-recovery-banner" role="alert">
               <div><strong>Nox module is revoked</strong><span>Safe balances remain intact, but private swaps, orders, reveals and viewer grants are paused. Re-enable the allowlisted module to continue.</span></div>
               <button className="primary-action compact" onClick={onEnable} disabled={!safe.isOwner || Boolean(busy)}>{busy === 'safe-enable' ? <LoaderCircle className="spin" size={17} /> : <ShieldCheck size={17} />} Enable Nox module</button>
