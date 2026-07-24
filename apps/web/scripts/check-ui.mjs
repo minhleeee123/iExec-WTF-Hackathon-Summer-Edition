@@ -178,6 +178,7 @@ try {
       assert.equal(await page.locator('[role="tabpanel"][aria-labelledby]').count(), 1, `${viewport.name} workflow panel must be labelled by its tab`);
       if (viewport.width > 900) {
         assert(await page.locator('.app-sidebar .compact-wallet').isVisible(), 'desktop private wallet is not persistent');
+        assert.equal(await page.locator('.app-sidebar [data-testid="public-asset-balances"] .public-balance-item').count(), 4, 'desktop wallet must expose all four public n-assets');
         const connectButton = page.getByRole('button', { name: 'Connect wallet' }).first();
         await connectButton.click();
         const walletDialog = page.getByRole('dialog', { name: /connect your web3 wallet/i });
@@ -191,6 +192,7 @@ try {
         await page.getByRole('button', { name: 'Open private wallet' }).click();
         const walletDrawer = page.getByRole('dialog', { name: 'Private wallet' });
         await walletDrawer.waitFor();
+        assert.equal(await walletDrawer.locator('[data-testid="public-asset-balances"] .public-balance-item').count(), 4, 'mobile wallet must expose all four public n-assets');
         assert.equal(await walletDrawer.evaluate((element) => element.contains(document.activeElement)), true, 'mobile wallet drawer must receive focus');
         await page.keyboard.press('Escape');
         await walletDrawer.waitFor({ state: 'hidden' });
@@ -336,6 +338,9 @@ try {
     await installReadOnlyWallet(walletPage, testAddress, { mockRecentClaims: true });
     await walletPage.goto(`${url}/app/wallet`, { waitUntil: 'networkidle' });
     await walletPage.locator('.sidebar-account').filter({ hasText: '0xE412' }).waitFor();
+    const publicAssetSymbols = await walletPage.locator('.app-sidebar .public-balance-item span').allTextContents();
+    assert.deepEqual(publicAssetSymbols, ['nUSDC', 'nWETH', 'nWBTC', 'nSOL']);
+    assert.equal(await walletPage.locator('.app-sidebar .public-balance-item strong').filter({ hasNotText: '—' }).count(), 4, 'connected wallet must render public n-asset balances');
     await walletPage.locator('.faucet-item .cooldown').first().waitFor({ timeout: 30_000 }).catch(async () => {
       const noticeText = await walletPage.locator('.notice').allTextContents();
       throw new Error(`Live wallet state did not load a faucet cooldown. Notices: ${noticeText.join(' | ')}. Runtime: ${walletErrors.join(' | ')}`);
@@ -443,7 +448,7 @@ try {
     await walletPage.setViewportSize({ width: 1280, height: 900 });
     await walletPage.goto(`${url}/app/trade?mode=orders&order=${actionableOrderId}`, { waitUntil: 'domcontentloaded' });
     await walletPage.getByRole('dialog', { name: `Order ${actionableOrderId} details` }).waitFor({ timeout: 30_000 });
-    await walletPage.getByRole('button', { name: 'Revoke OrderBook authorization' }).waitFor({ timeout: 30_000 });
+    await walletPage.getByRole('button', { name: /^(Authorize OrderBook|Revoke OrderBook authorization)$/ }).first().waitFor({ timeout: 30_000 });
     await walletPage.getByRole('button', { name: 'Reveal my order terms' }).waitFor({ timeout: 30_000 });
     await walletPage.getByRole('button', { name: 'Cancel order' }).waitFor();
     await walletPage.screenshot({ path: '/tmp/noxswap-order-owner.png' });

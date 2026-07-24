@@ -250,10 +250,18 @@ button:disabled { cursor: not-allowed; opacity: .48; box-shadow: none !important
 .balance-row small { overflow: hidden; color: var(--muted); font: 400 10px 'Space Mono', monospace; text-overflow: ellipsis; }
 .privacy-note { margin: 14px 0 0; color: var(--muted); font: 400 10px/1.45 'Space Mono', monospace; }
 .secondary-action { width: 100%; min-height: 42px; margin-top: 18px; background: var(--white); }
-.native-balance { margin-top: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--muted); font-size: 11px; }
+.native-balance { margin-top: 14px; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--muted); border-bottom: 1px solid var(--line); font-size: 11px; }
+.native-balance strong { color: var(--ink); }
 .eth-gas-label { display: flex; align-items: center; gap: 8px; }
 .faucet-inline-link { display: inline-flex; align-items: center; gap: 3px; color: #6941e0; font-size: 10px; font-weight: 700; text-decoration: underline; transition: color 0.15s ease; }
 .faucet-inline-link:hover { color: #4f25c8; }
+.wallet-balance-group { margin-top: 13px; }
+.wallet-balance-label { margin-bottom: 7px; display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--muted); font: 700 8px 'Space Mono', monospace; letter-spacing: .05em; text-transform: uppercase; }
+.wallet-balance-label small { padding: 3px 5px; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; font: inherit; letter-spacing: 0; text-transform: none; }
+.wallet-balance-label-actions { display: flex; align-items: center; gap: 5px; }
+.wallet-reveal-button { width: 26px; height: 26px; flex: 0 0 26px; color: var(--ink); background: var(--soft-purple); }
+.public-balance-list .balance-row:first-child { border-top: 1px solid var(--line); }
+.public-balance-item strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .section-band { padding: 48px max(20px, calc((100vw - 1200px) / 2)); border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); background: var(--soft-lime); }
 .section-title { margin-bottom: 28px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .7fr); align-items: end; gap: 32px; }
@@ -547,6 +555,7 @@ footer a { display: inline-flex; align-items: center; gap: 5px; }
 .compact-wallet .balance-row { min-height: 34px; padding: 7px 1px; }
 .compact-wallet .balance-row span, .compact-wallet .balance-row strong { font-size: 11px; }
 .compact-wallet .native-balance { margin-top: 9px; font-size: 9px; }
+.compact-wallet .confidential-balance-group .balance-row:last-child { border-bottom: 0; }
 .sidebar-footer { padding: 14px 3px 0; display: flex; justify-content: space-between; gap: 8px; }
 .sidebar-footer a { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 10px; font-weight: 700; text-decoration: none; }
 .sidebar-footer a:hover { color: var(--ink); }

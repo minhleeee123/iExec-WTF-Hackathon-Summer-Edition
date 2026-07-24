@@ -56,7 +56,10 @@ export default function DocsPage() {
 
   useEffect(() => {
     const updateActiveSection = () => {
-      const marker = window.scrollY + 132;
+      // Keep the active item aligned with the fixed header and the section
+      // scroll margin. Mobile anchor positioning can land a few pixels before
+      // the nominal boundary because the documentation TOC changes height.
+      const marker = window.scrollY + 160;
       let nextSection = tocItems[0][0];
       const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
       if (maxScroll > 0 && window.scrollY >= maxScroll - 4) {
