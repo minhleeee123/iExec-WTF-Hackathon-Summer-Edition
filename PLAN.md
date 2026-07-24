@@ -6,11 +6,11 @@
 ## 1. Trạng thái hiện tại
 
 - Giai đoạn hiện tại: Phase 6 — Development
-- Trạng thái: In progress
-- Bước tiếp theo: Deploy/migrate Nox Safe Module V4, chạy live Sepolia E2E và phát hành frontend tối ưu popup.
-- Blocker hiện tại: Không có. Ví deploy đã được nạp lại Sepolia ETH.
+- Trạng thái: Completed
+- Bước tiếp theo: Người dùng bắt đầu Phase 7 bằng MetaMask production rehearsal, quay video tối đa bốn phút và hoàn tất submission.
+- Blocker hiện tại: Không có blocker Phase 6. Safe Module V5 và frontend tối ưu popup đã live, có live write E2E và production smoke evidence.
 - Đang chờ phê duyệt từ: Không.
-- Cập nhật lần cuối: 2026-07-24T20:20:00+07:00
+- Cập nhật lần cuối: 2026-07-24T21:10:00+07:00
 
 Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for approval`, `Blocked`, `Completed`, `Skipped`.
 
@@ -34,7 +34,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 | 3. Brainstorm | Research output | Hard gate, rubric scoring và shortlist | Ý tưởng được chọn | Người dùng chọn ý tưởng | Completed |
 | 4. Product Plan | Ý tưởng được chọn | Hoàn thiện `plan/product-plan.md` | MVP, non-goals và demo scenario | Người dùng phê duyệt | Completed |
 | 5. Build Plan | Product Plan đã duyệt | Hoàn thiện `plan/build-plan.md` | Stack, kiến trúc, timeline và backlog | Người dùng phê duyệt | Completed |
-| 6. Development | Build Plan đã duyệt | Hoàn thiện core product, vượt Core Product Ready Gate, triển khai Sepolia | Demo-ready application và landing page | Milestone verification | In progress |
+| 6. Development | Build Plan đã duyệt | Hoàn thiện core product, vượt Core Product Ready Gate, triển khai Sepolia | Demo-ready application và landing page | Milestone verification | Completed |
 | 7. Submission | Demo-ready application và landing page | Hoàn thiện mọi deliverable bắt buộc | Bài nộp hoàn chỉnh | Người dùng final review | Todo |
 
 ## 4. Approval Log
@@ -53,6 +53,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 | Phase 6 final quality pass | Approved | User | 2026-07-24T14:10:00+07:00 | Align every Safe Treasury workflow with the established product UI/UX without removing capabilities, fix any remaining Phase 6 or rubric weakness, and leave Phase 7 to the user. |
 | Phase 6 milestone verification | Completed | Codex verification | 2026-07-24T14:45:00+07:00 | Full compile/test/lint/build/UI regression passed; Safe workflows are visually unified, Lighthouse scored 92/100/100/100, canonical MIT license exists, and the Phase 6-addressable rubric self-assessment is 12/12. |
 | Safe wallet-prompt optimization | Approved | User | 2026-07-24T19:55:00+07:00 | Reopen Phase 6 to batch Safe ACL/input operations, use Safe 1-of-1 prevalidated signatures, preserve multisig authority, migrate Sepolia, test live and redeploy production. |
+| Safe wallet-prompt optimization verification | Completed | Codex verification | 2026-07-24T21:10:00+07:00 | Module V5 live; batch input/viewer, prevalidated Safe execution, auto-operator, four post-swap ACLs, Gateway-lag retry, full regression, responsive UI and canonical production smoke all passed. |
 | Final submission | Pending |  |  |  |
 
 ## 5. Blockers và câu hỏi mở
@@ -64,7 +65,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 
 ## 6. Bước tiếp theo
 
-1. Repeat the MetaMask happy path on the public URL.
+1. Repeat the optimized Safe MetaMask happy path on the public URL and record the observed popup counts.
 2. Record a demo no longer than four minutes.
 3. Write the X submission post and complete the final submission review.
 
@@ -96,6 +97,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 - [x] Safe v1.4.1 treasury, allowlisted Nox module, private swap, selective viewer, module revoke/re-enable and confidential order create/cancel have live Sepolia evidence.
 - [x] Safe swap tolerance/deadline, on-chain Activity, draft-only Strategy Agent, and recoverable Safe unwrap have unit, responsive, contract, and live Sepolia evidence.
 - [x] Safe Treasury is a first-level desktop/mobile workspace with a compact custody header and four URL-addressable sections; Wallet, Trade, Activity, Landing, and Docs retain their prior content and pass responsive regression.
+- [x] Safe Module V5 batches amount/minOut and viewer operations, automatically restores allowlisted operators, uses prevalidated 1-of-1 execution, survives Nox indexing delay, retains cross-version Activity, and passes live receipt #32 plus production smoke.
 - [x] Đã tạo file README.md chính thức và feedback.md ở root repository.
 - [ ] Submission checklist canonical đã hoàn thành.
 - [ ] Bài nộp đã được final review.
