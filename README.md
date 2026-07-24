@@ -89,6 +89,7 @@ The router computes the 0.30% fee and constant-product quote using `Nox.mul`, `N
 - Configure the Safe swap oracle tolerance and deadline, review confirmed Safe events without exposing confidential values, and apply a non-custodial Strategy Agent draft to the Safe order form.
 - Unwrap a Safe-owned confidential asset to the Safe or one of its owners through a recoverable request, Nox public-decryption proof, and permissionless finalization.
 - Use nine MCP stdio tools for public market/plan reads, real protected swaps, balance decryption, three-pool inspection, ACL inspection, and limit-order management.
+- Follow wallet preparation, transaction submission, Sepolia confirmation, Nox proof/decryption, and balance refresh through a persistent multi-stage progress toast, followed by a separate result notification.
 
 ## Deliberate Limitations
 

@@ -236,11 +236,15 @@ Higher-threshold execution belongs in the Safe Wallet interface.
   submission.
 
 Operation notices use a fixed toast viewport at the lower-right on desktop and
-above the bottom navigation on mobile. Pending notices remain visible until the
-operation changes state; success notices dismiss automatically; errors remain
-until resolved or dismissed. Buttons and cards still show their own busy state,
-while Activity preserves durable transaction history. A single operation
-updates one toast instead of stacking duplicate pending and success messages.
+above the bottom navigation on mobile. Each active operation has one progress
+toast that retains up to six meaningful stages, including wallet preparation,
+submitted transaction hashes, Sepolia confirmation, Nox proof/decryption, and
+balance refresh. Completed stages remain checked while the current stage shows a
+spinner. A separate result toast confirms the final outcome. Successful progress
+and result notices dismiss automatically; errors remain until resolved or
+dismissed. The viewport is capped in practice at the operation progress, its
+result, and one persistent environment warning. Buttons and cards still show
+their own busy state, while Activity preserves durable transaction history.
 
 Empty states must explain what is absent and, where useful, the action needed to
 create data. Do not use fake transactions or balances to fill an empty state.

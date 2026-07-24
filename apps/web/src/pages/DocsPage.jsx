@@ -124,7 +124,7 @@ export default function DocsPage() {
               <li><span>03</span><div><strong>Wrap into confidential assets.</strong><p>Wrap a public n-asset 1:1 into its c-asset. Wrapping is an on-chain transaction and requires Sepolia ETH.</p></div></li>
               <li><span>04</span><div><strong>Reveal only when you need a private amount.</strong><p>The eye control requests an authorization signature for the current account, network, and encrypted balance handle. This signature is not a transaction.</p></div></li>
               <li><span>05</span><div><strong>Choose the correct custody workspace.</strong><p>Trade and Wallet operate assets owned by your connected EOA. Safe Treasury operates assets owned by the configured Safe while the connected Safe owner reviews and signs.</p></div></li>
-              <li><span>06</span><div><strong>Review every write in your wallet.</strong><p>NoxSwap encrypts private terms locally, but MetaMask remains the final authority for swaps, orders, access grants, wrapping, and unwrapping.</p></div></li>
+              <li><span>06</span><div><strong>Review every write in your wallet.</strong><p>NoxSwap encrypts private terms locally, but MetaMask remains the final authority for swaps, orders, access grants, wrapping, and unwrapping. A persistent progress notice tracks submitted transactions, Sepolia confirmation, Nox processing, and balance refresh without requiring you to scroll.</p></div></li>
             </ol>
           </section>
 
