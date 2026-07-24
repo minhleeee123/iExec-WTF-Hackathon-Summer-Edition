@@ -56,10 +56,10 @@ export default function DocsPage() {
 
   useEffect(() => {
     const updateActiveSection = () => {
-      // Keep the active item aligned with the fixed header and the section
-      // scroll margin. Mobile anchor positioning can land a few pixels before
-      // the nominal boundary because the documentation TOC changes height.
-      const marker = window.scrollY + 160;
+      // Keep the active item aligned with the fixed header and section scroll
+      // margin. The two-column mobile TOC adds height above anchor targets, so
+      // its activation line must sit below the desktop sticky-header line.
+      const marker = window.scrollY + (window.innerWidth <= 760 ? 280 : 160);
       let nextSection = tocItems[0][0];
       const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
       if (maxScroll > 0 && window.scrollY >= maxScroll - 4) {
@@ -178,12 +178,13 @@ export default function DocsPage() {
             <h2>Safe custody controls settlement; Nox protects the terms.</h2>
             <p className="docs-lead">The Sepolia demo composes a Safe v1.4.1 smart account with an allowlisted NoxSafeModule. The module cannot execute arbitrary calls or delegatecalls: it can only prepare Nox inputs, route supported swaps and orders, request approved unwraps, manage the router/orderbook operator, grant handle viewers, and revoke itself.</p>
             <div className="docs-order-grid">
-              <div><span className="docs-index">OVERVIEW</span><p>Safe identity, owner threshold, connected signer, module status, encrypted balances, wrap-to-Safe funding, pending work, and quick links.</p></div>
+              <div><span className="docs-index">CUSTODY</span><p>The compact header keeps Safe identity, owner threshold, module status, encrypted balances, reveal, and wrap-to-Safe funding together without a redundant overview screen.</p></div>
               <div><span className="docs-index">OPERATE</span><p>Swap &amp; Unwrap contains protected treasury movement. Orders &amp; Agent contains confidential order creation, reviewable AI drafts, open orders, and owner cancellation.</p></div>
               <div><span className="docs-index">CONTROL</span><p>Activity reconstructs confirmed public lifecycle metadata. Access &amp; Security contains viewers, token operators, recovery, and emergency revoke.</p></div>
             </div>
             <div className="docs-rule-list">
               <div><CheckCircle2 size={18} /><p><strong>Fund the Safe.</strong> The compact Safe Treasury header can wrap public test assets directly to the Safe address. The resulting ERC-7984 balance is owned by the Safe, not by the connected EOA.</p></div>
+              <div><CheckCircle2 size={18} /><p><strong>Review fewer, clearer wallet prompts.</strong> The 1-of-1 demo uses Safe prevalidated execution, batches amount/minOut preparation and missing viewer grants, and reuses the session-scoped Nox authorization. Every spending action still requires the Safe transaction confirmation.</p></div>
               <div><CheckCircle2 size={18} /><p><strong>Protect each swap.</strong> The Safe form derives encrypted minOut from the Chainlink reference and a configurable 0.5%–10% tolerance, with 10% recommended for the current test pools. Its public deadline is configurable from 1 minute to 24 hours.</p></div>
               <div><CheckCircle2 size={18} /><p><strong>Prepare, then settle.</strong> A Safe owner validates encrypted amount and minOut proofs for the module. This preparation cannot move funds. Spending occurs only when the Safe executes the module transaction under its configured threshold.</p></div>
               <div><CheckCircle2 size={18} /><p><strong>Draft, never delegate authority.</strong> Strategy Agent receives only intent and public market context, then fills the Safe order form for owner review. It cannot reveal a Safe balance, sign, or submit a transaction.</p></div>

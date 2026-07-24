@@ -133,6 +133,7 @@ Failure handling:
 - [x] Add an allowlisted Safe unwrap request restricted to the Safe or its owners, plus recoverable Nox proof finalization.
 - [x] Upgrade only the Safe module on Sepolia, retain the existing orderbook, and validate the full unwrap lifecycle with a one-base-unit live test.
 - [x] Promote Safe Treasury from a Wallet tab to a first-level `/app/safe` workspace with a compact custody header plus Swap & Unwrap, Orders & Agent, Activity, and Access & Security sections.
+- [x] Reduce 1-of-1 Safe prompts with prevalidated signatures, batched ciphertext/viewer writes, automatic allowlisted operators, session-cached Nox authorization, and changed-balance-only refresh.
 
 ## 6. Verification matrix
 
@@ -146,7 +147,7 @@ Failure handling:
 | Confidential limit order | Same live E2E | Permissionless execution/expiry, exact cancel/expiry refunds, owner permissions, and double-settlement rejection | Pass |
 | ACL viewer | Same live E2E | ACL subgraph contains granted viewer | Pass |
 | Unwrap | Same live E2E | Exactly `0.01 nWETH` released after proof finalization | Pass |
-| Safe Treasury parity | `npm run test:safe:sepolia` and `npm run test:safe:unwrap:sepolia` | Module configuration plus live Safe request, Nox public proof, exact underlying delta, and cleared pending request | Pass |
+| Safe Treasury parity | `npm run test:safe:sepolia`, `npm run test:safe:prompt:sepolia`, `npm run test:safe:swap:sepolia`, and `npm run test:safe:unwrap:sepolia` | Module configuration, batched inputs/viewers, prevalidated 1-of-1 execution, automatic operator/ACL settlement, and complete unwrap proof lifecycle | Pass |
 | MCP protocol | `npm run test:mcp` and `npm run test:mcp:write` | Nine tools, live Chainlink/Groq planning, real small swap, order create/cancel, receipt/event/status assertions, and sanitized evidence | Pass |
 | AI strategy and observer | `npm run test:unit`, `npm run test:agent:live`, backend `npm test` | Strict-schema Groq responses, private-field rejection, local percentage compilation, responsive UI, and observer non-authority | Pass |
 | Frontend static quality | `npm run test:unit && npm run build && npm run lint` | 46 unit tests including wallet-provider selection, configurable positive minOut regression, Safe activity normalization, incremental event index/cache, observer auth/rate/body guards, production build, and zero lint errors | Pass |

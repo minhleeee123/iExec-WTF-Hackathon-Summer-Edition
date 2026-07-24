@@ -75,6 +75,7 @@ export async function querySafeActivity({
   provider,
   safeAddress,
   moduleAddress,
+  moduleAddresses = [moduleAddress],
   tokens,
   deploymentBlock,
   latestBlock,
@@ -84,14 +85,15 @@ export async function querySafeActivity({
   const safeInterface = new ethers.Interface(SAFE_ABI);
   const wrapperInterface = new ethers.Interface(CONFIDENTIAL_TOKEN_ABI);
   const tokenByAddress = new Map(Object.values(tokens).map((token) => [token.wrapper.toLowerCase(), token]));
-  const addresses = [moduleAddress, safeAddress, ...tokenByAddress.keys()];
+  const normalizedModules = new Set(moduleAddresses.map((address) => address.toLowerCase()));
+  const addresses = [...moduleAddresses, safeAddress, ...tokenByAddress.keys()];
   const logsByAddress = await Promise.all(addresses.map((address) => getAddressLogs(provider, address, deploymentBlock, latestBlock)));
   const candidates = [];
 
   for (const logs of logsByAddress) {
     for (const log of logs) {
       const address = log.address.toLowerCase();
-      const source = address === moduleAddress.toLowerCase() ? 'module' : address === safeAddress.toLowerCase() ? 'safe' : 'wrapper';
+      const source = normalizedModules.has(address) ? 'module' : address === safeAddress.toLowerCase() ? 'safe' : 'wrapper';
       const parser = source === 'module' ? moduleInterface : source === 'safe' ? safeInterface : wrapperInterface;
       let parsed;
       try {
@@ -101,7 +103,7 @@ export async function querySafeActivity({
       }
       if (!parsed) continue;
       if (source === 'module' && parsed.args.safe?.toLowerCase() !== safeAddress.toLowerCase()) continue;
-      if (source === 'safe' && parsed.args.module?.toLowerCase() !== moduleAddress.toLowerCase()) continue;
+      if (source === 'safe' && !normalizedModules.has(parsed.args.module?.toLowerCase())) continue;
       if (source === 'wrapper' && parsed.name === 'ConfidentialTransfer' && parsed.args.to?.toLowerCase() !== safeAddress.toLowerCase()) continue;
       const normalized = normalizeSafeActivityEvent({
         eventName: parsed.name,

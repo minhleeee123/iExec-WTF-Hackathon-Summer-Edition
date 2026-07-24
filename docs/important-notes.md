@@ -62,12 +62,14 @@
 ## 8. Safe composability validation
 
 - Canonical Sepolia Safe: `0x549585Be4d75b388B4f825E0bCbBaA85B4FbfffF` (Safe v1.4.1, threshold 1).
-- Canonical allowlisted Nox module `0xc0c60df5F16196944e466E8bD6BE5220F913b093` and Safe orderbook `0xd8037cb70163eC52aa774f54590BB266ee0d9908` are recorded in `packages/contracts/deployment-sepolia.json`.
+- Canonical allowlisted Nox module V5 `0xF68B864b600dBb8cbCB7524899bF79B2ec2Dfbe2` and Safe orderbook `0xd8037cb70163eC52aa774f54590BB266ee0d9908` are recorded in `packages/contracts/deployment-sepolia.json`.
 - Live protected swap receipt #29 settled 1,000 cUSDC with the 10% default oracle tolerance; Safe balance reveal returned `0.496401483047806904 cETH`.
 - Safe confidential order #1 was created and cancelled through the module; the encrypted input was refunded.
 - Module revoke and owner-controlled re-enable were both confirmed on Sepolia; the canonical module is enabled after the test.
 - Auditor access is per-handle Nox viewer access only and does not grant token operator or Safe signing authority.
-- Safe module V3 was deployed in transaction `0xcb3aec532031858fc44e3d298ef3f31e6c8aeff2c91121aedecfe163a5eacfe7`, then enabled after the legacy module was disabled; the existing Safe orderbook was intentionally retained.
+- Safe module V5 was deployed in transaction `0xe3017ef17fa515cbe50787fe775b1ead860b2b420a97fd23f36168528f3ad70a`, enabled in `0x1259be1fabe9501c066afe4a41cd21f51f8fd3cafe0fa8d647fa9f66e1ac6bfb`, and the preceding module was disabled only after V5 became active; the existing Safe orderbook was intentionally retained.
+- V5 prompt-optimization evidence includes two ciphertext inputs prepared in one transaction (`0x1fe24270bdc0f75d553caf9f0cfa059a15c24a721c0bdbc2c9d9bfd0a351bc2a`) and a prevalidated Safe batch-viewer execution (`0x85212298df23eff1af488c7ceeb586875d04b018c15ee497dc9300647124fc33`).
+- Live receipt #32 verified automatic router-operator restoration, output/refund viewer ACLs, refreshed input/output balance ACLs, and post-indexing decryption through V5; the final passing regression settled in Safe transaction `0x0954954a2c297a8e4227da9bceb77aa60b3ba8b657f98b1ceacdef09d4431cbb`.
 - Live Safe unwrap prepared its ciphertext ACL in `0x5d2e2f4ce6675a6d07e39bf112f071238d0894e2d6065de1107f881545104a57`, created request `0x0000aa36a7230112e2da3a5cacbbb742b709eda9b615a3524b7ad30046cd0857` through Safe transaction `0x9751ef8c8f998a3796183c8f03a6168fabae1541293a495307a7cccecd9f5cf7`, and finalized the exact one-base-unit public release in `0x146b9e2d482b137297b6a3ccb806afcddb8736387e9a3f76915df0473f8cde2e`.
 - Safe Treasury is exposed at `/app/safe` as a first-level workspace. The Wallet tab was removed without removing Wallet Assets or Auditor Access; `/app/wallet?tab=safe` redirects to the new route for compatibility.
 - The Safe workspace intentionally has no Overview section: Safe identity, owner threshold, module/signer state, four encrypted balances, reveal, and funding are consolidated in its compact custody header above Swap & Unwrap, Orders & Agent, Activity, and Access & Security.

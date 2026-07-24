@@ -20,7 +20,7 @@ User documentation: [https://noxswap-iexec.vercel.app/docs](https://noxswap-iexe
 | NoxSwap Router V2 and receipt NFT | [`0x6e8d...1015`](https://sepolia.etherscan.io/address/0x6e8df82d708196e75Fb735120B4817f5c2551015) |
 | Confidential limit order book | [`0xab90...96fb`](https://sepolia.etherscan.io/address/0xab903F78edEAF96faE78c0BF46810122fC9896fb) |
 | Safe v1.4.1 treasury | [`0x5495...fffF`](https://sepolia.etherscan.io/address/0x549585Be4d75b388B4f825E0bCbBaA85B4FbfffF) |
-| Allowlisted Nox Safe module | [`0xc0c6...b093`](https://sepolia.etherscan.io/address/0xc0c60df5F16196944e466E8bD6BE5220F913b093) |
+| Allowlisted Nox Safe module V5 | [`0xF68B...fbe2`](https://sepolia.etherscan.io/address/0xF68B864b600dBb8cbCB7524899bF79B2ec2Dfbe2) |
 | Safe confidential order book | [`0xd803...9908`](https://sepolia.etherscan.io/address/0xd8037cb70163eC52aa774f54590BB266ee0d9908) |
 | cUSDC ERC-7984 wrapper | [`0x6932...28fE`](https://sepolia.etherscan.io/address/0x6932075FBfd847E453992A8A1EEefB6C6cb328fE) |
 | cETH ERC-7984 wrapper | [`0x04Dc...D4a4`](https://sepolia.etherscan.io/address/0x04Dc3bebDc4E1dfcB423bB7C38Ed280144B5D4a4) |
@@ -83,6 +83,7 @@ The router computes the 0.30% fee and constant-product quote using `Nox.mul`, `N
 - Configure a 0.5%-10% Chainlink-reference tolerance for swap `minOut` (10% default for the current test-pool/reference basis), then refresh and re-decrypt new balance handles after settlement.
 - Revoke an ERC-7984 OrderBook operator authorization for the selected input token; already escrowed orders remain active until settlement or cancellation.
 - Fund a Safe-owned ERC-7984 treasury, prepare Nox ciphertext ACLs without spend authority, and settle protected swaps only through the Safe threshold.
+- Batch Safe amount/minOut preparation and missing viewer grants, automatically restore allowlisted router/order-book operators in the reviewed Safe execution, and use Safe's prevalidated 1-of-1 path so each Safe action needs only its transaction confirmation.
 - Reveal Safe balance handles to a selected owner/auditor, manage allowlisted token operators, and revoke the Nox module without changing Safe owners or balances.
 - Create and cancel confidential limit orders owned by the Safe while minting non-fungible settlement receipts to a verified Safe owner.
 - Configure the Safe swap oracle tolerance and deadline, review confirmed Safe events without exposing confidential values, and apply a non-custodial Strategy Agent draft to the Safe order form.

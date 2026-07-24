@@ -27,7 +27,8 @@ Production frontend: [https://noxswap-iexec.vercel.app](https://noxswap-iexec.ve
 | Strategy Agent | Groq GPT-OSS strict schema converts natural language and public Chainlink context into a reviewable draft; percentage balance math and Nox encryption stay local | PASS, unit, live provider, desktop/mobile UI, and public Vercel API smoke tests |
 | Keeper AI observer | Optional Groq explanation receives public outcomes only and cannot alter deterministic keeper decisions | PASS, failure-isolation and no-private-field tests |
 | MCP tools | MCP v4 exposes nine public planning/read and opt-in protected write/decrypt tools over stdio | PASS, live Chainlink and Groq planning |
-| Responsive UI | Production build plus 46 frontend unit tests and headless Chrome at `1440x1000`, `1280x900`, and `390x844`; validates EIP-6963 wallet selection, provider-aware reconnect, keyboard tab semantics, modal focus/escape/scroll behavior, Strategy Agent, public orderbook/detail, filter persistence, operator revoke visibility, URL persistence, owner/non-owner controls, landing/app separation, desktop sidebar, mobile wallet drawer, bottom navigation, and observer endpoint auth/rate/body guards. Safe Swap & Unwrap, Orders & Agent, Activity, and Access & Security now reuse the same interaction and visual patterns as the personal workspaces without removing Safe functionality. | PASS |
+| Safe Treasury prompt optimization | Module V5 batches ciphertext/viewer writes, restores allowlisted operators within settlement, uses Safe prevalidated 1-of-1 execution, and caches the session Nox authorization; the frontend refreshes only changed balance handles. | PASS, live receipt #32 verified operator restoration, all four viewer ACLs, and post-indexing decryption |
+| Responsive UI | Production build plus 47 frontend unit tests and headless Chrome at `1440x1000`, `1280x900`, and `390x844`; validates EIP-6963 wallet selection, Safe prevalidated-signature encoding, provider-aware reconnect, keyboard tab semantics, modal focus/escape/scroll behavior, Strategy Agent, public orderbook/detail, filter persistence, operator revoke visibility, URL persistence, owner/non-owner controls, landing/app separation, desktop sidebar, mobile wallet drawer, bottom navigation, and observer endpoint auth/rate/body guards. Safe Swap & Unwrap, Orders & Agent, Activity, and Access & Security now reuse the same interaction and visual patterns as the personal workspaces without removing Safe functionality. | PASS |
 | Public source verification | Sourcify API v2 Standard JSON verification | PASS, exact creation/runtime match for all ten project contracts |
 | Accessibility and discovery | Lighthouse against the final production build | PASS, Performance 92, Accessibility 100, Best Practices 100, SEO 100, CLS 0.014; robots and sitemap included |
 | Open-source license | Root `LICENSE`, package metadata, and README | PASS, canonical MIT license is recognized from the repository root |
@@ -74,6 +75,8 @@ npm run compile
 npm test
 npm run keeper:dry
 PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:sepolia
+PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:safe:prompt:sepolia
+PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:safe:swap:sepolia
 PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:mcp:live
 npm run test:agent:live --workspace @noxswap/web
 npm run build

@@ -353,20 +353,28 @@ export default function App() {
     setSafeBalances(nextBalances);
     setSafeOrders(orders.sort((left, right) => Number(right.id) - Number(left.id)));
     try {
-      const moduleDeploymentHash = deployment.deploymentTransactions?.noxSafeModuleV3
-        ?? deployment.deploymentTransactions?.noxSafeModuleV2
-        ?? deployment.deploymentTransactions?.noxSafeModule
-        ?? deployment.deploymentTransactions?.safe;
-      const [moduleDeploymentReceipt, latestBlock] = await Promise.all([
-        moduleDeploymentHash ? provider.getTransactionReceipt(moduleDeploymentHash) : null,
+      const moduleDeploymentHashes = Object.entries(deployment.deploymentTransactions ?? {})
+        .filter(([key]) => /^noxSafeModule(?:V\d+)?$/.test(key))
+        .map(([, hash]) => hash);
+      const [moduleDeploymentReceipts, latestBlock] = await Promise.all([
+        Promise.all(moduleDeploymentHashes.map((hash) => provider.getTransactionReceipt(hash))),
         provider.getBlockNumber(),
       ]);
+      const moduleAddresses = [...new Set([
+        configuredSafe.module,
+        ...moduleDeploymentReceipts.map((receipt) => receipt?.contractAddress).filter(Boolean),
+      ])];
+      const firstModuleBlock = moduleDeploymentReceipts
+        .map((receipt) => receipt?.blockNumber)
+        .filter(Number.isInteger)
+        .reduce((minimum, blockNumber) => Math.min(minimum, blockNumber), Number.POSITIVE_INFINITY);
       const activity = await querySafeActivity({
         provider,
         safeAddress: configuredSafe.address,
         moduleAddress: configuredSafe.module,
+        moduleAddresses,
         tokens: TOKENS,
-        deploymentBlock: moduleDeploymentReceipt?.blockNumber ?? Math.max(0, latestBlock - 1200),
+        deploymentBlock: Number.isFinite(firstModuleBlock) ? firstModuleBlock : Math.max(0, latestBlock - 1200),
         latestBlock,
       });
       setSafeActivity(activity);
