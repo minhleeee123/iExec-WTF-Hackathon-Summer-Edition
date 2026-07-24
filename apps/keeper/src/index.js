@@ -17,12 +17,15 @@ const rpcUrl = process.env.SEPOLIA_RPC_URL ?? 'https://ethereum-sepolia-rpc.publ
 const historyRpcUrl = process.env.KEEPER_HISTORY_RPC_URL || 'https://eth-sepolia.api.onfinality.io/public';
 const privateKey = process.env.KEEPER_PRIVATE_KEY ?? '';
 if (!dryRun && !privateKey) throw new Error('Set KEEPER_PRIVATE_KEY for write mode.');
-if (deployment.chainId !== 11155111 || !deployment.contracts?.limitOrderBook) throw new Error('Invalid Sepolia deployment configuration.');
+if (
+  deployment.chainId !== 11155111
+  || !deployment.contracts?.limitOrderBook
+  || !deployment.safe?.orderBook
+) throw new Error('Invalid Sepolia deployment configuration.');
 
 const provider = new JsonRpcProvider(rpcUrl, 11155111, { staticNetwork: true });
 const historyProvider = new JsonRpcProvider(historyRpcUrl, 11155111, { staticNetwork: true });
 const signer = privateKey ? new Wallet(privateKey, provider) : null;
-const orderBook = new Contract(deployment.contracts.limitOrderBook, LIMIT_ORDER_ABI, signer ?? provider);
 const config = {
   dryRun,
   expireOrders: process.env.KEEPER_EXPIRE_ORDERS !== 'false',
@@ -36,34 +39,65 @@ const observe = createRemoteKeeperObserver({
   endpoint: process.env.KEEPER_AI_OBSERVER_URL ?? '',
   token: process.env.KEEPER_AI_OBSERVER_TOKEN ?? '',
 });
-const deploymentReceipt = await provider.getTransactionReceipt(deployment.deploymentTransactions.limitOrderBook);
-if (!deploymentReceipt) throw new Error('LimitOrderBook deployment receipt is unavailable.');
-const orderSource = createKeeperOrderSource({
-  chainId: deployment.chainId,
-  checkpointFile: process.env.KEEPER_CHECKPOINT_FILE || `${import.meta.dirname}/.keeper-checkpoint.json`,
-  contract: orderBook,
-  contractAddress: deployment.contracts.limitOrderBook,
-  deploymentBlock: deploymentReceipt.blockNumber,
-  finalityBlocks: Number(process.env.KEEPER_FINALITY_BLOCKS ?? 12),
-  headLagBlocks: Number(process.env.KEEPER_HISTORY_HEAD_LAG_BLOCKS ?? 3),
-  log: writeStructuredLog,
-  provider: historyProvider,
-});
-
-const adapter = {
-  keeperAddress: signer?.address ?? null,
-  getChainId: async () => Number((await provider.getNetwork()).chainId),
-  getBlockTimestamp: async () => Number((await provider.getBlock('latest')).timestamp),
-  getBalance: (address) => provider.getBalance(address),
-  listOrderIds: orderSource.listActiveOrderIds,
-  getOrder: async (orderId) => {
-    const order = await orderBook.getOrder(orderId);
-    return { expiry: Number(order.expiry), status: Number(order.status) };
+const orderBookDefinitions = [
+  {
+    key: 'personal',
+    address: deployment.contracts.limitOrderBook,
+    deploymentTransaction: deployment.deploymentTransactions.limitOrderBook,
+    checkpointFile: process.env.KEEPER_CHECKPOINT_FILE || `${import.meta.dirname}/.keeper-checkpoint.json`,
   },
-  canExecute: async (orderId) => (await orderBook.canExecute(orderId)).executable,
-  simulate: async (action, orderId) => orderBook[action === 'execute' ? 'executeOrder' : 'expireOrder'].estimateGas(orderId),
-  send: async (action, orderId) => orderBook[action === 'execute' ? 'executeOrder' : 'expireOrder'](orderId),
-};
+  {
+    key: 'safe',
+    address: deployment.safe.orderBook,
+    deploymentTransaction: deployment.deploymentTransactions.safeLimitOrderBook,
+    checkpointFile: process.env.KEEPER_SAFE_CHECKPOINT_FILE || `${import.meta.dirname}/.keeper-safe-checkpoint.json`,
+  },
+];
+
+const runtimes = await Promise.all(orderBookDefinitions.map(async (definition) => {
+  const contract = new Contract(definition.address, LIMIT_ORDER_ABI, signer ?? provider);
+  const deploymentReceipt = await provider.getTransactionReceipt(definition.deploymentTransaction);
+  if (!deploymentReceipt) throw new Error(`${definition.key} LimitOrderBook deployment receipt is unavailable.`);
+  const log = (entry) => writeStructuredLog({
+    orderBook: definition.key,
+    orderBookAddress: definition.address,
+    ...entry,
+  });
+  const orderSource = createKeeperOrderSource({
+    chainId: deployment.chainId,
+    checkpointFile: definition.checkpointFile,
+    contract,
+    contractAddress: definition.address,
+    deploymentBlock: deploymentReceipt.blockNumber,
+    finalityBlocks: Number(process.env.KEEPER_FINALITY_BLOCKS ?? 12),
+    headLagBlocks: Number(process.env.KEEPER_HISTORY_HEAD_LAG_BLOCKS ?? 3),
+    log,
+    provider: historyProvider,
+  });
+  return {
+    definition,
+    log,
+    notify: (payload) => notify({
+      ...payload,
+      orderBook: definition.key,
+      orderBookAddress: definition.address,
+    }),
+    adapter: {
+      keeperAddress: signer?.address ?? null,
+      getChainId: async () => Number((await provider.getNetwork()).chainId),
+      getBlockTimestamp: async () => Number((await provider.getBlock('latest')).timestamp),
+      getBalance: (address) => provider.getBalance(address),
+      listOrderIds: orderSource.listActiveOrderIds,
+      getOrder: async (orderId) => {
+        const order = await contract.getOrder(orderId);
+        return { expiry: Number(order.expiry), status: Number(order.status) };
+      },
+      canExecute: async (orderId) => (await contract.canExecute(orderId)).executable,
+      simulate: async (action, orderId) => contract[action === 'execute' ? 'executeOrder' : 'expireOrder'].estimateGas(orderId),
+      send: async (action, orderId) => contract[action === 'execute' ? 'executeOrder' : 'expireOrder'](orderId),
+    },
+  };
+}));
 
 let stopped = false;
 let healthServer;
@@ -74,7 +108,22 @@ process.on('SIGTERM', stop);
 async function main() {
   if (!once) healthServer = startHealthServer({ health, port: Number(process.env.KEEPER_HEALTH_PORT ?? 8787) });
   do {
-    try { await runKeeperCycle({ adapter, config, health, log: writeStructuredLog, notify, observe }); } catch { /* Health and structured logs already capture the cycle failure. */ }
+    let remainingActions = config.maxActions;
+    for (const runtime of runtimes) {
+      try {
+        const result = await runKeeperCycle({
+          adapter: runtime.adapter,
+          config: { ...config, maxActions: remainingActions },
+          health,
+          log: runtime.log,
+          notify: runtime.notify,
+          observe,
+        });
+        remainingActions = Math.max(0, remainingActions - result.actions);
+      } catch {
+        // Health and scoped structured logs already capture this orderbook failure.
+      }
+    }
     if (once || stopped) break;
     await new Promise((resolve) => {
       let watcher;
