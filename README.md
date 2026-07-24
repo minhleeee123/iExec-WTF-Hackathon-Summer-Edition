@@ -6,6 +6,8 @@ The working deployment is on Ethereum Sepolia. It supports faucet, wrap/unwrap, 
 
 The current confidentiality boundaries, privileged roles, public metadata, and
 compromise impact are documented in [`docs/threat-model.md`](docs/threat-model.md).
+The canonical UI/UX language and review checklist are documented in
+[`DESIGNS.md`](DESIGNS.md).
 
 ## Live Deployment
 
