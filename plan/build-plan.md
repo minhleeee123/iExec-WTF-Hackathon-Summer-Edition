@@ -153,9 +153,9 @@ Failure handling:
 | Continuous integration | `.github/workflows/ci.yml` | Push/PR compile, tests, lint, build, deployment consistency, and Gitleaks; latest Phase 6 commits completed successfully | Pass |
 | Responsive layout | Headless Chrome 1440x1000, 1280x900, and 390x844 | Wallet-free live orderbook; visually unified Safe Swap & Unwrap, Orders & Agent, Activity, and Access & Security; responsive detail; keyboard tabs; URL reload; owner/non-owner controls; landing/app separation; and no horizontal overflow | Pass |
 | Accessibility and discovery | Lighthouse and static route checks against the final production build | Performance 92, Accessibility 100, Best Practices 100, SEO 100, CLS 0.014; robots and sitemap resolve | Pass |
-| Public dApp accessibility | Headless external URL test | `https://noxswap-iexec.vercel.app` remains live against Sepolia; publishing the newest Phase 6 UI build is deliberately deferred to Phase 7 | Pass; latest publish pending |
+| Public dApp accessibility | Headless external URL test | Final Phase 6 build is live at `https://noxswap-iexec.vercel.app`; all canonical routes, robots/sitemap, Wallet-first entry actions, and desktop/mobile navigation order passed production smoke tests | Pass |
 | MetaMask UI happy path (local/preview) | Manual browser wallet test | User confirmed provider selection, reveal, swap, refreshed reveal, operator revoke/authorize, and order create/cancel | Pass |
-| MetaMask UI happy path (production) | Manual browser wallet test | Latest frontend audit build must be deployed first | Deferred by user |
+| MetaMask UI happy path (production) | Manual browser wallet test | Final frontend build is deployed; repeat the local/preview wallet checklist on the public origin before recording | Pending Phase 7 |
 
 ## 7. Remaining risks
 

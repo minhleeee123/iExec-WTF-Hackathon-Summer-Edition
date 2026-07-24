@@ -55,7 +55,7 @@ official rubric awards whole stars and totals 14.
 |---|---:|---|
 | Creativity | 3/3 | Confidential AMM, encrypted slippage protection/refunds, confidential limit-order escrow, selective disclosure, Safe module composability, and non-custodial Agent/MCP workflows form a differentiated, coherent system. |
 | Accessible and end-to-end without mock data | 3/3 | Core reads and writes use live Sepolia contracts, Chainlink, Nox SDK/Gateway, and real wallet signatures. Automated flows and the user-confirmed local/preview MetaMask path cover connect, reveal, swap, refreshed reveal, revoke/authorize, and order create/cancel. |
-| ETH Sepolia deployment | 2/2 | Ten NoxSwap contracts, three encrypted pools, the limit order book, Safe treasury, allowlisted module, and Safe order book are live. The newest frontend build still needs the user-approved production publish before recording the final demo. |
+| ETH Sepolia deployment | 2/2 | Ten NoxSwap contracts, three encrypted pools, the limit order book, Safe treasury, allowlisted module, and Safe order book are live. The final Phase 6 frontend is published at the canonical production URL. |
 | `feedback.md` | 2/2 | Root feedback records concrete SDK, ACL, indexing, Docker, version, and protected-minOut experience with actionable recommendations. |
 | Demo video, no longer than four minutes | 0/2 | Phase 7 deliverable intentionally left to the user; no final video exists yet. |
 | Technical implementation | 1/1 | Official Nox encrypted types, arithmetic, ERC-7984 wrappers, Handle SDK encryption/decryption, proofs, and ACLs are in the settlement path rather than attached as a label. |
@@ -63,8 +63,8 @@ official rubric awards whole stars and totals 14.
 
 **Phase 6-addressable score: 12/12. Current total submission score: 12/14.**
 The missing two points are exclusively the Phase 7 demo-video deliverable. Before
-recording it, publish the latest frontend commit and repeat the already-passing
-MetaMask happy path once on the public URL.
+recording it, repeat the already-passing MetaMask happy path once on the public
+URL.
 
 ## Repeatable Commands
 

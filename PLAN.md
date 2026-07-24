@@ -7,8 +7,8 @@
 
 - Giai đoạn hiện tại: Phase 6 — Development
 - Trạng thái: Completed
-- Bước tiếp theo: Người dùng bắt đầu Phase 7: publish frontend build mới nhất, kiểm tra MetaMask trên URL public, quay video tối đa bốn phút và hoàn tất submission.
-- Blocker hiện tại: Không có blocker Phase 6. Final frontend publish và submission media được giữ lại cho Phase 7 theo yêu cầu của người dùng.
+- Bước tiếp theo: Người dùng bắt đầu Phase 7: kiểm tra MetaMask trên URL public, quay video tối đa bốn phút và hoàn tất submission.
+- Blocker hiện tại: Không có blocker Phase 6. Production build mới nhất đã live; submission media thuộc Phase 7.
 - Đang chờ phê duyệt từ: Không.
 - Cập nhật lần cuối: 2026-07-24T14:45:00+07:00
 
@@ -63,9 +63,9 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 
 ## 6. Bước tiếp theo
 
-1. Publish the latest frontend build when the user lifts the deployment deferral.
-2. Repeat the MetaMask happy path on the public URL.
-3. Record a demo no longer than four minutes, write the X submission post, and complete the final submission review.
+1. Repeat the MetaMask happy path on the public URL.
+2. Record a demo no longer than four minutes.
+3. Write the X submission post and complete the final submission review.
 
 ## 7. Quy tắc cập nhật PLAN.md
 

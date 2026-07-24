@@ -33,7 +33,7 @@
 | Reuse project from previous Vibe Coding Hackathon leads to disqualification | SRC-001 | High | Xác nhận project mới, không tái sử dụng project cũ. |
 | Missing ETH Sepolia deployment or end-to-end accessibility | SRC-001 | High | Thiết kế demo để chạy thật trên Sepolia và tránh mock data cho core flow. |
 | Missing public GitHub, README, docs, `feedback.md` or X submission post | SRC-001 | High | Đưa các deliverable này vào scope submission ngay từ đầu. |
-| Latest frontend commit chưa được publish lên URL production | Internal implementation audit, 2026-07-24 | Medium | URL production và deployment cũ vẫn hoạt động; publish build Phase 6 mới rồi lặp lại MetaMask happy path trên URL public trước khi quay video. |
+| MetaMask write flow của build cuối chưa được xác nhận trên URL production | Production deployment and automated smoke test, 2026-07-24 | Low | Build Phase 6 mới đã live và desktop/mobile navigation smoke pass; lặp lại MetaMask happy path trên URL public trước khi quay video. |
 | Local Nox integration stack không chạy vì môi trường thiếu Docker | Nox Hardhat plugin runtime check, 2026-07-22 | Low | Dùng compile/unit + live Sepolia E2E; chạy lại local integration trong CI có Docker nếu có. |
 | Docker-backed Nox integration workflow chưa có run evidence | Internal implementation validation, 2026-07-23 | Low | Workflow nightly/manual đã được thêm; chạy trên GitHub và giữ tách khỏi required PR checks cho đến khi ổn định. |
 | Safe input proofs cannot use a Safe contract as the EOA gateway owner | Live Sepolia smoke test, 2026-07-23 | Closed | Safe owner prepares persistent Nox ACLs in the allowlisted module; only the Safe threshold can trigger settlement and spend treasury balances. |
