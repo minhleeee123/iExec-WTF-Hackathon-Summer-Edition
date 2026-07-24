@@ -11,7 +11,9 @@ import {
   UserRoundPlus,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import deployment from '../deployment.json';
 import AgentStrategy from './AgentStrategy';
+import OrderReadiness from './OrderReadiness';
 import SafeOrderBook from './SafeOrderBook';
 import { formatToken, isHandle, shorten } from '../lib/format';
 import { DEFAULT_LIMIT_ORDER_PROTECTION_BPS, DEFAULT_SWAP_PROTECTION_BPS, deriveLimitOrderMinOut, deriveSwapMinOut } from '../lib/min-out';
@@ -19,6 +21,7 @@ import { validateMinimumOutput, validateTokenAmount } from '../lib/validation';
 import { CardHelpButton } from './CardHelpModal';
 
 const SENTINEL = '0x0000000000000000000000000000000000000001';
+const MIN_GAS_BALANCE = 500000000000000n;
 const SAFE_SWAP_OUTPUTS = { cUSDC: ['cETH', 'cWBTC', 'cSOL'], cETH: ['cUSDC'], cWBTC: ['cUSDC'], cSOL: ['cUSDC'] };
 
 export default function SafeTreasury({
@@ -36,6 +39,7 @@ export default function SafeTreasury({
   onGrantViewer,
   onNotice,
   onReveal,
+  onRevealOrderTerms,
   onRevoke,
   onSetOperator,
   onSettleOrder,
@@ -45,6 +49,7 @@ export default function SafeTreasury({
   safeActivity = [],
   safeBalances,
   safePendingUnwraps = [],
+  safeRevealedOrderTerms = {},
   ethPrice,
   tokens,
   view = 'swap',
@@ -61,7 +66,7 @@ export default function SafeTreasury({
   const [orderTokenIn, setOrderTokenIn] = useState('cUSDC');
   const [orderTokenOut, setOrderTokenOut] = useState('cETH');
   const [triggerPrice, setTriggerPrice] = useState('3000');
-  const [expiryHours, setExpiryHours] = useState('24');
+  const [expiryMinutes, setExpiryMinutes] = useState('1440');
   const [viewer, setViewer] = useState(account ?? '');
   const [viewerHandle, setViewerHandle] = useState('cUSDC');
   const [unwrapToken, setUnwrapToken] = useState('cUSDC');
@@ -110,11 +115,24 @@ export default function SafeTreasury({
   const canUnwrap = !unwrapAmountValidation.error;
   const swapAvailable = swapBalance !== null && swapBalance !== undefined ? `${formatToken(swapBalance, tokens[swapTokenIn].decimals)} ${swapTokenIn}` : 'Private balance hidden';
   const orderAvailable = orderBalance !== null && orderBalance !== undefined ? `${formatToken(orderBalance, tokens[orderTokenIn].decimals)} ${orderTokenIn}` : 'Private balance hidden';
+  const orderOperatorActive = Boolean(safe?.operators?.[orderTokenIn]?.orderBook);
   const unwrapAvailable = unwrapBalance !== null && unwrapBalance !== undefined ? `${formatToken(unwrapBalance, tokens[unwrapToken].decimals)} ${unwrapToken}` : 'Private balance hidden';
   const unwrapRecipient = unwrapRecipientMode === 'safe' ? safe?.address : account;
   const validSwapProtection = !swapMinOutValidation.error;
   const validSwapDeadline = /^\d+$/.test(swapDeadlineMinutes) && Number(swapDeadlineMinutes) >= 1 && Number(swapDeadlineMinutes) <= 1440;
-  const validOrderTerms = !orderMinOutValidation.error && Number(triggerPrice) > 0 && Number(expiryHours) >= 1;
+  const validOrderExpiry = /^\d+$/.test(expiryMinutes) && Number(expiryMinutes) >= 1 && Number(expiryMinutes) <= 10080;
+  const validOrderTerms = !orderMinOutValidation.error && Number(triggerPrice) > 0 && validOrderExpiry;
+  const createOrderChecks = [
+    { id: 'wallet', label: 'Wallet connected', pass: connected, detail: account ? shorten(account) : 'Connect Safe owner' },
+    { id: 'network', label: 'Ethereum Sepolia', pass: chainId === deployment.chainId, detail: chainId === deployment.chainId ? 'Chain 11155111' : 'Switch network' },
+    { id: 'safe-owner', label: 'Connected signer is a Safe owner', pass: Boolean(safe?.isOwner), detail: safe?.isOwner ? 'Owner action available' : 'Read only' },
+    { id: 'module', label: 'Nox module enabled', pass: enabled, detail: enabled ? 'Restricted execution active' : 'Enable module first' },
+    { id: 'oracle', label: 'Chainlink answer valid', pass: Number(ethPrice) > 0, detail: Number(ethPrice) > 0 ? `$${Number(ethPrice).toLocaleString()}` : 'Oracle unavailable' },
+    { id: 'gas', label: 'Gas balance available', pass: ethBalance >= MIN_GAS_BALANCE, detail: `${formatToken(ethBalance, 18, 4)} ETH` },
+    { id: 'balance', label: 'Private balance revealed and sufficient', pass: canSpendOrder, detail: orderAmountValidation.error || orderAvailable },
+    { id: 'terms', label: 'Trigger, minOut and expiry valid', pass: validOrderTerms, detail: validOrderTerms ? `${expiryMinutes} min expiry` : 'Review private order terms' },
+  ];
+  const createOrderReady = createOrderChecks.every((check) => check.pass);
   const safeBalancesVisible = Object.values(safeBalances).every((balance) => balance.decrypted !== null && balance.decrypted !== undefined);
   const safeAgentContext = {
     account,
@@ -130,7 +148,7 @@ export default function SafeTreasury({
       setOrderTokenOut(compiled.tokenOut);
       setOrderAmount(compiled.amount);
       setTriggerPrice(String(compiled.triggerPriceUsd));
-      setExpiryHours(String(Math.max(1, Math.ceil(compiled.expiryMinutes / 60))));
+      setExpiryMinutes(String(compiled.expiryMinutes));
       setOrderProtectionBps(compiled.slippageBps);
       setOrderMinOut('');
       setOperationMode('order');
@@ -235,15 +253,33 @@ export default function SafeTreasury({
                       <label><span>Encrypted minOut</span><span className="protected-input"><input value={orderMin} onChange={(event) => setOrderMinOut(event.target.value)} inputMode="decimal" aria-label="Safe order minimum output" /><strong>{orderTokenOut}</strong></span></label>
                       <label><span>Oracle tolerance</span><span className="protected-input"><select value={orderProtectionBps} onChange={(event) => { setOrderProtectionBps(Number(event.target.value)); setOrderMinOut(''); }} aria-label="Safe order oracle tolerance"><option value={50}>0.5%</option><option value={100}>1%</option><option value={300}>3%</option><option value={500}>5%</option><option value={1000}>10% — recommended</option></select><strong>buffer</strong></span></label>
                       <label><span>{orderTokenIn === 'cUSDC' ? 'Execute at or below' : 'Execute at or above'}</span><span className="protected-input"><input value={triggerPrice} onChange={(event) => setTriggerPrice(event.target.value)} inputMode="decimal" aria-label="Safe order trigger price" /><strong>USD</strong></span></label>
-                      <label><span>Expiry</span><span className="protected-input"><input value={expiryHours} onChange={(event) => setExpiryHours(event.target.value)} inputMode="numeric" aria-label="Safe order expiry in hours" /><strong>hours</strong></span></label>
+                      <label><span>Expiry</span><span className="protected-input"><input value={expiryMinutes} onChange={(event) => setExpiryMinutes(event.target.value)} inputMode="numeric" aria-label="Safe order expiry minutes" /><strong>min</strong></span></label>
                     </div>
                     {!canSpendOrder && <p className="field-error">{orderAmountValidation.error}</p>}
                     {orderMinOutValidation.error && <p className="field-error">{orderMinOutValidation.error}</p>}
+                    {!validOrderExpiry && <p className="field-error">Expiry must be between 1 minute and 7 days.</p>}
                     <p className="field-note">The Safe escrows encrypted input through the allowlisted module. The owner can cancel before permissionless settlement.</p>
-                    <button className="primary-action compact" onClick={() => onCreateOrder({ tokenIn: orderTokenIn, tokenOut: orderTokenOut, amount: orderAmount, minOut: orderMin, triggerPrice, expiryHours })} disabled={!enabled || !safe.isOwner || Boolean(busy) || !canSpendOrder || !validOrderTerms}>{busy === 'safe-order' ? <LoaderCircle className="spin" size={18} /> : <Plus size={18} />} Encrypt and escrow Safe order</button>
+                    <OrderReadiness checks={createOrderChecks} title="Create Safe order readiness" />
+                    <div className="operator-revoke">
+                      <button
+                        className="secondary-action"
+                        onClick={() => onSetOperator({ tokenSymbol: orderTokenIn, target: 'orderBook', enabled: !orderOperatorActive })}
+                        disabled={!enabled || !safe.isOwner || Boolean(busy)}
+                      >
+                        {busy === `safe-operator-orderBook-${orderTokenIn}` ? <LoaderCircle className="spin" size={17} /> : <KeyRound size={17} />} {orderOperatorActive ? 'Revoke OrderBook authorization' : 'Authorize OrderBook'}
+                      </button>
+                      <p className="field-note">{orderOperatorActive ? `Revoking blocks unreviewed ${orderTokenIn} escrow transfers and leaves existing orders unchanged.` : 'The reviewed create-order transaction automatically restores this allowlisted operator when required.'}</p>
+                    </div>
+                    <button
+                      className="primary-action compact"
+                      onClick={connected ? () => onCreateOrder({ tokenIn: orderTokenIn, tokenOut: orderTokenOut, amount: orderAmount, minOut: orderMin, triggerPrice, expiryMinutes }) : onConnect}
+                      disabled={connected && (Boolean(busy) || !createOrderReady)}
+                    >
+                      {busy === 'safe-order' ? <LoaderCircle className="spin" size={18} /> : <Plus size={18} />} {connected ? safe?.isOwner ? 'Encrypt and escrow Safe order' : 'Safe owner required' : 'Connect owner wallet to create'}
+                    </button>
                   </div>
                 )}
-                <SafeOrderBook account={account} busy={busy} chainId={chainId} ethBalance={ethBalance} onCancelOrder={onCancelOrder} onConnect={onConnect} onNotice={onNotice} onSettleOrder={onSettleOrder} safe={safe} />
+                <SafeOrderBook account={account} busy={busy} chainId={chainId} ethBalance={ethBalance} onCancelOrder={onCancelOrder} onConnect={onConnect} onNotice={onNotice} onRevealOrderTerms={onRevealOrderTerms} onSettleOrder={onSettleOrder} revealedTerms={safeRevealedOrderTerms} safe={safe} />
               </div>
             </section>
           )}
@@ -271,7 +307,10 @@ export default function SafeTreasury({
             </section>
             <section className="orders-list safe-security-panel">
               <div className="safe-security-copy"><p className="eyebrow">MODULE SECURITY</p><h2>Operator access & emergency controls</h2><p>Operator authorization is token-specific. Revoking the module pauses every Nox operation but never changes Safe owners, threshold, or balances.</p></div>
-              <div className="safe-operator-group"><span>Token operators</span><div>{Object.values(tokens).slice(0, 2).map((token) => <button className="outline-mini-button" key={token.symbol} onClick={() => onSetOperator(token.symbol)} disabled={!enabled || !safe.isOwner || Boolean(busy)}>{busy === `safe-operator-${token.symbol}` ? <LoaderCircle className="spin" size={15} /> : <ShieldCheck size={15} />} Authorize {token.symbol}</button>)}</div></div>
+              <div className="safe-operator-group"><span>Router operators</span><div>{Object.values(tokens).map((token) => {
+                const active = Boolean(safe?.operators?.[token.symbol]?.router);
+                return <button className="outline-mini-button" key={token.symbol} onClick={() => onSetOperator({ tokenSymbol: token.symbol, target: 'router', enabled: !active })} disabled={!enabled || !safe.isOwner || Boolean(busy)}>{busy === `safe-operator-router-${token.symbol}` ? <LoaderCircle className="spin" size={15} /> : active ? <Ban size={15} /> : <ShieldCheck size={15} />} {active ? 'Revoke' : 'Authorize'} {token.symbol}</button>;
+              })}</div></div>
               <div className="safe-danger-zone"><div><strong>Emergency revoke</strong><span>Requires a Safe owner recovery action to enable the module again.</span></div><button className="danger-action compact" onClick={() => onRevoke(SENTINEL)} disabled={!enabled || !safe.isOwner || Boolean(busy)}>{busy === 'safe-revoke' ? <LoaderCircle className="spin" size={17} /> : <Ban size={17} />} Revoke module</button></div>
             </section>
             </div>

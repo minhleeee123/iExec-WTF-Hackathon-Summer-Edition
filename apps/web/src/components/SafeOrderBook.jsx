@@ -16,7 +16,9 @@ export default function SafeOrderBook({
   onCancelOrder,
   onConnect,
   onNotice,
+  onRevealOrderTerms,
   onSettleOrder,
+  revealedTerms,
   safe,
 }) {
   const notifyChange = useCallback(
@@ -38,7 +40,7 @@ export default function SafeOrderBook({
       canCancel: safeOwned && Boolean(safe?.isOwner) && Boolean(safe?.moduleEnabled) && contractOpen,
       canExecute: connected && order.state === ORDER_STATE.EXECUTABLE,
       canExpire: connected && order.state === ORDER_STATE.EXPIRED && contractOpen,
-      canReveal: false,
+      canReveal: safeOwned && Boolean(safe?.isOwner),
       isOwner: safeOwned && Boolean(safe?.isOwner),
     };
   }, [account, safe?.address, safe?.isOwner, safe?.moduleEnabled]);
@@ -64,16 +66,22 @@ export default function SafeOrderBook({
         { id: 'gas', label: 'Gas balance available', pass: ethBalance >= MIN_GAS_BALANCE, detail: `${formatToken(ethBalance, 18, 4)} ETH` },
       ];
     },
-    getBusyKey: (action, order) => action === 'cancel' ? `safe-cancel-${order.id}` : `${action}-safe-order-${order.id}`,
+    getBusyKey: (action, order) => action === 'cancel'
+      ? `safe-cancel-${order.id}`
+      : action === 'reveal'
+        ? `reveal-order-${order.id}`
+        : `${action}-safe-order-${order.id}`,
     getCallerLabel: (permissions) => permissions.isOwner ? 'Connected Safe owner' : account ? 'Permissionless executor' : 'Read only',
+    getRevealLabel: () => 'Reveal Safe order terms',
     getPermissions,
-    revealedTerms: {},
+    revealOrderTerms: onRevealOrderTerms,
+    revealedTerms,
     settleOrder: async (order, action) => {
       if (action === 'cancel') await onCancelOrder(order.id);
       else await onSettleOrder(order, action);
       await book.refresh();
     },
-  }), [account, book, chainId, ethBalance, getPermissions, onCancelOrder, onSettleOrder, safe?.moduleEnabled, safe?.orderBook]);
+  }), [account, book, chainId, ethBalance, getPermissions, onCancelOrder, onRevealOrderTerms, onSettleOrder, revealedTerms, safe?.moduleEnabled, safe?.orderBook]);
 
   return (
     <OrderBook

@@ -67,7 +67,7 @@ export default function OrderDetail({ account, actions, blockTimestamp, busy, on
         {terms && <div className="revealed-terms"><span>Owner-authorized session plaintext</span><strong>{terms.amount}</strong><strong>Minimum {terms.minOut}</strong></div>}
         {permissions.canReveal && !terms && (
           <button className="secondary-action" onClick={() => actions.revealOrderTerms(order)} disabled={Boolean(busy)}>
-            {busy === `reveal-order-${order.id}` ? <LoaderCircle className="spin" size={17} /> : <Eye size={17} />} Reveal my order terms
+            {busy === (actions.getBusyKey?.('reveal', order) ?? `reveal-order-${order.id}`) ? <LoaderCircle className="spin" size={17} /> : <Eye size={17} />} {actions.getRevealLabel?.(order) ?? 'Reveal my order terms'}
           </button>
         )}
 

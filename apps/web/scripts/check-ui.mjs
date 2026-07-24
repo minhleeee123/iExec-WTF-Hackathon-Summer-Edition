@@ -285,6 +285,10 @@ try {
       await publicSafeOrderBook.locator('.public-order-row').first().waitFor({ timeout: 30_000 });
       assert(await publicSafeOrderBook.locator('.public-order-row').count() >= 1, 'Safe public orderbook must remain readable without a connected wallet');
       assert.equal(await page.getByText('Connect the Safe owner wallet to continue.').count(), 0, 'wallet connection must not gate the public Safe orderbook');
+      await publicSafeOrderBook.locator('.public-order-row').first().click();
+      await page.getByRole('dialog', { name: /order \d+ details/i }).waitFor();
+      assert.equal(await page.getByRole('button', { name: 'Reveal Safe order terms' }).count(), 0, 'disconnected readers must not receive Safe term access');
+      await page.keyboard.press('Escape');
 
       await page.goto(`${url}/app/activity`);
       await page.locator('.page-heading h1').filter({ hasText: 'Activity' }).waitFor();
@@ -430,6 +434,12 @@ try {
     assert.equal(await safeOrderBook.getByLabel('Order owner').locator('option[value="mine"]').textContent(), 'Safe orders');
     const safeOrderBookLayout = await safeOrderBook.evaluate((element) => ({ clientWidth: element.clientWidth, scrollWidth: element.scrollWidth }));
     assert(safeOrderBookLayout.scrollWidth <= safeOrderBookLayout.clientWidth, 'Safe public orderbook content must stay inside its card');
+    await safeOrderBook.locator('.public-order-row').first().click();
+    await walletPage.getByRole('dialog', { name: /order \d+ details/i }).waitFor();
+    assert.equal(await walletPage.getByRole('button', { name: 'Reveal Safe order terms' }).count(), 1, 'Safe owner must be able to reveal Safe-owned private order terms');
+    await walletPage.keyboard.press('Escape');
+    assert.equal(await walletPage.getByLabel('Safe order expiry minutes').inputValue(), '1440');
+    assert.equal(await walletPage.getByRole('button', { name: /OrderBook authorization|Authorize OrderBook/ }).count(), 1, 'Safe order form must expose explicit OrderBook operator control');
     await walletPage.getByRole('tab', { name: 'Strategy Agent', exact: true }).click();
     await walletPage.getByLabel('Trading intent').fill('Sell 0.01 cETH when ETH reaches $2,500. Expire in 6 hours.');
     await walletPage.getByRole('button', { name: 'Generate private strategy draft' }).click();
@@ -439,10 +449,12 @@ try {
     assert.equal(await walletPage.getByLabel('Safe order amount').inputValue(), '0.01');
     assert.equal(await walletPage.getByLabel('Safe order trigger price').inputValue(), '2500');
     assert.equal(await walletPage.getByLabel('Safe order oracle tolerance').inputValue(), '100');
+    assert.equal(await walletPage.getByLabel('Safe order expiry minutes').inputValue(), '360');
     await walletPage.screenshot({ path: '/tmp/noxswap-safe-orders.png', fullPage: true });
     await walletPage.getByRole('tab', { name: 'Access & security' }).click();
     await walletPage.waitForURL(`${url}/app/safe?section=security`);
     await walletPage.getByRole('heading', { name: 'Grant a viewer' }).waitFor();
+    assert.equal(await walletPage.locator('.safe-operator-group button').count(), 4, 'Safe security must expose router operator controls for every supported treasury asset');
     await walletPage.getByRole('button', { name: 'Revoke module' }).waitFor();
     const safeLayout = await walletPage.evaluate(() => ({
       clientWidth: document.documentElement.clientWidth,
