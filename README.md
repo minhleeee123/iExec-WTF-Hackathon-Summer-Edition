@@ -84,8 +84,8 @@ The router computes the 0.30% fee and constant-product quote using `Nox.mul`, `N
 - Revoke an ERC-7984 OrderBook operator authorization for the selected input token; already escrowed orders remain active until settlement or cancellation.
 - Fund a Safe-owned ERC-7984 treasury, prepare Nox ciphertext ACLs without spend authority, and settle protected swaps only through the Safe threshold.
 - Batch Safe amount/minOut preparation and missing viewer grants, automatically restore allowlisted router/order-book operators in the reviewed Safe execution, and use Safe's prevalidated 1-of-1 path so each Safe action needs only its transaction confirmation.
-- Reveal Safe balance handles to a selected owner/auditor, manage allowlisted token operators, and revoke the Nox module without changing Safe owners or balances.
-- Create Safe-owned confidential limit orders, browse their full public lifecycle, execute or expire eligible orders permissionlessly, and cancel open orders through the owner-authorized module while minting non-fungible settlement receipts to a verified Safe owner.
+- Reveal Safe balance handles to a selected owner/auditor, inspect and revoke live router or OrderBook operators, and revoke the Nox module without changing Safe owners or balances.
+- Create minute-precision Safe-owned confidential limit orders, browse their full public lifecycle, batch-grant the Safe owner viewer ACL for amount/minOut reveal, execute or expire eligible orders permissionlessly, and cancel open orders through the owner-authorized module while minting non-fungible settlement receipts to a verified Safe owner.
 - Configure the Safe swap oracle tolerance and deadline, review confirmed Safe events without exposing confidential values, and apply a non-custodial Strategy Agent draft to the Safe order form.
 - Unwrap a Safe-owned confidential asset to the Safe or one of its owners through a recoverable request, Nox public-decryption proof, and permissionless finalization.
 - Use nine MCP stdio tools for public market/plan reads, real protected swaps, balance decryption, three-pool inspection, ACL inspection, and limit-order management.

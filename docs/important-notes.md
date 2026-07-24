@@ -66,6 +66,7 @@
 - Live protected swap receipt #29 settled 1,000 cUSDC with the 10% default oracle tolerance; Safe balance reveal returned `0.496401483047806904 cETH`.
 - Safe confidential order #1 was created and cancelled through the module; the encrypted input was refunded.
 - The Safe orderbook now exposes the same public lifecycle, filters, details, and readiness controls as the personal Trade orderbook. The dual-book keeper permissionlessly executed trigger-ready Safe order #3 in transaction `0xf9c71fa94ae7bb3c175cf000c646c2c3db645fe9e90cf120465da3c3450e29e2`; Safe order #4 remains open for the demo.
+- Safe order #4 term-reveal validation batch-granted the owner viewer ACL for both amount/minOut handles in transaction `0xb1c34f5ca8b60fedb2e522d873422533caa95e1a43310c505ec77bf427d357fe`; both values decrypted successfully and were redacted from test output.
 - Module revoke and owner-controlled re-enable were both confirmed on Sepolia; the canonical module is enabled after the test.
 - Auditor access is per-handle Nox viewer access only and does not grant token operator or Safe signing authority.
 - Safe module V5 was deployed in transaction `0xe3017ef17fa515cbe50787fe775b1ead860b2b420a97fd23f36168528f3ad70a`, enabled in `0x1259be1fabe9501c066afe4a41cd21f51f8fd3cafe0fa8d647fa9f66e1ac6bfb`, and the preceding module was disabled only after V5 became active; the existing Safe orderbook was intentionally retained.

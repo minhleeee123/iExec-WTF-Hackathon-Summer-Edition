@@ -99,6 +99,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 - [x] Safe Treasury is a first-level desktop/mobile workspace with a compact custody header and four URL-addressable sections; Wallet, Trade, Activity, Landing, and Docs retain their prior content and pass responsive regression.
 - [x] Safe Module V5 batches amount/minOut and viewer operations, automatically restores allowlisted operators, uses prevalidated 1-of-1 execution, survives Nox indexing delay, retains cross-version Activity, and passes live receipt #32 plus production smoke.
 - [x] Safe Orders reuses the complete Trade public-orderbook UX; execute/expiry remain permissionless, cancellation remains Safe-owner/module controlled, and the keeper indexes both orderbooks with a shared bounded write budget.
+- [x] Safe order parity includes minute-level expiry, creation readiness, explicit live OrderBook operator revoke/authorize, and owner-only batch-ACL term reveal with live Sepolia decryption evidence.
 - [x] Đã tạo file README.md chính thức và feedback.md ở root repository.
 - [ ] Submission checklist canonical đã hoàn thành.
 - [ ] Bài nộp đã được final review.

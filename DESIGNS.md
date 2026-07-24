@@ -230,8 +230,10 @@ history patterns.
 
 The Safe orderbook exposes public coordination metadata without exposing order
 terms. The connected owner EOA is not automatically a plaintext recipient for
-the Safe-owned escrow handles. Do not show a reveal action unless the on-chain
-ACL explicitly authorizes that viewer.
+the Safe-owned escrow handles. `Reveal Safe order terms` first batches any
+missing amount/minOut viewer ACLs through one owner-approved Safe transaction,
+then decrypts both handles into browser-session state. Non-owners never receive
+this control.
 
 Never present a 1-of-1 browser demo as a complete multi-owner signing client.
 Higher-threshold execution belongs in the Safe Wallet interface.
