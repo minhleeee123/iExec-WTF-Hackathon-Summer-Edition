@@ -37,7 +37,7 @@ const capabilities = [
     icon: ShieldCheck,
     number: '05',
     title: 'Safe Treasury',
-    text: 'Keep confidential assets in Safe custody while an allowlisted Nox module routes reviewed swaps, orders, unwraps, and access controls.',
+    text: 'Keep confidential assets in Safe custody while an allowlisted Nox module routes reviewed operations and a public orderbook enables permissionless settlement without revealing private terms.',
     to: '/app/safe',
   },
 ];
@@ -47,7 +47,7 @@ const onboardingSteps = [
   { icon: Coins, title: 'Fund test assets', text: 'Claim public nUSDC, nWETH, nWBTC, or nSOL from the demo faucets. Claims have a one-hour cooldown.' },
   { icon: LockKeyhole, title: 'Wrap into c-assets', text: 'Wrap n-assets 1:1 into ERC-7984 c-assets whose balances are represented by encrypted handles.' },
   { icon: FileKey2, title: 'Open private balances', text: 'Sign the Nox Gateway authorization once per current session and balance handle. No transaction or gas is required.' },
-  { icon: Workflow, title: 'Choose the custody flow', text: 'Trade from your personal wallet or open Safe Treasury for smart-account-owned swaps, orders, unwraps, and access controls.' },
+  { icon: Workflow, title: 'Choose the custody flow', text: 'Trade from your personal wallet or open Safe Treasury for smart-account-owned swaps, orders, permissionless settlement, unwraps, and access controls.' },
 ];
 
 const publicData = [

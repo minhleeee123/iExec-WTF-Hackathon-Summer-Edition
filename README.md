@@ -85,7 +85,7 @@ The router computes the 0.30% fee and constant-product quote using `Nox.mul`, `N
 - Fund a Safe-owned ERC-7984 treasury, prepare Nox ciphertext ACLs without spend authority, and settle protected swaps only through the Safe threshold.
 - Batch Safe amount/minOut preparation and missing viewer grants, automatically restore allowlisted router/order-book operators in the reviewed Safe execution, and use Safe's prevalidated 1-of-1 path so each Safe action needs only its transaction confirmation.
 - Reveal Safe balance handles to a selected owner/auditor, manage allowlisted token operators, and revoke the Nox module without changing Safe owners or balances.
-- Create and cancel confidential limit orders owned by the Safe while minting non-fungible settlement receipts to a verified Safe owner.
+- Create Safe-owned confidential limit orders, browse their full public lifecycle, execute or expire eligible orders permissionlessly, and cancel open orders through the owner-authorized module while minting non-fungible settlement receipts to a verified Safe owner.
 - Configure the Safe swap oracle tolerance and deadline, review confirmed Safe events without exposing confidential values, and apply a non-custodial Strategy Agent draft to the Safe order form.
 - Unwrap a Safe-owned confidential asset to the Safe or one of its owners through a recoverable request, Nox public-decryption proof, and permissionless finalization.
 - Use nine MCP stdio tools for public market/plan reads, real protected swaps, balance decryption, three-pool inspection, ACL inspection, and limit-order management.
@@ -99,7 +99,7 @@ The router computes the 0.30% fee and constant-product quote using `Nox.mul`, `N
 - No fixed MEV-savings claim. The UI reports measured execution-versus-oracle deviation only for ETH/USDC.
 - No LP share/removal lifecycle. Pools are deployer-funded test liquidity.
 - The built-in Safe browser signer supports the deployed 1-of-1 demo Safe. Higher-threshold Safes must collect signatures in the Safe Wallet interface.
-- Direct faucet claims to the Safe, Safe-owner order execution controls, and in-app multi-owner signature collection are intentionally excluded; funding uses the existing public-wallet faucet followed by wrap-to-Safe, while order execution remains permissionless.
+- Direct faucet claims to the Safe and in-app multi-owner signature collection are intentionally excluded; funding uses the existing public-wallet faucet followed by wrap-to-Safe. Safe order execution and expiry are deliberately permissionless, while cancellation remains restricted to the Safe owner through the allowlisted module.
 
 See [`docs/verification.md`](./docs/verification.md) for the remediation and test record.
 
@@ -154,6 +154,9 @@ and session controls stay in the desktop sidebar or the mobile wallet drawer.
 Safe Treasury is available at `/app/safe` with a compact custody header for Safe
 identity, module state, balances, reveal, and funding, followed by URL-addressable
 `Swap & unwrap`, `Orders & Agent`, `Activity`, and `Access & security` sections.
+Its Orders section reuses the personal Trade orderbook interaction model: complete
+public lifecycle rows, status/owner filters, shareable detail URLs, readiness
+checks, permissionless execute/expiry, and owner-authorized cancellation.
 The legacy `/app/wallet?tab=safe` URL redirects to the new first-level workspace.
 
 MetaMask must be on Ethereum Sepolia for write operations. Read-only pool and
@@ -206,9 +209,10 @@ unit tests plus the live Sepolia E2E test.
 
 ## Stateless Order Keeper
 
-The keeper reads the canonical Sepolia deployment JSON, scans every open order,
-rechecks status before submission, and sequentially calls only `executeOrder` or
-`expireOrder`. It has no database and never decrypts handles.
+The keeper reads both canonical personal and Safe orderbooks from the Sepolia
+deployment JSON, incrementally indexes their active orders, rechecks status before
+submission, and sequentially calls only `executeOrder` or `expireOrder`. It has
+no database and never decrypts handles.
 
 ```bash
 npm run keeper:dry

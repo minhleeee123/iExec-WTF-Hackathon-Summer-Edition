@@ -8,7 +8,7 @@
 - Giai đoạn hiện tại: Phase 6 — Development
 - Trạng thái: Completed
 - Bước tiếp theo: Người dùng bắt đầu Phase 7 bằng MetaMask production rehearsal, quay video tối đa bốn phút và hoàn tất submission.
-- Blocker hiện tại: Không có blocker Phase 6. Safe Module V5 và frontend tối ưu popup đã live, có live write E2E và production smoke evidence.
+- Blocker hiện tại: Không có blocker Phase 6. Safe Module V5, Safe public orderbook và dual-book keeper có live write evidence; production smoke sẽ được làm mới sau thay đổi UI cuối.
 - Đang chờ phê duyệt từ: Không.
 - Cập nhật lần cuối: 2026-07-24T21:10:00+07:00
 
@@ -98,6 +98,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 - [x] Safe swap tolerance/deadline, on-chain Activity, draft-only Strategy Agent, and recoverable Safe unwrap have unit, responsive, contract, and live Sepolia evidence.
 - [x] Safe Treasury is a first-level desktop/mobile workspace with a compact custody header and four URL-addressable sections; Wallet, Trade, Activity, Landing, and Docs retain their prior content and pass responsive regression.
 - [x] Safe Module V5 batches amount/minOut and viewer operations, automatically restores allowlisted operators, uses prevalidated 1-of-1 execution, survives Nox indexing delay, retains cross-version Activity, and passes live receipt #32 plus production smoke.
+- [x] Safe Orders reuses the complete Trade public-orderbook UX; execute/expiry remain permissionless, cancellation remains Safe-owner/module controlled, and the keeper indexes both orderbooks with a shared bounded write budget.
 - [x] Đã tạo file README.md chính thức và feedback.md ở root repository.
 - [ ] Submission checklist canonical đã hoàn thành.
 - [ ] Bài nộp đã được final review.

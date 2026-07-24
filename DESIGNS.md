@@ -61,6 +61,11 @@ workspaces:
 
 The compact Safe header carries identity, owner threshold, module state,
 balances, reveal, and funding. Do not restore a redundant Overview page.
+Safe Orders must reuse the complete public orderbook grammar from Trade:
+toolbar, keeper state, status and owner filters, lifecycle rows, shareable detail
+URLs, readiness checks, and responsive drawers. Execute and expiry are
+permissionless; cancel is a Safe-owner action routed through the allowlisted
+module.
 
 ## 3. Visual language
 
@@ -222,6 +227,11 @@ Safe interfaces must continuously reinforce:
 Safe-specific cards may describe custody or module state, but operational
 controls must reuse the original swap, order, activity, segmented-tab, and
 history patterns.
+
+The Safe orderbook exposes public coordination metadata without exposing order
+terms. The connected owner EOA is not automatically a plaintext recipient for
+the Safe-owned escrow handles. Do not show a reveal action unless the on-chain
+ACL explicitly authorizes that viewer.
 
 Never present a 1-of-1 browser demo as a complete multi-owner signing client.
 Higher-threshold execution belongs in the Safe Wallet interface.
