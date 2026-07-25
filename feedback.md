@@ -7,7 +7,7 @@
 >
 > **Hackathon:** iExec WTF Hackathon Summer Edition 2026
 >
-> **Validation date:** 2026-07-24
+> **Validation date:** 2026-07-25
 
 ## 1. Executive summary
 
@@ -65,11 +65,11 @@ validation, not a documentation-only review.
 
 ### Validation performed
 
-- 22 contract/protocol tests passed; one Docker-backed Nox runtime suite remains
+- 24 contract/protocol tests passed; one Docker-backed Nox runtime suite remains
   environment-gated.
 - 13 stateless keeper tests passed.
 - 3 MCP protocol tests passed.
-- 46 frontend and server-endpoint unit tests passed.
+- 51 frontend and server-endpoint unit tests passed.
 - Headless-browser checks covered 1440×1000, 1280×900, and 390×844 layouts.
 - Live Sepolia tests covered normal swap settlement, encrypted `minOut`
   rejection with exact refund, three pools, order execute/cancel/expiry,

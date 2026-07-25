@@ -39,7 +39,9 @@
 | Safe Module V5 and Safe orderbook do not yet have public Sourcify records | Read-only Sourcify lookup, 2026-07-25 | Medium | Deployment consistency passes; verification targets are prepared but must be submitted only after user authorization. |
 | Safe input proofs cannot use a Safe contract as the EOA Gateway owner | Live Sepolia smoke test, 2026-07-23 | Closed | A Safe owner prepares persistent Nox ACLs in the allowlisted module; only the Safe threshold can settle and spend treasury balances. |
 | A standard Safe cannot receive the router's ERC-721 receipt callback | Live Sepolia smoke test, 2026-07-23 | Closed | Assets and refunds stay in Safe custody; the receipt owner is restricted to a verified Safe-owner EOA. |
-| MCP SDK includes two moderate `@hono/node-server` advisories | `npm audit --omit=dev`, 2026-07-24 | Low | MCP runs only over stdio on Linux and does not start the affected static HTTP server; avoid a forced incompatible SDK downgrade and monitor upstream fixes. |
+| Safe Module V5 is currently disabled | Read-only `isModuleEnabled` and module-list query, 2026-07-25 | High for the owner-controlled Safe demo | The Safe still has its expected sole owner and threshold 1. The configured owner must review and enable canonical Module V5 before module-routed swaps, order create/cancel, ACL/operator, unwrap, or revoke flows. Permissionless Safe-order execute/expiry remains available. |
+| MCP SDK includes two moderate `@hono/node-server` advisories | `npm audit --omit=dev`, rerun 2026-07-25 | Low | MCP runs only over stdio on Linux and does not start the affected static HTTP server; avoid a forced incompatible SDK downgrade and monitor upstream fixes. |
+| React Router packages report two high Framework/RSC action advisories | `npm audit --omit=dev --workspace @noxswap/web`, 2026-07-25 | Low for the current architecture | The deployed Vite SPA uses declarative `BrowserRouter` and defines no React Router server actions, loaders, framework server, or RSC endpoints. Monitor for a compatible patched release and reassess if the routing architecture changes. |
 
 ## 5. Unverified Information
 
@@ -64,11 +66,25 @@
 
 - Canonical Sepolia Safe: `0x549585Be4d75b388B4f825E0bCbBaA85B4FbfffF` (Safe v1.4.1, threshold 1).
 - Canonical allowlisted Nox module V5 `0xF68B864b600dBb8cbCB7524899bF79B2ec2Dfbe2` and Safe orderbook `0xd8037cb70163eC52aa774f54590BB266ee0d9908` are recorded in `packages/contracts/deployment-sepolia.json`.
-- Live protected swap receipt #29 settled 1,000 cUSDC with the 10% default oracle tolerance; Safe balance reveal returned `0.496401483047806904 cETH`.
+- The personal orderbook at `0xab903F78edEAF96faE78c0BF46810122fC9896fb`
+  has an exact Sourcify match to repository revision `407d770`; the current
+  `NoxLimitOrderBook.sol` is the later Safe-compatible revision and exactly
+  matches the Safe orderbook creation bytecode instead.
+- Live protected swap receipt #29 passed with the 10% default oracle tolerance;
+  authorized Safe balance decryption succeeded and the plaintext value is omitted
+  from public evidence.
 - Safe confidential order #1 was created and cancelled through the module; the encrypted input was refunded.
-- The Safe orderbook now exposes the same public lifecycle, filters, details, and readiness controls as the personal Trade orderbook. The dual-book keeper permissionlessly executed trigger-ready Safe order #3 in transaction `0xf9c71fa94ae7bb3c175cf000c646c2c3db645fe9e90cf120465da3c3450e29e2`; Safe order #4 remains open for the demo.
+- The Safe orderbook exposes the same public lifecycle, filters, details, and
+  readiness controls as the personal Trade orderbook. The dual-book keeper
+  permissionlessly executed trigger-ready Safe order #3 in transaction
+  `0xf9c71fa94ae7bb3c175cf000c646c2c3db645fe9e90cf120465da3c3450e29e2`.
+  As of the 2026-07-25 audit, Safe order #4 remains `Open` in contract storage but
+  is past expiry and eligible for permissionless refund.
 - Safe order #4 term-reveal validation batch-granted the owner viewer ACL for both amount/minOut handles in transaction `0xb1c34f5ca8b60fedb2e522d873422533caa95e1a43310c505ec77bf427d357fe`; both values decrypted successfully and were redacted from test output.
-- Module revoke and owner-controlled re-enable were both confirmed on Sepolia; the canonical module is enabled after the test.
+- Module revoke and owner-controlled re-enable were previously confirmed on
+  Sepolia. A later read-only audit on 2026-07-25 found no enabled modules, so the
+  canonical V5 module must be enabled again before owner-controlled Safe module
+  operations.
 - Auditor access is per-handle Nox viewer access only and does not grant token operator or Safe signing authority.
 - Safe module V5 was deployed in transaction `0xe3017ef17fa515cbe50787fe775b1ead860b2b420a97fd23f36168528f3ad70a`, enabled in `0x1259be1fabe9501c066afe4a41cd21f51f8fd3cafe0fa8d647fa9f66e1ac6bfb`, and the preceding module was disabled only after V5 became active; the existing Safe orderbook was intentionally retained.
 - V5 prompt-optimization evidence includes two ciphertext inputs prepared in one transaction (`0x1fe24270bdc0f75d553caf9f0cfa059a15c24a721c0bdbc2c9d9bfd0a351bc2a`) and a prevalidated Safe batch-viewer execution (`0x85212298df23eff1af488c7ceeb586875d04b018c15ee497dc9300647124fc33`).

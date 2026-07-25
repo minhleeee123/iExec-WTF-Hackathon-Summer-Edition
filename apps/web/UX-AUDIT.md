@@ -1,14 +1,20 @@
 # NoxSwap Frontend UI/UX Audit
 
-Audit date: 2026-07-23
-Scope: landing page, app shell, wallet, protected swap, limit orders, Strategy Agent, activity/evidence, mobile drawer, dialogs, responsive behavior, and keyboard/accessibility states.
+Audit date: 2026-07-23; refreshed against the final workspace on 2026-07-25.
+Scope: landing page, docs, app shell, wallet, protected swap, limit orders,
+Strategy Agent, activity/evidence, Safe Treasury, mobile drawer, dialogs,
+responsive behavior, and keyboard/accessibility states.
 
 ## Baseline
 
-- 41 frontend unit tests passed.
+- 51 frontend and server-endpoint unit tests passed.
 - Oxlint and production Vite build passed.
-- Playwright smoke checks passed at `1440x1000`, `390x844`, and two wallet/permission scenarios.
-- No horizontal overflow was found in landing, trade, wallet, activity, agent, orderbook, or order detail views.
+- Playwright smoke checks passed at `1440x1000`, `1280x900`, and `390x844`,
+  including wallet/provider, Safe owner/non-owner, and permission scenarios.
+- No horizontal overflow was found in landing, docs, trade, wallet, activity,
+  personal/Safe orderbooks, order detail, or Safe Treasury views.
+- The production Lighthouse run recorded Performance 92, Accessibility 100,
+  Best Practices 100, SEO 100, and CLS 0.014.
 
 ## Findings and remediation
 
@@ -32,4 +38,6 @@ The existing neo-brutalist visual language is coherent across landing and app su
 
 - Exact encrypted-pool quotes cannot be shown as plaintext without changing the privacy model. The UI continues to disclose that Chainlink tolerance is a protection reference and that pool price impact can still cause a confidential refund.
 - The dApp remains testnet software and should continue to display the external-audit/testnet disclaimer.
-- A formal automated axe/Lighthouse run and external smart-contract/security audit remain useful follow-ups for a production release, but are outside this repository's current test harness.
+- Automated axe regression coverage and an external smart-contract/security audit
+  remain useful follow-ups for a production release. Lighthouse has been run, but
+  it does not replace either of those reviews.

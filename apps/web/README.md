@@ -1,6 +1,7 @@
 # NoxSwap Frontend
 
-React/Vite client for the live NoxSwap Router V2 and confidential limit-order deployment on Ethereum Sepolia.
+React/Vite client for the live NoxSwap personal-wallet and Safe Treasury
+workflows on Ethereum Sepolia.
 
 ## Commands
 
@@ -46,12 +47,14 @@ npm run build
   Agent, selected with a URL-backed workflow tab.
 - `/app/wallet`: test faucets, wrap/unwrap, and auditor access grants.
 - `/app/activity`: wallet history, execution logs, proofs, and receipt evidence.
+- `/app/safe`: Safe-owned confidential balances, swaps, unwrap, orders, activity,
+  viewer/operator controls, and module lifecycle.
 
 Wallet, network, reveal, and transaction state live above the router, so navigating
 between workflows does not reset the connected session. On desktop, account, gas,
 refresh, and private-balance reveal controls remain in the application sidebar. On
-mobile they are available in the wallet drawer, while the three primary workflows
-use bottom navigation. Legacy URLs redirect to the consolidated routes.
+mobile they are available in the wallet drawer, while Wallet, Trade, Activity, and
+Safe use bottom navigation. Legacy URLs redirect to the consolidated routes.
 
 `vercel.json` provides the SPA fallback required when a route is opened directly on
 Vercel.
@@ -66,6 +69,10 @@ Vercel.
 - Four faucet/wrap/unwrap asset flows with balance-aware validation.
 - Gateway signature evidence after authorized SDK decryption and measured ETH/USDC execution deviation.
 - Groq strict-schema intent planning with public Chainlink context, local private-balance compilation, and explicit MetaMask review.
+- A dedicated Safe Treasury workspace for the deployed 1-of-1 Safe, with
+  owner-prepared ciphertext ACLs, threshold-authorized module calls, protected
+  swaps/unwrap, a separate Safe orderbook, viewer/operator controls, and
+  recoverable module revoke/re-enable.
 
 ## Groq configuration
 
@@ -84,6 +91,9 @@ proof, signature, or private key.
 
 The client never substitutes plaintext or mock balances for an encrypted balance. The eye control asks the selected EIP-6963 wallet provider for the EIP-712 authorization required by the Nox Handle Gateway, then displays the returned plaintext only in local React state. Changing account/network clears stale private balance state. When a user starts a balance-changing operation with balances revealed, the client reads the newly confirmed handles and requests fresh decryption instead of retaining stale plaintext.
 
-Swap suggestions use a configurable Chainlink-reference tolerance from 0.5% to 10%, defaulting to 5% for the deployed test pools. This is not a pool quote: reserves and price impact remain confidential, so the UI explicitly warns that a stricter minimum can still produce a full protected refund.
+Swap suggestions use a configurable Chainlink-reference tolerance from 0.5% to
+10%, defaulting to the recommended 10% for the deployed test pools. This is not a
+pool quote: reserves and price impact remain confidential, so the UI explicitly
+warns that a stricter minimum can still produce a full protected refund.
 
 Limit-order authorization can be revoked per input token with `setOperator(orderBook, 0)`. Revocation prevents new escrow transfers and does not cancel or refund an existing order.

@@ -1,7 +1,7 @@
 # NoxSwap Design System
 
-> Status: Canonical UI/UX reference for the Phase 6 production interface.
-> Updated: 2026-07-24.
+> Status: Canonical UI/UX reference for the current production interface.
+> Updated: 2026-07-25.
 
 This document defines the visual language, information architecture, interaction
 rules, responsive behavior, and privacy-aware UX conventions used by NoxSwap.

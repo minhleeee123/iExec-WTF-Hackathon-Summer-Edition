@@ -2,7 +2,11 @@
 
 NoxSwap is a confidential constant-product swap prototype built with the official iExec Nox Solidity packages and Handle SDK. Inputs, balances, pool reserves, and outputs are represented by Nox `bytes32` handles rather than plaintext token amounts.
 
-The working deployment is on Ethereum Sepolia. It supports faucet, wrap/unwrap, protected encrypted swaps across three pools, authorized balance decryption, selective ACL disclosure, Chainlink-triggered confidential limit orders, a Groq-powered Strategy Agent, event history, and ERC-721 receipts.
+The working deployment is on Ethereum Sepolia. It supports four faucet/wrapper
+pairs, protected encrypted swaps across three pools, personal and Safe-owned
+confidential limit orders, authorized balance decryption, selective ACL
+disclosure, a stateless keeper, a Groq-powered Strategy Agent, an opt-in MCP
+client, event history, recoverable unwrap, and ERC-721 settlement receipts.
 
 The current confidentiality boundaries, privileged roles, public metadata, and
 compromise impact are documented in [`docs/threat-model.md`](docs/threat-model.md).
@@ -22,6 +26,13 @@ The canonical UI/UX language and review checklist are documented in
 
 No core product data is mocked: public order state comes from Sepolia events and
 private values are obtained only through Nox-authorized decryption.
+
+The Safe module status is read from Sepolia rather than trusted from the deployment
+snapshot. As of the 2026-07-25 documentation audit, Module V5 is deployed but
+disabled; the configured Safe owner must review and use **Enable Nox module** in
+Safe Treasury before demonstrating owner-controlled Safe module operations.
+Permissionless execution/expiry of existing Safe orders does not require the
+module.
 
 ## Live Deployment
 
@@ -48,40 +59,137 @@ User documentation: [https://noxswap-iexec.vercel.app/docs](https://noxswap-iexe
 
 The three encrypted pools were initialized in transactions [`0xb509...6ae87`](https://sepolia.etherscan.io/tx/0xb50926c8d71c293e5f13b0f79c46d0f4260b5c4a4301c78fbb34eac96f6ae87b), [`0xdd08...3c72`](https://sepolia.etherscan.io/tx/0xdd08e2eff23401b32b682090162f84dff01e06b3639c37a2bf137d495c3c3c72), and [`0xa650...1f5e`](https://sepolia.etherscan.io/tx/0xa650ae996f1faa9c5d1449154a0c378d6f089f505ec5f53700f0a4f620351f5e). Full addresses and transactions are in [`packages/contracts/deployment-sepolia.json`](./packages/contracts/deployment-sepolia.json).
 
-The original ten NoxSwap deployment contracts have exact creation/runtime source matches on Sourcify. [Inspect the verified Router V2 source](https://repo.sourcify.dev/11155111/0x6e8df82d708196e75Fb735120B4817f5c2551015). The Safe extension addresses and deployment transactions are recorded in the canonical deployment JSON.
+The ten base NoxSwap deployment contracts have exact creation/runtime source
+matches on Sourcify. [Inspect the verified Router V2 source](https://repo.sourcify.dev/11155111/0x6e8df82d708196e75Fb735120B4817f5c2551015).
+The personal orderbook was deployed from the earlier repository revision linked
+in the mapping below; the current orderbook source adds the authorized-entry
+points used by Safe and therefore is not byte-for-byte identical to that older
+personal deployment.
+The Safe Module V5 and Safe orderbook are not yet published on Sourcify; their
+addresses, constructor arguments, deployment transactions, executable creation
+bytecode matches, and runtime bytecode hashes are checked by the read-only
+`npm run verify:deployment` command.
 
 All `n*` assets are faucet-backed Sepolia test assets deployed for this demo. They do not represent assets with monetary value or native Solana custody.
+
+### Source-to-deployment mapping
+
+Deployment version labels intentionally differ from some Solidity contract names.
+This table is the canonical mapping for source review:
+
+| Deployed component | Canonical Solidity source | Mapping note |
+|---|---|---|
+| NoxSwap Router V2 | [`NoxSwap.sol`](./packages/contracts/contracts/NoxSwap.sol) | `Router V2` is the deployment label; the Solidity contract remains `NoxSwap`. |
+| Personal limit order book | [`NoxLimitOrderBook.sol` at `407d770`](https://github.com/minhleeee123/iExec-WTF-Hackathon-Summer-Edition/blob/407d770218fb82ea14d680380bfedea2a24c341a/packages/contracts/contracts/NoxLimitOrderBook.sol) | Exact deployed revision, also published on Sourcify; orders are owned by their creating EOA. |
+| Safe confidential order book | [`NoxLimitOrderBook.sol`](./packages/contracts/contracts/NoxLimitOrderBook.sol) | Current source adds `createOrderAuthorized` and receipt-owner routing; its creation bytecode exactly matches the Safe orderbook deployment. |
+| Allowlisted Safe Module V5 | [`NoxSafeModule.sol`](./packages/contracts/contracts/NoxSafeModule.sol) | `V5` is the current deployed module version; this file is its canonical source. |
+| Four ERC-7984 wrappers | [`NoxConfidentialToken.sol`](./packages/contracts/contracts/NoxConfidentialToken.sol) | Thin extension of the official `ERC20ToERC7984Wrapper`. |
+| Four faucet test tokens | [`NoxTestToken.sol`](./packages/contracts/contracts/NoxTestToken.sol) | Public Sepolia-only collateral with one-hour faucet cooldowns. |
 
 ## Architecture
 
 ```mermaid
-flowchart LR
-    Browser[React client and MetaMask]
-    Gateway[iExec Nox Handle Gateway]
-    Router[NoxSwap router]
-    Compute[NoxCompute on Sepolia]
-    InToken[cUSDC ERC-7984]
-    OutToken[cETH ERC-7984]
+flowchart TB
+    subgraph Clients["Client and automation"]
+        Web["React web client"]
+        Wallet["Injected EIP-1193 wallet"]
+        MCP["MCP v4 stdio server<br/>read-only by default"]
+        Keeper["Stateless keeper"]
+        Agent["Vercel planner / observer API"]
+        Groq["Groq API"]
+    end
 
-    Browser -->|encryptInput value, uint256, router| Gateway
-    Gateway -->|bytes32 handle and proof| Browser
-    Browser -->|confidentialSwap| Router
-    Router -->|Nox.fromExternal and encrypted AMM operations| Compute
-    Router -->|confidentialTransferFrom| InToken
-    Router -->|confidentialTransfer| OutToken
-    Router -->|encrypted output handle and receipt NFT| Browser
-    Browser -->|EIP-712 authorized decrypt| Gateway
+    subgraph Nox["iExec Nox services"]
+        Handle["Handle Gateway, KMS, runner,<br/>indexer and subgraph"]
+    end
+
+    subgraph Sepolia["Ethereum Sepolia"]
+        Compute["NoxCompute<br/>encrypted operations and ACL"]
+        Underlying["4 faucet ERC-20 test tokens"]
+        Wrappers["4 ERC-7984 wrappers"]
+        Router["NoxSwap Router V2<br/>3 pools and ERC-721 receipts"]
+        PersonalBook["Personal limit order book"]
+        Safe["Safe v1.4.1<br/>1 owner / threshold 1"]
+        Module["Allowlisted Safe Module V5"]
+        SafeBook["Safe limit order book"]
+        Chainlink["Chainlink ETH/USD"]
+    end
+
+    Web --> Wallet
+    Web <-->|encrypt, decrypt, ACL and public-decrypt requests| Handle
+    Wallet -->|EIP-712 authorization| Handle
+    MCP <-->|Handle reads and signer-authorized operations| Handle
+
+    Wallet -->|EOA-signed personal writes| Wrappers
+    Wallet --> Router
+    Wallet --> PersonalBook
+    Wallet -->|owner input preparation| Module
+    Wallet -->|prevalidated 1-of-1 Safe execution| Safe
+
+    Underlying <-->|1:1 wrap and finalized unwrap| Wrappers
+    Wrappers <-->|encrypted transfers| Router
+    PersonalBook -->|escrow and authorized settlement| Router
+    PersonalBook -->|public trigger| Chainlink
+
+    Safe -->|threshold-approved call| Module
+    Module -->|allowlisted calls as the Safe| Wrappers
+    Module --> Router
+    Module --> SafeBook
+    Module --> Compute
+    SafeBook -->|authorized settlement| Router
+    SafeBook -->|public trigger| Chainlink
+
+    Router -.->|Nox arithmetic and ACL| Compute
+    Wrappers -.->|confidential balances and proofs| Compute
+    Keeper -->|execute or expire only| PersonalBook
+    Keeper -->|execute or expire only| SafeBook
+
+    Web -->|intent and public market context| Agent
+    Keeper -->|public outcome only| Agent
+    Agent <--> Groq
+    MCP -->|personal swap and pool operations| Router
+    MCP -->|personal order operations| PersonalBook
 ```
 
-The router computes the 0.30% fee and constant-product quote using `Nox.mul`, `Nox.div`, `Nox.add`, and `Nox.sub`. It never receives an output amount from the browser. ERC-7984 wrappers hold the underlying ERC-20 assets and update encrypted balances through the official Nox confidential-contract implementation.
+The web client uses `@iexec-nox/handle` through the Nox service boundary.
+`encryptInput` returns a target-bound external handle and proof; authorized
+decryption requires the connected wallet's EIP-712 authorization. Plaintext
+confidential values are held only in browser session state after the user
+authorizes a reveal.
+
+For personal swaps, the EOA authorizes the router as an ERC-7984 operator and
+submits encrypted amount/minOut inputs. The router imports them with
+`Nox.fromExternal`, computes the 0.30% fee and constant-product result with Nox
+arithmetic, and uses `Nox.ge` plus `Nox.select` to choose encrypted output or a
+full encrypted refund. It never receives a browser-calculated AMM output.
+
+The repository deploys two instances of `NoxLimitOrderBook`: one accepting
+EOA-owned orders and one whose orders are owned by the Safe. Chainlink ETH/USD
+only decides whether a cUSDC/cETH order may execute; it does not set the AMM
+settlement price. The router's encrypted `minOut` check remains authoritative and
+can settle an executable order as zero output plus full refund.
+
+Safe input preparation is a separate owner-only module call that validates Nox
+proofs and grants only an allowlisted consumer access to the prepared handles.
+Spending still requires the Safe to call the restricted module. The deployed demo
+has one owner and threshold 1, so the browser uses Safe's prevalidated-signature
+path; it is not an in-browser multisig client for higher-threshold Safes.
+
+The keeper can only call the public `executeOrder` and `expireOrder` entry points
+on both orderbooks. Groq receives user-entered intent plus public market data and
+returns drafts or explanations; it cannot sign, decrypt, or gate settlement. MCP
+starts read-only, targets the personal router/orderbook, and requires an explicit
+signer plus `MCP_ALLOW_WRITES=true` before transaction tools are enabled.
 
 ## Implemented Flows
 
-- Faucet `nUSDC` or `nWETH`, subject to a one-hour per-wallet cooldown.
+- Faucet `nUSDC`, `nWETH`, `nWBTC`, or `nSOL`, subject to a one-hour per-wallet cooldown.
 - Wrap public test assets 1:1 into official ERC-7984 wrapper balances.
 - Encrypt input amounts with `@iexec-nox/handle` and submit handle plus proof.
 - Transfer the encrypted input into the pool and calculate encrypted output from encrypted reserves.
-- Encrypt `minOut`; reject and confidentially refund the full input when the quote is insufficient or the public deadline has passed.
+- Encrypt `minOut` and confidentially refund the full input when the encrypted
+  quote is insufficient. A direct swap whose public deadline has passed reverts
+  before settlement.
 - Swap cUSDC/cETH, cWBTC/cUSDC, and cSOL/cUSDC using live encrypted pools.
 - Create, execute, cancel, and expiry-refund cUSDC/cETH limit orders with encrypted amount/minOut and a public Chainlink trigger.
 - Browse the complete public orderbook without connecting a wallet, with operational status, filters, pagination, shareable URLs, live Chainlink readiness, encrypted handles, and lifecycle transaction links.
@@ -89,15 +197,23 @@ The router computes the 0.30% fee and constant-product quote using `Nox.mul`, `N
 - Decrypt only handles authorized for the connected wallet.
 - Grant an auditor access to a current balance handle and verify the indexed ACL.
 - Unwrap through `UnwrapRequested`, Nox public decryption, and `finalizeUnwrap` proof verification.
-- Mint an on-chain ERC-721 SVG receipt for every successful swap.
+- Mint an on-chain ERC-721 SVG receipt for every completed router settlement,
+  including an encrypted minOut rejection that returns zero output and a full
+  refund. A transaction that reverts before settlement, such as an expired direct
+  swap, mints no receipt.
 - Read actual `SwapExecuted` history, calldata, handles, proof size, and receipt metadata.
 - Read the Sepolia Chainlink ETH/USD feed for a clearly labeled UI reference estimate.
-- Draft a strict limit-order plan from natural language and public Chainlink context; private percentage math and Nox encryption remain in the browser and every transaction still requires MetaMask.
+- Draft a strict limit-order plan from natural language and public Chainlink
+  context; private percentage math and Nox encryption remain in the browser and
+  every transaction still requires explicit confirmation in the selected wallet.
 - Select MetaMask, Coinbase Wallet, or Rabby through EIP-6963 provider discovery without falling back to a different injected wallet.
 - Configure a 0.5%-10% Chainlink-reference tolerance for swap `minOut` (10% default for the current test-pool/reference basis); balances already revealed in the current session are automatically refreshed after settlement when the existing viewer authorization remains valid.
 - Revoke an ERC-7984 OrderBook operator authorization for the selected input token; already escrowed orders remain active until settlement or cancellation.
 - Fund a Safe-owned ERC-7984 treasury, prepare Nox ciphertext ACLs without spend authority, and settle protected swaps only through the Safe threshold.
-- Batch Safe amount/minOut preparation and missing viewer grants, automatically restore allowlisted router/order-book operators in the reviewed Safe execution, and use Safe's prevalidated 1-of-1 path so each Safe action needs only its transaction confirmation.
+- Batch Safe amount/minOut preparation into one owner transaction, grant missing
+  viewers and restore allowlisted router/order-book operators inside the reviewed
+  Safe execution, and use Safe's prevalidated 1-of-1 path so that execution needs
+  a transaction confirmation without a separate personal-sign prompt.
 - Reveal Safe balance handles to a selected owner/auditor, inspect and revoke live router or OrderBook operators, and revoke the Nox module without changing Safe owners or balances.
 - Create minute-precision Safe-owned confidential limit orders, browse their full public lifecycle, batch-grant the Safe owner viewer ACL for amount/minOut reveal, execute or expire eligible orders permissionlessly, and cancel open orders through the owner-authorized module while minting non-fungible settlement receipts to a verified Safe owner.
 - Configure the Safe swap oracle tolerance and deadline, review confirmed Safe events without exposing confidential values, and apply a non-custodial Strategy Agent draft to the Safe order form.
@@ -112,6 +228,16 @@ The router computes the 0.30% fee and constant-product quote using `Nox.mul`, `N
 - No historical ACL revoke button: the installed Nox SDK supports `addViewer` but not `removeViewer`; grants apply to the current handle and do not automatically carry to a new balance handle.
 - No fixed MEV-savings claim. The UI reports measured execution-versus-oracle deviation only for ETH/USDC.
 - No LP share/removal lifecycle. Pools are deployer-funded test liquidity.
+- Router V2 grants its deployment owner viewer access to encrypted reserve
+  handles. Reserve values are hidden from ordinary observers, not from that
+  privileged owner.
+- Router V2 has permissionless pool creation and no router-level token allowlist
+  or reentrancy guard. The three deployed pools use the listed official
+  ERC-7984 wrappers, but arbitrary third-party pools should not be treated as
+  reviewed.
+- The web client uses reusable `MaxUint256` ERC-20 approvals when wrapping public
+  faucet assets. This reduces repeated prompts but leaves an allowance until the
+  user revokes it; the demo assets have no monetary value.
 - The built-in Safe browser signer supports the deployed 1-of-1 demo Safe. Higher-threshold Safes must collect signatures in the Safe Wallet interface.
 - Direct faucet claims to the Safe and in-app multi-owner signature collection are intentionally excluded; funding uses the existing public-wallet faucet followed by wrap-to-Safe. Safe order execution and expiry are deliberately permissionless, while cancellation remains restricted to the Safe owner through the allowlisted module.
 
@@ -173,8 +299,8 @@ public lifecycle rows, status/owner filters, shareable detail URLs, readiness
 checks, permissionless execute/expiry, and owner-authorized cancellation.
 The legacy `/app/wallet?tab=safe` URL redirects to the new first-level workspace.
 
-MetaMask must be on Ethereum Sepolia for write operations. Read-only pool and
-Chainlink data load without a wallet.
+The connected wallet must be on Ethereum Sepolia for write operations. Read-only
+pool and Chainlink data load without a wallet.
 
 The Strategy Agent is available at `/app/trade?mode=agent`. For local development,
 place `GROQ_API_KEY` in the ignored `apps/web/.env.local`; on Vercel,
@@ -221,6 +347,10 @@ deployment owner. Each run writes sanitized JSON evidence under
 `packages/contracts/artifacts/evidence/`. The local Nox off-chain Hardhat stack
 requires Docker. When Docker is unavailable, the acceptance path is compile plus
 unit tests plus the live Sepolia E2E test.
+
+`npm run verify:deployment` is read-only. `npm run verify:sourcify` is not: it
+submits any currently unverified target to Sourcify and should be run only when
+external source publication is intended.
 
 ## Stateless Order Keeper
 

@@ -19,7 +19,7 @@ The system aims to:
 - prevent an order from being executed, cancelled, or expired more than once;
 - keep keepers and non-owner executors unable to decrypt another owner's terms or
   settlement values;
-- keep MCP and CI signing keys outside source code, logs, and evidence artifacts.
+- keep MCP and CI signing keys outside source code, logs, and evidence artifacts;
 - prevent the Groq planning and observation paths from receiving wallet addresses,
   private balances, Nox handles/proofs, signatures, or signing keys.
 
@@ -33,6 +33,7 @@ The system aims to:
 | Limit-order amount and minOut | Encrypted handles are public; values are confidential | Order owner and the OrderBook/router during settlement |
 | Trigger price and expiry | Public plaintext | Everyone |
 | Token pair, trader/owner, timing, status, receipt ID and transaction hash | Public plaintext | Everyone |
+| Safe address, owners, threshold, enabled modules and operator status | Public plaintext | Everyone |
 | Pool reserve values | Encrypted handles are public; values are confidential | Router contract and, in the current Router V2 deployment, router owner |
 | Underlying wrapper collateral | ERC-20 balances are public | Everyone can inspect; only wrapper rules can release collateral |
 | Keeper decisions and health | Public operational metadata | Everyone with log/health access |
@@ -47,10 +48,13 @@ otherwise encrypted values.
 
 ### Wallet and browser
 
-MetaMask controls transaction authorization. The frontend holds revealed
-plaintext only in React session state and clears order terms when the account or
-network changes. A compromised browser, wallet extension, or injected script can
-observe values after the user authorizes decryption.
+The selected injected wallet controls personal transaction authorization. The
+deployed Safe browser path additionally requires the connected address to be its
+sole configured owner and executes the Safe's threshold-1 transaction with a
+prevalidated Safe signature. The frontend holds revealed plaintext only in React
+session state and clears order terms when the account or network changes. A
+compromised browser, wallet extension, or injected script can observe values after
+the user authorizes decryption.
 
 ### Nox off-chain services
 
@@ -62,16 +66,20 @@ on those services.
 ### Smart contracts
 
 The Sepolia contracts are the canonical settlement state. `NoxSwap` is the only
-component authorized to update encrypted pool reserves; `NoxLimitOrderBook`
-escrows order inputs and uses public Chainlink data to determine execution
-readiness. The contracts have not received an independent audit.
+component authorized to update encrypted pool reserves. Two
+`NoxLimitOrderBook` instances escrow personal-wallet and Safe-owned order inputs
+and use public Chainlink data to determine execution readiness. The restricted
+Safe module can route only allowlisted token, router, orderbook, and NoxCompute
+ACL calls on behalf of the configured Safe. The contracts have not received an
+independent audit.
 
 ### RPC, Chainlink, keeper, and MCP
 
 - RPC providers can observe requests, delay responses, omit events, or serve stale
   data, but cannot sign wallet transactions.
 - Chainlink ETH/USD is a public execution dependency for limit orders. Invalid or
-  stale answers prevent execution.
+  stale answers prevent execution. It is a trigger, not the router's settlement
+  price; the encrypted AMM `minOut` check can still select a full refund.
 - Keepers are untrusted permissionless callers. They can execute ready orders or
   expire overdue orders, but cannot cancel or decrypt them.
 - MCP starts read-only. When `MCP_ALLOW_WRITES=true`, it becomes a hot-wallet
@@ -99,7 +107,7 @@ readiness. The contracts have not received an independent audit.
 | Public calldata reveals amount/minOut | Values enter as Nox handles plus proofs | Metadata and timing remain public |
 | Unauthorized balance decryption | Nox ACL and wallet EIP-712 authorization | Compromised wallet/browser can authorize disclosure |
 | Slippage or bad execution | Encrypted positive minOut and full encrypted refund | Chainlink-derived UI estimate is not an AMM quote and pool price can diverge |
-| Replay/double settlement | Canonical order status changes before external settlement; reentrancy guard | Contract correctness is unaudited |
+| Replay/double settlement | Canonical order status changes before router settlement; orderbook entry points use a reentrancy guard | Contract correctness is unaudited |
 | Malicious keeper | Keeper has only permissionless execute/expire methods | Keeper can choose ordering/timing and spend its own gas |
 | Competing keepers | Status is reread and transactions are simulated before sending | Simultaneous submissions can still waste gas |
 | Stale/manipulated oracle data | Positive, non-future answer and one-hour maximum age | Chainlink/feed compromise affects public trigger decisions |
@@ -109,6 +117,8 @@ readiness. The contracts have not received an independent audit.
 | Prompt injection or malformed model output | Fixed system instruction, strict JSON Schema, semantic validation, manual review and wallet confirmation | A plausible but poor strategy can still be drafted |
 | AI influences keeper settlement | Deterministic decision runs independently; observer failures are isolated and never gate writes | Observer latency can delay the next polling cycle when enabled |
 | Router owner decrypts reserves | This capability is documented; reserve ACL is not exposed in normal UI | Current owner is a privileged reserve viewer until a new router is deployed |
+| Malicious ERC-7984-like pool token reenters or behaves unexpectedly | The three canonical pools use the listed official Nox wrappers | Router V2 has permissionless pool creation, no token allowlist, and no router-level reentrancy guard; arbitrary third-party pools are unreviewed |
+| Reusable public-token wrapper approval is abused | The UI checks allowance, approvals are visible/revocable, and deployed n-assets are faucet-only test tokens | A compromised wrapper could spend the remaining `MaxUint256` allowance until the user revokes it |
 
 ## 5. Compromise impact
 
@@ -134,6 +144,10 @@ readiness. The contracts have not received an independent audit.
   independent explorer/provider.
 - **Chainlink feed compromise:** can cause limit orders to become executable at an
   incorrect public price; encrypted minOut may still reject and refund settlement.
+- **Wrapper compromise:** can affect wrapper-held collateral and use any remaining
+  reusable underlying-token allowance. The deployed assets are test-only, but the
+  same approval model would require stricter review before use with valuable
+  assets.
 
 ## 6. Operational requirements
 
@@ -147,6 +161,8 @@ readiness. The contracts have not received an independent audit.
   as permission to substitute mock confidential behavior.
 - Verify deployed bytecode hashes, chain ID, transaction receipts, events, and
   lifecycle assertions in each live evidence artifact.
+- Review and revoke unused ERC-20 wrapper allowances when a demo wallet is no
+  longer in use.
 
 ## 7. Out of scope
 
