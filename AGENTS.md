@@ -1,35 +1,33 @@
-# iExec WTF Hackathon Summer Edition — Project Instructions
+# NoxSwap — Agent and Contributor Guide
 
 ## 1. Objective
 
-This workspace contains the context for the iExec WTF Hackathon Summer Edition. The competition is a strong fit for web/mobile applications because the brief requires a functional front end, end-to-end accessibility, deployment on Ethereum Sepolia, and good UX.
+This repository contains NoxSwap, an iExec Nox confidential DeFi application built for the iExec WTF Hackathon Summer Edition.
 
-Preferred product types:
+Preserve the working Ethereum Sepolia deployment, real Nox/ERC-7984 integration, short end-to-end demo flow, and judge-friendly repository structure.
 
-- Web application.
-- Mobile application.
-- Progressive Web App.
-- Web/mobile client combined with APIs, a backend, an AI service, or sponsor technology.
+## 2. Onboarding
 
-## 2. Required Reading
+Read these files before making changes:
 
-After this file, read `PLAN.md` to determine the current phase, approvals, and next action.
+1. `README.md` for the judge quick start, architecture, supported flows, and commands.
+2. `PLAN.md` for the current submission status and remaining actions.
+3. `docs/threat-model.md` for security and privacy boundaries.
+4. `docs/verification.md` for remediation history and repeatable verification.
 
-Before conducting research or planning, also read:
+Consult the following files when a change depends on competition rules:
 
-1. `docs/competition-summary.md`
-2. `docs/competition-summary-detailed.md`
-3. `docs/requirements.md`
-4. `docs/judging-criteria.md`
-5. `docs/important-notes.md`
+- `docs/competition-summary.md`
+- `docs/competition-summary-detailed.md`
+- `docs/requirements.md`
+- `docs/judging-criteria.md`
+- `docs/important-notes.md`
 
-Then read the relevant file in `plan/` for the current phase.
+## 3. Source Priority
 
-## 3. Source of Truth
+`docs/original/` stores source inputs. Do not assume every document there is official.
 
-`docs/original/` stores source inputs. Do not assume that every document in that directory is an official source.
-
-Source priority:
+Use this priority order:
 
 1. Official rules.
 2. Official challenge or track page.
@@ -37,84 +35,48 @@ Source priority:
 4. Sponsor technical documentation.
 5. Official organizer email.
 6. Third-party sources.
-7. User-provided information without independent confirmation.
+7. Unverified user-provided information.
 8. Agent inference.
 
-If context, a translation, or a plan conflicts with a higher-priority source:
+If a repository document conflicts with a higher-priority source, stop using the conflicting claim, verify the original source, update the relevant canonical document, and record the conflict in `docs/important-notes.md`.
 
-1. Stop using the conflicting information.
-2. Check the source ID and original document in `docs/original/`.
-3. Update the canonical file.
-4. Record the conflict in `docs/important-notes.md`.
+## 4. Repository Map
 
-## 4. Canonical Responsibilities
+- `apps/web/`: web client, landing page, and Vercel Agent API.
+- `apps/keeper/`: stateless order keeper.
+- `apps/mcp-server/`: MCP stdio server.
+- `packages/contracts/`: Solidity contracts, deployment scripts, tests, and canonical client artifacts.
+- `docs/`: competition context, threat model, and verification evidence.
 
-- `PLAN.md`: phases, status, approvals, blockers, and next actions.
-- `docs/competition-summary.md`: concise overview and Participation Fit Gate.
-- `docs/competition-summary-detailed.md`: detailed English competition summary.
-- `docs/requirements.md`: eligibility, product requirements, technology, IP, constraints, and submission.
-- `docs/judging-criteria.md`: rubric, weights, and evidence mapping.
-- `docs/important-notes.md`: sources, deadline, conflicts, disqualification risks, and unresolved questions.
+Local submission drafts, slides, videos, and personal notes are not part of the public source repository unless the user explicitly requests otherwise.
 
-When the same fact appears in multiple places, the canonical file takes precedence.
+## 5. Change Rules
 
-## 5. Work Sequence
+- Keep sponsor technology central to the implemented flow.
+- Do not replace real Nox behavior with mocks or plaintext shadow state.
+- Preserve the documented privacy boundary and MetaMask signing authority.
+- Do not expose secrets, private values, encrypted handles, signatures, or seed material in evidence or logs.
+- Do not change deployed addresses, ABI snapshots, or canonical artifacts without completing the corresponding deployment and synchronization workflow.
+- Avoid adding backends, databases, authentication, or major features unless they directly support an approved requirement.
+- Keep judge-facing documentation concise, accurate, and reproducible.
+- Distinguish official facts, project decisions, assumptions, and unverified information.
 
-### Phase 1 — Understand the Competition
+## 6. Validation
 
-- Confirm the Participation Fit Gate.
-- Verify requirements, rubric, deadline, and unresolved information.
-- Do not begin research or coding while mandatory requirements remain unclear.
+Run checks proportional to the change. Before a release or submission-facing commit, run:
 
-### Phase 2 — Research and Brainstorm
+```bash
+npm test
+npm run lint
+npm run build
+```
 
-Follow:
+For contract or deployment changes, also use the relevant compile, synchronization, Sepolia, and verification commands documented in `README.md` and `packages/contracts/README.md`.
 
-- `plan/research-plan.md`
-- `plan/brainstorm-plan.md`
+## 7. Submission Safety
 
-### Phase 3 — Product Plan
-
-Complete `plan/product-plan.md` only after the user selects an idea.
-
-### Phase 4 — Build Plan
-
-Complete `plan/build-plan.md` only after the Product Plan is approved.
-
-### Phase 5 — Development and Submission
-
-- Web/mobile client, landing page, and Vercel Agent API: `apps/web/`
-- Stateless keeper: `apps/keeper/`
-- MCP stdio server: `apps/mcp-server/`
-- Solidity, Hardhat, deployment, and canonical artifacts: `packages/contracts/`
-- Slides: `submission/slide/`
-- Video: `submission/video/`
-
-## 6. Web/App Rules
-
-- Viewers must understand the product value quickly.
-- The core flow must be short, stable, and directly demonstrate the challenge.
-- Sponsor technology must have a real role rather than being attached only for eligibility.
-- Provide suitable sample data and fallbacks for external services.
-- Do not add a backend, database, authentication, or deployment unless it supports the core flow or a requirement.
-
-## 7. Core-Product-First and Landing Page
-
-The landing page is mandatory for the final release, but it must be built only after the `Core Product Ready Gate`.
-
-## 8. General Rules
-
-- Do not invent requirements or change mandatory technology.
-- Do not ignore deadlines, disqualification conditions, or submission requirements.
-- Distinguish facts, inferences, and unverified information.
-- Do not add major features outside the Product Plan without approval.
-
-## 9. Preconditions for Coding
-
-Begin coding only when:
-
-- The competition has been confirmed as a fit or the user has accepted an exception.
-- Mandatory requirements and the rubric are clear.
-- The user has selected the final idea.
-- The MVP and non-goals are defined.
-- The Product Plan and Build Plan are approved.
+- Keep `README.md` as the primary judge entry point.
+- Preserve working live links and exact Sepolia addresses.
+- Do not claim unsupported verification, multisig behavior, or privacy guarantees.
+- Do not commit local submission media or private working notes accidentally.
+- Update `PLAN.md` when the submission status, blocker, or next action changes.

@@ -32,8 +32,8 @@ Allowed phase statuses: `Todo`, `In progress`, `Waiting for approval`, `Blocked`
 | 1. Context verification | Five canonical files in `docs/` | Resolve high-impact unknowns | Decision-ready context | User confirmation | Completed |
 | 2. Research | Verified context | Research users, comparable products, and rubric benchmarks | Evidence Log, competitor/rubric benchmark, and research handoff | None | Completed |
 | 3. Brainstorm | Research output | Apply hard gates, rubric scoring, and shortlist | Selected idea | User selects idea | Completed |
-| 4. Product Plan | Selected idea | Complete `plan/product-plan.md` | MVP, non-goals, and demo scenario | User approval | Completed |
-| 5. Build Plan | Approved Product Plan | Complete `plan/build-plan.md` | Stack, architecture, timeline, and backlog | User approval | Completed |
+| 4. Product Definition | Selected idea | Define the MVP, non-goals, acceptance criteria, and demo scenario | Approved product scope | User approval | Completed |
+| 5. Build Design | Approved product scope | Confirm the stack, architecture, milestones, verification, and risks | Approved implementation design | User approval | Completed |
 | 6. Development | Approved Build Plan | Complete the core product, pass the Core Product Ready Gate, and deploy to Sepolia | Demo-ready application and landing page | Milestone verification | Completed |
 | 7. Submission | Demo-ready application and landing page | Complete every mandatory deliverable | Complete submission | User final review | In progress |
 
