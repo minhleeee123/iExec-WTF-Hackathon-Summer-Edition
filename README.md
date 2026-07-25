@@ -58,16 +58,19 @@ User documentation: [https://noxswap-iexec.vercel.app/docs](https://noxswap-iexe
 
 The three encrypted pools were initialized in transactions [`0xb509...6ae87`](https://sepolia.etherscan.io/tx/0xb50926c8d71c293e5f13b0f79c46d0f4260b5c4a4301c78fbb34eac96f6ae87b), [`0xdd08...3c72`](https://sepolia.etherscan.io/tx/0xdd08e2eff23401b32b682090162f84dff01e06b3639c37a2bf137d495c3c3c72), and [`0xa650...1f5e`](https://sepolia.etherscan.io/tx/0xa650ae996f1faa9c5d1449154a0c378d6f089f505ec5f53700f0a4f620351f5e). Full addresses and transactions are in [`packages/contracts/deployment-sepolia.json`](./packages/contracts/deployment-sepolia.json).
 
-The ten base NoxSwap deployment contracts have exact creation/runtime source
-matches on Sourcify. [Inspect the verified Router V2 source](https://repo.sourcify.dev/11155111/0x6e8df82d708196e75Fb735120B4817f5c2551015).
+All twelve NoxSwap deployment targets submitted by the repository verification
+script have exact creation/runtime source matches on Sourcify. Inspect the
+verified [Router V2](https://repo.sourcify.dev/11155111/0x6e8df82d708196e75Fb735120B4817f5c2551015),
+[Safe Module V5](https://repo.sourcify.dev/11155111/0xF68B864b600dBb8cbCB7524899bF79B2ec2Dfbe2),
+and [Safe orderbook](https://repo.sourcify.dev/11155111/0xd8037cb70163eC52aa774f54590BB266ee0d9908)
+sources.
 The personal orderbook was deployed from the earlier repository revision linked
 in the mapping below; the current orderbook source adds the authorized-entry
 points used by Safe and therefore is not byte-for-byte identical to that older
 personal deployment.
-The Safe Module V5 and Safe orderbook are not yet published on Sourcify; their
-addresses, constructor arguments, deployment transactions, executable creation
-bytecode matches, and runtime bytecode hashes are checked by the read-only
-`npm run verify:deployment` command.
+Their addresses, constructor arguments, deployment transactions, creation
+bytecode matches, runtime bytecode hashes, and public Sourcify status are also
+checked by the read-only `npm run verify:deployment` command.
 
 All `n*` assets are faucet-backed Sepolia test assets deployed for this demo. They do not represent assets with monetary value or native Solana custody.
 
