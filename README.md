@@ -28,11 +28,10 @@ No core product data is mocked: public order state comes from Sepolia events and
 private values are obtained only through Nox-authorized decryption.
 
 The Safe module status is read from Sepolia rather than trusted from the deployment
-snapshot. As of the 2026-07-25 documentation audit, Module V5 is deployed but
-disabled; the configured Safe owner must review and use **Enable Nox module** in
-Safe Treasury before demonstrating owner-controlled Safe module operations.
-Permissionless execution/expiry of existing Safe orders does not require the
-module.
+snapshot. Module V5 was re-enabled by the configured Safe owner and confirmed
+active at Sepolia block `11347078` on 2026-07-25. Owner-controlled module
+operations are available; permissionless execution/expiry of existing Safe orders
+remains independent of the module.
 
 ## Live Deployment
 

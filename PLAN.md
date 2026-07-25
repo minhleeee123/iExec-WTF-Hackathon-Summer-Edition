@@ -7,15 +7,12 @@
 
 - Current phase: Phase 7 — Submission
 - Status: In progress
-- Next action: Re-enable canonical Safe Module V5, recheck the Safe write entry
-  point, publish the demo video and X submission post, and complete the final
-  review.
-- Current blocker: Read-only Sepolia audit on 2026-07-25 found that the deployed
-  Safe currently has no enabled modules. Personal flows remain available, but the
-  configured Safe owner must re-enable Module V5 before the owner-controlled Safe
-  module demo; permissionless execute/expiry of existing Safe orders is unaffected.
+- Next action: Publish the demo video and X submission post, then complete the
+  final review.
+- Current blocker: No technical blocker. Module V5 was re-enabled by the
+  configured Safe owner and confirmed active at Sepolia block `11347078`.
 - Awaiting approval from: None.
-- Last updated: 2026-07-25T15:13:06+07:00
+- Last updated: 2026-07-25T17:27:00+07:00
 
 Allowed phase statuses: `Todo`, `In progress`, `Waiting for approval`, `Blocked`, `Completed`, `Skipped`.
 
@@ -71,11 +68,9 @@ Allowed phase statuses: `Todo`, `In progress`, `Waiting for approval`, `Blocked`
 
 ## 6. Next Actions
 
-1. Connect the configured Safe owner and enable canonical Module V5 from Safe Treasury.
-2. Confirm one Safe write preflight after the module is enabled.
-3. Publish the prepared demo video, which is under four minutes.
-4. Publish the X submission post with the live app, GitHub repository, video, and `@iEx_ec`.
-5. Complete the canonical submission checklist and final review.
+1. Publish the prepared demo video, which is under four minutes.
+2. Publish the X submission post with the live app, GitHub repository, video, and `@iEx_ec`.
+3. Complete the canonical submission checklist and final review.
 
 ## 7. PLAN.md Update Rules
 
