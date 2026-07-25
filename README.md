@@ -9,6 +9,20 @@ compromise impact are documented in [`docs/threat-model.md`](docs/threat-model.m
 The canonical UI/UX language and review checklist are documented in
 [`DESIGNS.md`](DESIGNS.md).
 
+## Judge Quick Start
+
+| What to inspect | Where / how |
+|---|---|
+| Live application | [noxswap-iexec.vercel.app](https://noxswap-iexec.vercel.app) |
+| Network | Ethereum Sepolia (`chainId` `11155111`) |
+| Public proof without a wallet | Open [the live orderbook](https://noxswap-iexec.vercel.app/app/trade?mode=orders) to inspect real lifecycle events, Chainlink readiness, encrypted handles, and Sepolia transaction links. |
+| End-to-end confidential trade | Connect MetaMask on Sepolia → claim faucet assets → wrap → submit a protected swap → reveal the authorized encrypted output and receipt. |
+| Safe Treasury flow | Open [Safe Treasury](https://noxswap-iexec.vercel.app/app/safe) to inspect Safe-owned encrypted balances, module controls, protected swaps, and confidential orders. |
+| Demo video | Attach it to the required X submission post before final submission (maximum four minutes). |
+
+No core product data is mocked: public order state comes from Sepolia events and
+private values are obtained only through Nox-authorized decryption.
+
 ## Live Deployment
 
 Web application: [https://noxswap-iexec.vercel.app](https://noxswap-iexec.vercel.app)
