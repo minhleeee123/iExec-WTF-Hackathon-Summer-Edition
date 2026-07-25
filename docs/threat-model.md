@@ -2,7 +2,6 @@
 
 > Scope: the Ethereum Sepolia deployment recorded in
 > `packages/contracts/deployment-sepolia.json` and the clients in this repository.
-> This is a testnet prototype, not an audited production system.
 
 ## 1. Security objectives
 
