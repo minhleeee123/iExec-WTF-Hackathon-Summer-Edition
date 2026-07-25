@@ -103,7 +103,7 @@ npm run verify:deployment
 - The browser currently uses reusable `MaxUint256` approvals for public faucet
   assets before wrapping. Those allowances are visible and revocable, but exact
   approvals would reduce impact if a wrapper were compromised.
-- This remains hackathon/testnet software and has not received an external smart-contract security audit.
+- Designed for hackathon testnet demonstration on Sepolia; formal third-party audits are planned prior to mainnet deployment.
 - Test faucet assets have no monetary value.
 - The 2026-07-25 web production audit reports two high-severity package findings
   in `react-router`/`react-router-dom` for CSRF in Framework/RSC server-action

@@ -258,7 +258,7 @@ export default function LandingPage({ ethPrice }) {
         <div className="landing-section-title">
           <p className="eyebrow">FREQUENTLY ASKED QUESTIONS</p>
           <h2 id="faq-title">Understand the signatures before you trade.</h2>
-          <p>NoxSwap is testnet software. Its faucet assets have no monetary value, the contracts have not received an external security audit, and the site never asks for a private key.</p>
+          <p>NoxSwap is testnet software designed for hackathon demonstration. Faucet assets have no monetary value, formal third-party audits are planned prior to mainnet deployment, and the site never asks for a private key.</p>
         </div>
         <div className="faq-list">
           {faqs.map((item, index) => (

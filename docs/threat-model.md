@@ -169,4 +169,4 @@ independent audit.
 - Protection from endpoint malware after plaintext has been deliberately revealed.
 - Hiding public order trigger, owner, token pair, expiry, timing, or lifecycle.
 - MEV elimination or anonymity guarantees.
-- Security guarantees from a formal audit; none has been completed.
+- Formal third-party security audits prior to mainnet deployment; designed for hackathon testnet evaluation.
