@@ -1,90 +1,90 @@
 # Competition Requirements
 
-> Trạng thái: Hoàn tất cho workspace handoff
-> Đây là nguồn canonical cho eligibility, yêu cầu sản phẩm, công nghệ, IP, giới hạn và submission.
+> Status: Completed for workspace handoff
+> This is the canonical source for eligibility, product requirements, technology, IP, constraints, and submission.
 
-## 1. Điều kiện tham gia
+## 1. Eligibility
 
-| ID | Điều kiện | Bắt buộc | Source ID | Trạng thái |
+| ID | Requirement | Mandatory | Source ID | Status |
 |---|---|---|---|---|
 | ELIG-001 | Teams can include up to 5 participants | Yes | SRC-001 | Confirmed |
 | ELIG-002 | Do not reuse a project from the previous Vibe Coding Hackathon | Yes | SRC-001 | Confirmed |
-| ELIG-003 | Public GitHub repository with open-source code is required for submission | Yes | SRC-001 | Confirmed |
+| ELIG-003 | A public GitHub repository with open-source code is required for submission | Yes | SRC-001 | Confirmed |
 
-Kiểm tra tối thiểu:
+Minimum checks:
 
-- Cá nhân hoặc đội nhóm: đội nhóm.
-- Số thành viên: tối đa 5.
-- Yêu cầu đăng ký: join Discord challenge channel.
-- Các bên hoặc đối tượng không đủ điều kiện: project reuse từ Vibe Coding Hackathon trước đó.
+- Individual or team: team participation is supported.
+- Team size: up to 5 participants.
+- Registration requirement: join the iExec Discord challenge channel.
+- Ineligible entries: projects reused from the previous Vibe Coding Hackathon.
 
-## 2. Yêu cầu bắt buộc đối với sản phẩm
+## 2. Mandatory Product Requirements
 
-| ID | Yêu cầu | Cách kiểm chứng | Source ID | Trạng thái |
+| ID | Requirement | Verification Method | Source ID | Status |
 |---|---|---|---|---|
-| REQ-001 | Functional front-end for the dApp | Có UI chạy được end to end | SRC-001 | Confirmed |
-| REQ-002 | Project must be accessible and work end to end without mock data | Smoke test a full happy path | SRC-001 | Confirmed |
-| REQ-003 | Project must be deployed on ETH Sepolia | Verify live deployment | SRC-001 | Confirmed |
+| REQ-001 | Functional front end for the dApp | Run the UI end to end | SRC-001 | Confirmed |
+| REQ-002 | Project must be accessible and work end to end without mock data | Smoke-test the complete happy path | SRC-001 | Confirmed |
+| REQ-003 | Project must be deployed on Ethereum Sepolia | Verify the live deployment | SRC-001 | Confirmed |
 | REQ-004 | Provide `feedback.md` in the GitHub repository | Check repository contents | SRC-001 | Confirmed |
-| REQ-005 | Provide a demo video of max 4 minutes | Check video length | SRC-001 | Confirmed |
-| REQ-006 | Share the project on X with description, demo video, GitHub link and tag `@iEx_ec` | Check post contents | SRC-001 | Confirmed |
-| REQ-007 | Include complete README and documentation for setup, deployment and usage | Review repo docs | SRC-001 | Confirmed |
+| REQ-005 | Provide a demo video no longer than 4 minutes | Check video duration | SRC-001 | Confirmed |
+| REQ-006 | Share the project on X with a description, demo video, GitHub link, and `@iEx_ec` tag | Check the published post | SRC-001 | Confirmed |
+| REQ-007 | Include complete README and documentation for setup, deployment, and use | Review repository documentation | SRC-001 | Confirmed |
 
-## 3. Công nghệ bắt buộc
+## 3. Mandatory Technology
 
-| Công nghệ | Cách bắt buộc sử dụng | Bằng chứng cần có | Source ID |
+| Technology | Required Use | Required Evidence | Source ID |
 |---|---|---|---|
-| iExec Nox protocol | Must be leveraged in the confidential DeFi project | Demo and code paths showing Nox integration | SRC-001 |
-| ETH Sepolia | Application must be deployed there | Deployment URL and verification | SRC-001 |
+| iExec Nox protocol | Must be used in the confidential DeFi project | Demo and code paths showing a real Nox integration | SRC-001 |
+| Ethereum Sepolia | The application must be deployed there | Deployment URL and verification | SRC-001 |
 
-## 4. Công nghệ được khuyến nghị hoặc cung cấp
+## 4. Recommended or Provided Technology
 
-| Công nghệ | Vai trò | Tài nguyên/quyền truy cập | Source ID |
+| Technology | Role | Resources/Access | Source ID |
 |---|---|---|---|
-| Nox docs, npm packages, wizard, Hardhat plugin and starter | Developer resources for implementation | Official links mentioned in brief | SRC-001 |
+| Nox docs, npm packages, wizard, Hardhat plugin, and starter | Implementation resources | Official links mentioned in the brief | SRC-001 |
 
-## 5. Giới hạn và điều cấm
+## 5. Constraints and Prohibitions
 
-| Giới hạn hoặc điều cấm | Phạm vi áp dụng | Source ID | Trạng thái |
+| Constraint or Prohibition | Scope | Source ID | Status |
 |---|---|---|---|
 | Reusing a previous Vibe Coding Hackathon project disqualifies the builder | Submission eligibility | SRC-001 | Confirmed |
 | Do not present mock data as the core product experience | Evaluation and submission quality | SRC-001 | Confirmed |
 
-## 6. Quyền sở hữu trí tuệ, dữ liệu và pháp lý
+## 6. Intellectual Property, Data, and Legal
 
-| Chủ đề | Quy định | Source ID | Trạng thái |
+| Topic | Rule | Source ID | Status |
 |---|---|---|---|
-| Quyền sở hữu trí tuệ | Ensure originality and respect intellectual property rights | SRC-001 | Confirmed |
-| Dữ liệu và quyền riêng tư | Brief emphasizes privacy-preserving design | SRC-001 | Confirmed |
-| Mã nguồn hoặc tài sản có sẵn | Existing work must be specified when integrating iExec tools into an existing project | SRC-001 | Confirmed |
-| Giấy phép và nội dung bên thứ ba | Not explicitly specified in the provided brief | SRC-001 | Chưa xác minh |
+| Intellectual property | Ensure originality and respect intellectual property rights | SRC-001 | Confirmed |
+| Data and privacy | The brief emphasizes privacy-preserving design | SRC-001 | Confirmed |
+| Existing code or assets | Existing work must be disclosed when integrating iExec tools into an existing project | SRC-001 | Confirmed |
+| License and third-party content | Not explicitly specified in the provided brief | SRC-001 | Unverified |
 
-## 7. Submission checklist — Canonical
+## 7. Canonical Submission Checklist
 
-| Thành phần | Bắt buộc | Yêu cầu hoặc giới hạn | Source ID | Trạng thái |
+| Component | Mandatory | Requirement or Limit | Source ID | Status |
 |---|---|---|---|---|
-| Source code | Yes | Public, complete and viewable open-source code | SRC-001 | Confirmed |
+| Source code | Yes | Public, complete, viewable, and open source | SRC-001 | Confirmed |
 | Repository URL | Yes | https://github.com/minhleeee123/iExec-WTF-Hackathon-Summer-Edition | SRC-001 | Confirmed |
-| Demo URL hoặc application build | Yes | Deployed on ETH Sepolia | SRC-001 | Confirmed |
-| Slide | Chưa xác minh | Not explicitly required in the provided brief | SRC-001 | Chưa kiểm tra |
-| Video | Yes | Brief demo video, max 4 minutes | SRC-001 | Confirmed |
-| Project description | Yes | X post must include a short description | SRC-001 | Confirmed |
-| Architecture document | Yes | Documentation for setup, deployment and usage | SRC-001 | Confirmed |
-| Screenshot hoặc media | Chưa xác minh | Not explicitly listed, but demo video is required | SRC-001 | Chưa kiểm tra |
-| Form submission | Chưa xác minh | No separate form mentioned in the provided brief | SRC-001 | Chưa kiểm tra |
-| Tài khoản hoặc quyền truy cập | Yes | Join iExec Discord challenge channel | SRC-001 | Confirmed |
-| Thành phần khác | Yes | `feedback.md` in repository; X post tagging `@iEx_ec` | SRC-001 | Confirmed |
+| Demo URL or application build | Yes | Deployed on Ethereum Sepolia | SRC-001 | Confirmed |
+| Slides | Unverified | Not explicitly required in the provided brief | SRC-001 | Not checked |
+| Video | Yes | Brief demo video, maximum 4 minutes | SRC-001 | Confirmed |
+| Project description | Yes | The X post must include a short description | SRC-001 | Confirmed |
+| Architecture document | Yes | Documentation for setup, deployment, and use | SRC-001 | Confirmed |
+| Screenshots or media | Unverified | Not explicitly listed, although a demo video is required | SRC-001 | Not checked |
+| Submission form | Unverified | No separate form is mentioned in the provided brief | SRC-001 | Not checked |
+| Account or access | Yes | Join the iExec Discord challenge channel | SRC-001 | Confirmed |
+| Other components | Yes | `feedback.md` in the repository and an X post tagging `@iEx_ec` | SRC-001 | Confirmed |
 
-## 8. Điều kiện có thể dẫn đến bị loại
+## 8. Potential Disqualification Conditions
 
-| Điều kiện | Cách phòng tránh | Source ID | Trạng thái |
+| Condition | Prevention | Source ID | Status |
 |---|---|---|---|
-| Reusing a project from the previous Vibe Coding Hackathon | Start with a fresh codebase or clearly validated new project idea | SRC-001 | Confirmed |
-| Missing public repo, demo video, or Sepolia deployment | Keep submission checklist visible from day one | SRC-001 | Confirmed |
+| Reusing a project from the previous Vibe Coding Hackathon | Start from a fresh codebase or clearly validate the idea as a new project | SRC-001 | Confirmed |
+| Missing public repository, demo video, or Sepolia deployment | Keep the submission checklist visible throughout development | SRC-001 | Confirmed |
 
-## 9. Thông tin chưa xác minh
+## 9. Unverified Information
 
-| Chủ đề | Source đã kiểm tra | Câu hỏi cần làm rõ | Mức ảnh hưởng |
+| Topic | Sources Checked | Question | Impact |
 |---|---|---|---|
-| Whether slides are mandatory or optional | SRC-001 | Are slides required for the final submission? | Medium |
-| Whether a separate form submission exists | SRC-001 | Is the X post the only submission action? | Medium |
+| Whether slides are mandatory or optional | SRC-001 | Are slides required for final submission? | Medium |
+| Whether a separate submission form exists | SRC-001 | Is the X post the only submission action? | Medium |

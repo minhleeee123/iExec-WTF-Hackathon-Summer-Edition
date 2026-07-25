@@ -1,116 +1,116 @@
 # Research Plan
 
-> Trạng thái: Sẵn sàng để research agent thực hiện
-> Mọi phát hiện phải có nguồn hoặc được đánh dấu là inference.
+> Status: Ready for the research agent
+> Every finding must include a source or be marked as an inference.
 
-## 1. Input cần đọc
+## 1. Required Input
 
 - `docs/competition-summary.md`
 - `docs/requirements.md`
 - `docs/judging-criteria.md`
 - `docs/important-notes.md`
 
-## 2. Mục tiêu nghiên cứu
+## 2. Research Objectives
 
-- Hiểu rõ người dùng và vấn đề của challenge.
-- Xác minh web/mobile app có thể tạo giá trị cốt lõi.
-- Tìm giải pháp tương tự và khoảng trống có thể khai thác.
-- Kiểm tra tính khả thi của dữ liệu, API và sponsor technology.
-- Tạo evidence đầu vào cho brainstorm và rubric mapping.
+- Understand the challenge's users and problem.
+- Verify that a web/mobile application can provide core value.
+- Find comparable solutions and exploitable gaps.
+- Assess the feasibility of data, APIs, and sponsor technology.
+- Produce evidence for brainstorming and rubric mapping.
 
-## 3. Câu hỏi và từ khóa
+## 3. Questions and Keywords
 
-- Vấn đề chính: Thêm privacy vào hạ tầng DeFi/open-source public mà không phá composability.
-- Người dùng mục tiêu: Builders, DeFi users, teams cần confidential workflows.
-- Ngành/lĩnh vực: Confidential DeFi / privacy-preserving smart contracts.
-- Công nghệ bắt buộc: iExec Nox, ETH Sepolia deployment.
+- Main problem: Add privacy to public DeFi/open-source infrastructure without breaking composability.
+- Target users: Builders, DeFi users, and teams that need confidential workflows.
+- Domain: Confidential DeFi and privacy-preserving smart contracts.
+- Mandatory technology: iExec Nox and Ethereum Sepolia deployment.
 - Sponsor technology: iExec Nox protocol, docs, wizard, Hardhat plugin/starter.
-- Từ khóa sản phẩm tương tự: confidential DeFi, privacy-preserving swap, private treasury, encrypted smart contract, Nox integration.
-- Giả thuyết cần kiểm tra: Một front-end end-to-end có thể chứng minh value của Nox rõ hơn một protocol-only demo.
+- Comparable-product keywords: confidential DeFi, privacy-preserving swap, private treasury, encrypted smart contract, Nox integration.
+- Hypothesis: An end-to-end front end can demonstrate Nox's value more clearly than a protocol-only demo.
 
-## 4. Phạm vi nghiên cứu
+## 4. Research Scope
 
-Ưu tiên theo thứ tự:
+Priority order:
 
-1. Tài liệu chính thức và sponsor technical docs.
-2. Nhu cầu, workflow và pain point của người dùng.
-3. Sản phẩm trực tiếp hoặc gián tiếp có liên quan tới challenge và rubric.
-4. Dự án hackathon, open-source hoặc case study đáng tin cậy.
-5. Rủi ro về dữ liệu, API, quyền truy cập và khả năng demo.
+1. Official sources and sponsor technical documentation.
+2. User needs, workflows, and pain points.
+3. Products directly or indirectly related to the challenge and rubric.
+4. Credible hackathon projects, open-source projects, or case studies.
+5. Data, API, access, and demo-feasibility risks.
 
-Số lượng sản phẩm so sánh phụ thuộc challenge. Thường chọn 2–5 sản phẩm thật sự liên quan; không thêm đối thủ chỉ để đủ số lượng hoặc vì sản phẩm đó nổi tiếng.
+The number of comparable products depends on the challenge. Usually select two to five genuinely relevant products; do not add competitors merely to increase the count or because they are well known.
 
-Ưu tiên sản phẩm đáp ứng ít nhất một điều kiện:
+Prioritize products that meet at least one condition:
 
-- Giải quyết cùng vấn đề hoặc phục vụ cùng nhóm người dùng.
-- Có core flow web/mobile tương tự.
-- Thể hiện tốt một tiêu chí trong rubric của cuộc thi.
-- Là dự án thắng giải hoặc case study có bằng chứng liên quan.
+- Solve the same problem or serve the same users.
+- Have a similar web/mobile core flow.
+- Demonstrate a competition rubric criterion well.
+- Are award-winning projects or case studies with relevant evidence.
 
 ## 5. Evidence Log
 
-| ID | Phát hiện | Fact/Inference | Nguồn hoặc URL | Thời điểm truy cập | Độ tin cậy | Liên quan tới rubric |
+| ID | Finding | Fact/Inference | Source or URL | Accessed | Confidence | Rubric Relevance |
 |---|---|---|---|---|---|---|
-| RES-001 | iExec Nox sử dụng chuẩn ERC-7984 cho confidential tokens (tương đương confidential ERC-20) dựa trên encrypted handles (`einput`, `euint64`). | Fact | https://github.com/iExec-Nox/nox-confidential-contracts | 2026-07-22 | High | JUD-006 (Technical) |
-| RES-002 | Nox kết hợp hợp đồng on-chain với TEE off-chain (Intel TDX runners) và KMS phân tán để tính toán số liệu mã hóa mà không lộ plaintext on-chain. | Fact | https://docs.iex.ec/nox-protocol | 2026-07-22 | High | JUD-006 (Technical) |
-| RES-003 | Bộ công cụ chính thức gồm `nox-confidential-contracts`, `nox-protocol-contracts`, `nox-hardhat-starter`, Hardhat plugin và Confidential Wizard. | Fact | https://github.com/iExec-Nox | 2026-07-22 | High | JUD-003 (Sepolia), JUD-004 (feedback.md) |
-| RES-004 | ERC-7984 hỗ trợ ACL (Access Control Lists) để cho phép quyền xem có chọn lọc (auditing/compliance) mà vẫn đảm bảo tính bảo mật với công chúng. | Fact | https://github.com/iExec-Nox/nox-confidential-contracts | 2026-07-22 | High | JUD-001 (Creativity), JUD-007 (UX) |
+| RES-001 | iExec Nox uses ERC-7984 for confidential tokens, equivalent to confidential ERC-20, based on encrypted handles such as `einput` and `euint64`. | Fact | https://github.com/iExec-Nox/nox-confidential-contracts | 2026-07-22 | High | JUD-006 (Technical) |
+| RES-002 | Nox combines on-chain contracts with off-chain TEE execution (Intel TDX runners) and a distributed KMS to compute encrypted values without exposing plaintext on-chain. | Fact | https://docs.iex.ec/nox-protocol | 2026-07-22 | High | JUD-006 (Technical) |
+| RES-003 | The official toolkit includes `nox-confidential-contracts`, `nox-protocol-contracts`, `nox-hardhat-starter`, the Hardhat plugin, and Confidential Wizard. | Fact | https://github.com/iExec-Nox | 2026-07-22 | High | JUD-003 (Sepolia), JUD-004 (`feedback.md`) |
+| RES-004 | ERC-7984 supports access-control lists for selective viewing, including auditing/compliance use cases, while keeping values confidential from the public. | Fact | https://github.com/iExec-Nox/nox-confidential-contracts | 2026-07-22 | High | JUD-001 (Creativity), JUD-007 (UX) |
 
-## 6. Phân tích sản phẩm hoặc dự án tương tự
+## 6. Comparable Product or Project Analysis
 
-| Sản phẩm/dự án | Mức phù hợp với challenge | Người dùng và core flow | Điểm mạnh | Điểm yếu/khoảng trống | Rubric ID liên quan | Evidence ID |
+| Product/Project | Challenge Relevance | Users and Core Flow | Strengths | Weaknesses/Gaps | Related Rubric IDs | Evidence ID |
 |---|---|---|---|---|---|---|
-| Zama fhEVM / Fhenix | Gián tiếp (dùng FHE thay vì TEE) | Developer xây dApp bảo mật | Mô hình toán học mã hóa toàn phần (FHE) | Tốc độ tính toán FHE chậm, chưa thương mại hóa mượt trên EVM | JUD-001, JUD-006 | RES-001 |
-| Oasis Sapphire / Secret Network | Tương tự (TEE/Confidential EVM) | Người dùng DeFi bảo mật | Môi trường tính toán riêng tư độc lập | Đòi hỏi thay đổi chuỗi/L1/L2 thay vì tích hợp trực tiếp layer Nox trên Ethereum Sepolia | JUD-001, JUD-003 | RES-002 |
-| Standard ERC-20 Swaps (Uniswap v3/v4) | Hạ tầng sẵn có để tích hợp | Traders, Liquidity Providers | Thanh khoản dồi dào, composability cao | Mọi số lượng token, vị thế và địa chỉ đều công khai 100% | JUD-001, JUD-002 | RES-001, RES-004 |
+| Zama fhEVM / Fhenix | Indirect; uses FHE rather than TEE | Developers building confidential dApps | Fully encrypted mathematical model through FHE | FHE computation remains slow and has limited smooth EVM commercialization | JUD-001, JUD-006 | RES-001 |
+| Oasis Sapphire / Secret Network | Similar TEE/confidential EVM model | Privacy-focused DeFi users | Independent private execution environment | Requires a different chain/L1/L2 rather than adding Nox directly to Ethereum Sepolia | JUD-001, JUD-003 | RES-002 |
+| Standard ERC-20 swaps (Uniswap v3/v4) | Existing infrastructure suitable for integration | Traders and liquidity providers | Deep liquidity and strong composability | Token amounts, positions, and addresses are fully public | JUD-001, JUD-002 | RES-001, RES-004 |
 
 ## 7. Competitor/Rubric Benchmark
 
-Với từng tiêu chí chính thức, tìm sản phẩm, dự án hoặc case study phù hợp để hiểu loại bằng chứng có thể thuyết phục giám khảo.
+For every official criterion, identify a relevant product, project, or case study to understand what evidence may persuade judges.
 
-| Rubric ID | Sản phẩm/dự án tham khảo | Họ thể hiện tốt điều gì | Bằng chứng quan sát được | Khoảng trống có thể khai thác | Evidence ID |
+| Rubric ID | Reference Product/Project | What It Demonstrates Well | Observable Evidence | Exploitable Gap | Evidence ID |
 |---|---|---|---|---|---|
-| JUD-001 (Creativity) | Encrypted Orderbook / Dark Pool | Ẩn số lượng lệnh giao dịch | Không để lộ vị thế trước khi khớp lệnh | Tích hợp trực tiếp ERC-7984 confidential swap qua Nox | RES-001, RES-004 |
-| JUD-002 (End-to-End) | Live Sepolia dApps | Kết nối ví WalletConnect / Viem thật, không mock | Giao dịch thực tế xác nhận trên Sepolia Etherscan | Xây dựng UI mượt mà hiển thị trạng thái mã hóa/giải mã của Nox | RES-003 |
-| JUD-006 (Technical) | iExec Nox Hardhat Starter | Mẫu chuẩn triển khai ERC-7984 và `NoxCompute` | Contract kế thừa từ bộ thư viện Nox chính thức | Tạo luồng hợp đồng kết hợp ERC-7984 với logic nghiệp vụ dApp cụ thể | RES-001, RES-002 |
-| JUD-007 (UX) | Uniswap / Sablier App | Giao diện đơn giản, trực quan | Thao tác 1-click approve và execute | Tích hợp giải mã tức thì cho ví cá nhân mà không làm rối trải nghiệm | RES-004 |
+| JUD-001 (Creativity) | Encrypted orderbook / dark pool | Hides order quantities | Positions are not exposed before matching | Integrate ERC-7984 confidential swaps directly through Nox | RES-001, RES-004 |
+| JUD-002 (End-to-End) | Live Sepolia dApps | Real WalletConnect/Viem connection without mocks | Confirmed transactions on Sepolia Etherscan | Build a polished UI that exposes Nox encryption/decryption progress | RES-003 |
+| JUD-006 (Technical) | iExec Nox Hardhat Starter | Standard ERC-7984 and `NoxCompute` deployment | Contracts inherit from official Nox libraries | Combine ERC-7984 with application-specific business logic | RES-001, RES-002 |
+| JUD-007 (UX) | Uniswap / Sablier App | Simple, intuitive interface | One-click approval and execution | Integrate private-wallet decryption without making the UX confusing | RES-004 |
 
-Không sao chép tính năng hoặc tuyên bố rằng một sản phẩm đã đạt điểm cao nếu không có nguồn. Chỉ rút ra pattern, tiêu chuẩn chất lượng và cơ hội khác biệt có bằng chứng.
+Do not copy features or claim that a product scored highly without a source. Extract only evidence-backed patterns, quality standards, and differentiation opportunities.
 
 ## 8. Feasibility
 
-| Chủ đề | Điều cần xác minh | Kết quả | Evidence ID | Rủi ro |
+| Topic | Question | Result | Evidence ID | Risk |
 |---|---|---|---|---|
-| Dữ liệu | Có dữ liệu demo đủ để không phải mock core flow không | Đã xác minh (Sepolia faucet + ERC-7984 test tokens) | RES-003 | Low |
-| API/SDK | Nox packages, wizard, Hardhat plugin/starter có đủ cho build không | Đã xác minh (Thư viện `nox-confidential-contracts` sẵn sàng) | RES-001, RES-003 | Low |
-| Sponsor technology | Nox có chỗ đứng thực trong core flow nào | Đã xác minh (Xử lý ERC-7984 confidential balances & Nox compute) | RES-001, RES-002 | Low |
-| Web/mobile demo | Luồng UI nào chứng minh giá trị nhanh nhất | Đã xác minh (Web dApp trên React/Vite + Wagmi/Viem) | RES-004 | Low |
-| Thời gian triển khai | Có thể hoàn thành trước deadline 02/08/2026 không | Đã xác minh (Còn 10 ngày, scope MVP rõ ràng hoàn toàn khảthi) | RES-003 | Low |
+| Data | Is there enough demo data to avoid mocking the core flow? | Verified: Sepolia faucet and ERC-7984 test tokens | RES-003 | Low |
+| API/SDK | Are Nox packages, wizard, and Hardhat plugin/starter sufficient? | Verified: `nox-confidential-contracts` is available | RES-001, RES-003 | Low |
+| Sponsor technology | Where does Nox have a real role in the core flow? | Verified: ERC-7984 confidential balances and Nox compute | RES-001, RES-002 | Low |
+| Web/mobile demo | Which UI flow demonstrates value most quickly? | Verified: React/Vite web dApp with Wagmi/Viem | RES-004 | Low |
+| Delivery time | Can it be completed before 2026-08-02? | Verified: ten days remained and the MVP scope was clear and feasible | RES-003 | Low |
 
-## 9. Khoảng trống và cơ hội
+## 9. Gaps and Opportunities
 
-- Nhu cầu chưa được đáp ứng: Confidential workflow cho protocol công khai.
-- Workflow chưa hiệu quả: Privacy thường buộc phải hi sinh composability hoặc phải sửa protocol gốc.
-- Trải nghiệm chưa tốt: Các demo privacy hay dừng ở proof-of-concept thay vì app chạy thật.
-- Công nghệ chưa được tận dụng: Nox có thể ở lớp xử lý encrypted data trong core flow.
-- Điểm khác biệt có thể xây và demo: Route một hành động DeFi qua Nox mà người dùng vẫn nhìn thấy một UI product hoàn chỉnh.
+- Unmet need: confidential workflows for public protocols.
+- Inefficient workflow: privacy often sacrifices composability or requires modifying the underlying protocol.
+- Poor experience: privacy demos often stop at proof of concept rather than becoming functional apps.
+- Underused technology: Nox can process encrypted data within the core flow.
+- Buildable differentiator: route a DeFi action through Nox while preserving a complete product UI.
 
-## 10. Liên kết với rubric
+## 10. Rubric Mapping
 
-Mỗi phát hiện quan trọng phải trả lời:
+Every important finding must answer:
 
-- Hỗ trợ tiêu chí nào?
-- Có thể biến thành bằng chứng hoặc demo không?
-- Có khả thi trước deadline không?
-- Có phụ thuộc vào dữ liệu hoặc dịch vụ khó kiểm soát không?
+- Which criterion does it support?
+- Can it become evidence or a demo?
+- Is it feasible before the deadline?
+- Does it depend on data or services that are difficult to control?
 
-## 11. Handoff cho brainstorm
+## 11. Brainstorm Handoff
 
-- Các evidence ID quan trọng: RES-001, RES-002, RES-003, RES-004
-- Competitor/rubric benchmark đáng chú ý: Encrypted Orderbook / Dark Pool (JUD-001), Live Sepolia dApps (JUD-002), iExec Nox Starter (JUD-006)
-- Cơ hội nên brainstorm:
-  1. Private Swap / Liquidity Router (Uniswap/Curve + Nox ERC-7984)
-  2. Confidential Payroll & Streaming Payouts (Sablier/Superfluid + Nox ACLs)
-  3. Private Treasury Manager (Gnosis Safe + Encrypted Balances)
-- Hướng nên tránh: Wallet wrapper đơn thuần không có xử lý hợp đồng bảo mật thực sự, hoặc Nox integration chỉ nằm ở backend mà UI không thể hiện được giá trị riêng tư.
-- Rủi ro chưa giải quyết: Cổng nộp bài bổ sung ngoài X (nếu có). (Lưu ý: Deadline 02/08/2026 và trọng số sao đã giải quyết hoàn toàn).
+- Important evidence IDs: RES-001, RES-002, RES-003, RES-004.
+- Notable competitor/rubric benchmarks: encrypted orderbook/dark pool (JUD-001), live Sepolia dApps (JUD-002), and iExec Nox Starter (JUD-006).
+- Opportunities to brainstorm:
+  1. Private Swap / Liquidity Router (Uniswap/Curve + Nox ERC-7984).
+  2. Confidential Payroll & Streaming Payouts (Sablier/Superfluid + Nox ACLs).
+  3. Private Treasury Manager (Gnosis Safe + encrypted balances).
+- Directions to avoid: a superficial wallet wrapper without real confidential contract processing, or a Nox integration confined to the backend whose privacy value is invisible in the UI.
+- Unresolved risk: an additional submission portal beyond X may exist. The 2026-08-02 deadline and star weights were already resolved.

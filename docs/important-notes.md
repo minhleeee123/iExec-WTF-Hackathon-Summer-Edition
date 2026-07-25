@@ -1,66 +1,66 @@
 # Important Notes
 
-> Trạng thái: Active; updated during implementation validation
-> File này quản lý nguồn, deadline, xung đột, rủi ro bị loại và thông tin chưa xác minh.
+> Status: Active; updated during implementation validation
+> This file manages sources, deadlines, conflicts, disqualification risks, and unverified information.
 
 ## 1. Source Register
 
-| Source ID | Tên nguồn | Loại nguồn | File/URL | Đơn vị phát hành | Thời điểm truy cập | Cấp ưu tiên |
+| Source ID | Source Name | Source Type | File/URL | Publisher | Accessed | Priority |
 |---|---|---|---|---|---|---:|
 | SRC-001 | User-provided challenge brief for iExec WTF Hackathon Summer Edition | User-provided | `docs/original/user-provided-challenge-brief.md` | User-provided | 2026-07-21T21:34:36+07:00 | 7 |
 | SRC-002 | Safe Smart Account concepts and module architecture | Official technical documentation | `https://docs.safe.global/advanced/smart-account-concepts` | Safe | 2026-07-23 | 4 |
 
 ## 2. Deadline
 
-- Múi giờ địa phương dùng để quy đổi: GMT+7 (Giờ Đông Dương)
+- Local timezone used for conversion: GMT+7 (Indochina Time)
 
-| Mốc | Thời gian gốc | Múi giờ gốc | Thời gian địa phương (GMT+7) | Source ID | Trạng thái |
+| Milestone | Original Time | Original Timezone | Local Time (GMT+7) | Source ID | Status |
 |---|---|---|---|---|---|
-| Đăng ký (Pre-registration) | 2026/07/02 05:00 | Chưa rõ (có thể UTC) | 2026/07/02 05:00 | User | Xác nhận |
-| Mở cổng nộp bài (Submission) | 2026/07/06 05:00 | Chưa rõ (có thể UTC) | 2026/07/06 05:00 | User | Xác nhận |
-| Hạn chót nộp bài (Deadline) | 2026/08/02 04:59 | Chưa rõ (có thể UTC) | 2026/08/02 04:59 | User | Xác nhận |
+| Pre-registration | 2026/07/02 05:00 | Unknown, possibly UTC | 2026/07/02 05:00 | User | Confirmed |
+| Submission opens | 2026/07/06 05:00 | Unknown, possibly UTC | 2026/07/06 05:00 | User | Confirmed |
+| Submission deadline | 2026/08/02 04:59 | Unknown, possibly UTC | 2026/08/02 04:59 | User | Confirmed |
 
-## 3. Xung đột giữa nguồn
+## 3. Source Conflicts
 
-| Chủ đề | Thông tin A | Source ID A | Thông tin B | Source ID B | Cách xử lý | Trạng thái |
+| Topic | Information A | Source ID A | Information B | Source ID B | Resolution | Status |
 |---|---|---|---|---|---|---|
-| Chưa kiểm tra |  |  |  |  |  | Mở |
+| Not yet reviewed |  |  |  |  |  | Open |
 
-## 4. Rủi ro bị loại hoặc mất quyền chấm
+## 4. Disqualification or Judging Risks
 
-| Rủi ro | Bằng chứng/Source ID | Mức ảnh hưởng | Hành động phòng tránh |
+| Risk | Evidence/Source ID | Impact | Mitigation |
 |---|---|---|---|
-| Reuse project from previous Vibe Coding Hackathon leads to disqualification | SRC-001 | High | Xác nhận project mới, không tái sử dụng project cũ. |
-| Missing ETH Sepolia deployment or end-to-end accessibility | SRC-001 | High | Thiết kế demo để chạy thật trên Sepolia và tránh mock data cho core flow. |
-| Missing public GitHub, README, docs, `feedback.md` or X submission post | SRC-001 | High | Đưa các deliverable này vào scope submission ngay từ đầu. |
-| Production MetaMask write flow regression | User confirmation, 2026-07-25 | Closed | Người dùng đã xác nhận happy path hoạt động ổn định trên URL public; chỉ chạy lại nếu production build thay đổi. |
-| Local Nox integration stack không chạy vì môi trường thiếu Docker | Nox Hardhat plugin runtime check, 2026-07-22 | Low | Dùng compile/unit + live Sepolia E2E; chạy lại local integration trong CI có Docker nếu có. |
-| Docker-backed Nox integration workflow chưa có run evidence | Internal implementation validation, 2026-07-23 | Low | Workflow nightly/manual đã được thêm; chạy trên GitHub và giữ tách khỏi required PR checks cho đến khi ổn định. |
-| Safe Module V5 và Safe orderbook chưa có public Sourcify record | Read-only Sourcify lookup, 2026-07-25 | Medium | Deployment consistency đã pass; verification targets đã được chuẩn bị nhưng chỉ gửi lên Sourcify sau khi người dùng yêu cầu. |
-| Safe input proofs cannot use a Safe contract as the EOA gateway owner | Live Sepolia smoke test, 2026-07-23 | Closed | Safe owner prepares persistent Nox ACLs in the allowlisted module; only the Safe threshold can trigger settlement and spend treasury balances. |
-| Standard Safe cannot receive the router's ERC-721 receipt callback | Live Sepolia smoke test, 2026-07-23 | Closed | Assets and refunds remain in Safe custody; receipt owner is constrained to a verified Safe owner EOA. |
-| MCP SDK kéo theo hai advisory moderate của `@hono/node-server` | `npm audit --omit=dev`, 2026-07-24 | Low | MCP chỉ chạy stdio trên Linux và không khởi tạo static HTTP server bị ảnh hưởng; không force downgrade SDK, theo dõi bản vá tương thích upstream. |
+| Reusing a project from the previous Vibe Coding Hackathon leads to disqualification | SRC-001 | High | Confirm that the project is new and does not reuse a previous entry. |
+| Missing Ethereum Sepolia deployment or end-to-end accessibility | SRC-001 | High | Demonstrate the real Sepolia flow and avoid mock data in the core experience. |
+| Missing public GitHub repository, README, docs, `feedback.md`, or X submission post | SRC-001 | High | Keep every mandatory deliverable in the submission scope. |
+| Production MetaMask write-flow regression | User confirmation, 2026-07-25 | Closed | The user confirmed the happy path on the public URL; repeat only if the production build changes. |
+| Local Nox integration stack cannot run because Docker is unavailable | Nox Hardhat plugin runtime check, 2026-07-22 | Low | Use compile/unit tests and live Sepolia E2E; rerun local integration in Docker-enabled CI when available. |
+| Docker-backed Nox integration workflow has no completed run evidence | Internal implementation validation, 2026-07-23 | Low | The nightly/manual workflow exists; run it on GitHub and keep it separate from required PR checks until stable. |
+| Safe Module V5 and Safe orderbook do not yet have public Sourcify records | Read-only Sourcify lookup, 2026-07-25 | Medium | Deployment consistency passes; verification targets are prepared but must be submitted only after user authorization. |
+| Safe input proofs cannot use a Safe contract as the EOA Gateway owner | Live Sepolia smoke test, 2026-07-23 | Closed | A Safe owner prepares persistent Nox ACLs in the allowlisted module; only the Safe threshold can settle and spend treasury balances. |
+| A standard Safe cannot receive the router's ERC-721 receipt callback | Live Sepolia smoke test, 2026-07-23 | Closed | Assets and refunds stay in Safe custody; the receipt owner is restricted to a verified Safe-owner EOA. |
+| MCP SDK includes two moderate `@hono/node-server` advisories | `npm audit --omit=dev`, 2026-07-24 | Low | MCP runs only over stdio on Linux and does not start the affected static HTTP server; avoid a forced incompatible SDK downgrade and monitor upstream fixes. |
 
-## 5. Thông tin chưa xác minh
+## 5. Unverified Information
 
-| Chủ đề | Source đã kiểm tra | Điều chưa rõ | Ảnh hưởng | Người cần xác nhận |
+| Topic | Sources Checked | Unknown | Impact | Required Owner |
 |---|---|---|---|---|
-| Cổng nộp chính thức ngoài X post | SRC-001 | Có form submission hoặc bước bổ sung nào không | Ảnh hưởng submission checklist | User/Organizer |
+| Official submission portal beyond the X post | SRC-001 | Whether an additional form or submission step exists | Affects the submission checklist | User/Organizer |
 
-## 6. Câu hỏi cần làm rõ
+## 6. Questions to Resolve
 
-| Câu hỏi | Lý do cần biết | Deadline cần câu trả lời | Trạng thái |
+| Question | Why It Matters | Required By | Status |
 |---|---|---|---|
-| Cổng nộp chính thức ngoài X post có tồn tại không? | Xác minh toàn bộ các kênh submission | Trước khi nộp bài | Open |
+| Is there an official submission portal beyond the X post? | Confirms every required submission channel | Before submission | Open |
 
-## 7. Inference và giả định
+## 7. Inferences and Assumptions
 
-| Nội dung | Loại | Căn cứ | Có cần người dùng phê duyệt? |
+| Statement | Type | Basis | Requires User Approval? |
 |---|---|---|---|
-| Web/mobile app là phù hợp | Inference | Brief yêu cầu functional front-end, UX và end-to-end accessibility | Không, đã được fit gate chấp nhận |
-| Official website tạm dùng linktr.ee iExec tech | Inference | Link được nhắc trong brief, chưa kiểm chứng riêng | Có |
+| A web/mobile app is a suitable format | Inference | The brief requires a functional front end, UX, and end-to-end accessibility | No; the fit gate is already approved |
+| The temporary official website reference is the iExec Linktree | Inference | The link appears in the brief but has not been independently verified | Yes |
 
-## 8. Safe composability validation
+## 8. Safe Composability Validation
 
 - Canonical Sepolia Safe: `0x549585Be4d75b388B4f825E0bCbBaA85B4FbfffF` (Safe v1.4.1, threshold 1).
 - Canonical allowlisted Nox module V5 `0xF68B864b600dBb8cbCB7524899bF79B2ec2Dfbe2` and Safe orderbook `0xd8037cb70163eC52aa774f54590BB266ee0d9908` are recorded in `packages/contracts/deployment-sepolia.json`.

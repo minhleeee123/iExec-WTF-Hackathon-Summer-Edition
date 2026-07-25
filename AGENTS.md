@@ -1,120 +1,120 @@
 # iExec WTF Hackathon Summer Edition — Project Instructions
 
-## 1. Mục tiêu
+## 1. Objective
 
-Workspace này chứa context cho iExec WTF Hackathon Summer Edition. Cuộc thi phù hợp với web/mobile app vì brief yêu cầu functional front-end, end-to-end accessibility, ETH Sepolia deployment và UX.
+This workspace contains the context for the iExec WTF Hackathon Summer Edition. The competition is a strong fit for web/mobile applications because the brief requires a functional front end, end-to-end accessibility, deployment on Ethereum Sepolia, and good UX.
 
-Sản phẩm ưu tiên:
+Preferred product types:
 
 - Web application.
 - Mobile application.
 - Progressive Web App.
-- Web/mobile client kết hợp API, backend, AI service hoặc sponsor technology.
+- Web/mobile client combined with APIs, a backend, an AI service, or sponsor technology.
 
-## 2. Nội dung phải đọc
+## 2. Required Reading
 
-Sau file này, đọc `PLAN.md` để xác định phase hiện tại, approval và bước tiếp theo.
+After this file, read `PLAN.md` to determine the current phase, approvals, and next action.
 
-Trước khi nghiên cứu hoặc lập kế hoạch, đọc tiếp:
+Before conducting research or planning, also read:
 
 1. `docs/competition-summary.md`
-2. `docs/competition-summary-vi.md`
+2. `docs/competition-summary-detailed.md`
 3. `docs/requirements.md`
 4. `docs/judging-criteria.md`
 5. `docs/important-notes.md`
 
-Sau đó đọc file phù hợp trong `plan/` theo phase hiện tại.
+Then read the relevant file in `plan/` for the current phase.
 
-## 3. Nguồn sự thật
+## 3. Source of Truth
 
-`docs/original/` là kho lưu nguồn đầu vào. Không mặc định mọi tài liệu trong đó đều là nguồn chính thức.
+`docs/original/` stores source inputs. Do not assume that every document in that directory is an official source.
 
-Thứ tự ưu tiên:
+Source priority:
 
-1. Thể lệ chính thức.
-2. Trang challenge hoặc track chính thức.
-3. FAQ chính thức.
-4. Tài liệu kỹ thuật của nhà tài trợ.
-5. Email chính thức từ ban tổ chức.
-6. Nguồn bên thứ ba.
-7. Nội dung người dùng cung cấp nhưng chưa có nguồn xác nhận.
-8. Suy luận của agent.
+1. Official rules.
+2. Official challenge or track page.
+3. Official FAQ.
+4. Sponsor technical documentation.
+5. Official organizer email.
+6. Third-party sources.
+7. User-provided information without independent confirmation.
+8. Agent inference.
 
-Nếu context, bản dịch hoặc kế hoạch mâu thuẫn với nguồn ưu tiên cao hơn:
+If context, a translation, or a plan conflicts with a higher-priority source:
 
-1. Dừng sử dụng thông tin mâu thuẫn.
-2. Kiểm tra source ID và tài liệu gốc trong `docs/original/`.
-3. Cập nhật file canonical.
-4. Ghi lại xung đột trong `docs/important-notes.md`.
+1. Stop using the conflicting information.
+2. Check the source ID and original document in `docs/original/`.
+3. Update the canonical file.
+4. Record the conflict in `docs/important-notes.md`.
 
-## 4. Trách nhiệm canonical
+## 4. Canonical Responsibilities
 
-- `PLAN.md`: phase, trạng thái, approval, blocker và bước tiếp theo.
-- `docs/competition-summary.md`: tổng quan ngắn và Participation Fit Gate.
-- `docs/competition-summary-vi.md`: bản dịch/tóm tắt tiếng Việt.
-- `docs/requirements.md`: eligibility, yêu cầu sản phẩm, công nghệ, IP, giới hạn và submission.
-- `docs/judging-criteria.md`: rubric, trọng số và evidence mapping.
-- `docs/important-notes.md`: nguồn, deadline, xung đột, rủi ro bị loại và câu hỏi chưa xác minh.
+- `PLAN.md`: phases, status, approvals, blockers, and next actions.
+- `docs/competition-summary.md`: concise overview and Participation Fit Gate.
+- `docs/competition-summary-detailed.md`: detailed English competition summary.
+- `docs/requirements.md`: eligibility, product requirements, technology, IP, constraints, and submission.
+- `docs/judging-criteria.md`: rubric, weights, and evidence mapping.
+- `docs/important-notes.md`: sources, deadline, conflicts, disqualification risks, and unresolved questions.
 
-Khi cùng một dữ kiện xuất hiện ở nhiều nơi, file canonical được ưu tiên.
+When the same fact appears in multiple places, the canonical file takes precedence.
 
-## 5. Thứ tự làm việc
+## 5. Work Sequence
 
-### Giai đoạn 1 — Hiểu cuộc thi
+### Phase 1 — Understand the Competition
 
-- Xác nhận Participation Fit Gate.
-- Kiểm tra requirements, rubric, deadline và thông tin chưa xác minh.
-- Không bắt đầu nghiên cứu hoặc code nếu yêu cầu bắt buộc chưa rõ.
+- Confirm the Participation Fit Gate.
+- Verify requirements, rubric, deadline, and unresolved information.
+- Do not begin research or coding while mandatory requirements remain unclear.
 
-### Giai đoạn 2 — Nghiên cứu và brainstorm
+### Phase 2 — Research and Brainstorm
 
-Làm theo:
+Follow:
 
 - `plan/research-plan.md`
 - `plan/brainstorm-plan.md`
 
-### Giai đoạn 3 — Product plan
+### Phase 3 — Product Plan
 
-Chỉ hoàn thiện `plan/product-plan.md` sau khi người dùng chọn ý tưởng.
+Complete `plan/product-plan.md` only after the user selects an idea.
 
-### Giai đoạn 4 — Build plan
+### Phase 4 — Build Plan
 
-Chỉ hoàn thiện `plan/build-plan.md` sau khi Product Plan được phê duyệt.
+Complete `plan/build-plan.md` only after the Product Plan is approved.
 
-### Giai đoạn 5 — Phát triển và submission
+### Phase 5 — Development and Submission
 
-- Web/mobile client, landing page và Vercel Agent API: `apps/web/`
+- Web/mobile client, landing page, and Vercel Agent API: `apps/web/`
 - Stateless keeper: `apps/keeper/`
 - MCP stdio server: `apps/mcp-server/`
-- Solidity, Hardhat, deployment và canonical artifacts: `packages/contracts/`
-- Slide: `submission/slide/`
+- Solidity, Hardhat, deployment, and canonical artifacts: `packages/contracts/`
+- Slides: `submission/slide/`
 - Video: `submission/video/`
 
-## 6. Quy tắc Web/App
+## 6. Web/App Rules
 
-- Người xem phải hiểu giá trị sản phẩm nhanh.
-- Core flow phải ngắn, ổn định và thể hiện trực tiếp đề bài.
-- Sponsor technology phải đóng vai trò thực, không chỉ được gắn thêm để đủ điều kiện.
-- Có dữ liệu mẫu và fallback phù hợp cho dịch vụ ngoài.
-- Không thêm backend, database, authentication hoặc deployment nếu không phục vụ core flow hoặc requirement.
+- Viewers must understand the product value quickly.
+- The core flow must be short, stable, and directly demonstrate the challenge.
+- Sponsor technology must have a real role rather than being attached only for eligibility.
+- Provide suitable sample data and fallbacks for external services.
+- Do not add a backend, database, authentication, or deployment unless it supports the core flow or a requirement.
 
-## 7. Core-product-first và Landing Page
+## 7. Core-Product-First and Landing Page
 
-Landing page là deliverable bắt buộc của bản cuối nhưng chỉ được làm sau `Core Product Ready Gate`.
+The landing page is mandatory for the final release, but it must be built only after the `Core Product Ready Gate`.
 
-## 8. Quy tắc chung
+## 8. General Rules
 
-- Không tự bịa yêu cầu hoặc thay đổi công nghệ bắt buộc.
-- Không bỏ qua deadline, điều kiện bị loại hoặc submission requirement.
-- Phân biệt fact, inference và thông tin chưa xác minh.
-- Không thêm tính năng lớn ngoài Product Plan mà chưa được phê duyệt.
+- Do not invent requirements or change mandatory technology.
+- Do not ignore deadlines, disqualification conditions, or submission requirements.
+- Distinguish facts, inferences, and unverified information.
+- Do not add major features outside the Product Plan without approval.
 
-## 9. Điều kiện trước khi bắt đầu code
+## 9. Preconditions for Coding
 
-Chỉ bắt đầu code khi:
+Begin coding only when:
 
-- Cuộc thi đã được xác nhận phù hợp hoặc người dùng đã chấp nhận ngoại lệ.
-- Yêu cầu bắt buộc và rubric đã rõ.
-- Ý tưởng cuối cùng đã được người dùng chọn.
-- MVP và non-goals đã được xác định.
-- Product Plan và Build Plan đã được phê duyệt.
+- The competition has been confirmed as a fit or the user has accepted an exception.
+- Mandatory requirements and the rubric are clear.
+- The user has selected the final idea.
+- The MVP and non-goals are defined.
+- The Product Plan and Build Plan are approved.

@@ -40,7 +40,7 @@ Build a real, deployable use case on top of iExec Nox, the confidential smart co
 
 ## 5. Participation Fit Gate
 
-- Classification: Phù hợp
+- Classification: Suitable
 - Evidence and source IDs: The brief explicitly requires a functional front-end, end-to-end accessibility, UX, and deployment on ETH Sepolia, which makes web/mobile the core product surface. Source: SRC-001.
 - Why web/mobile is or is not a core part of the solution: The challenge judges the app itself, not only a backend or protocol proof. The frontend must be functional and usable end to end.
 - Conditions requiring clarification: Exact deadline, exact rubric weighting, and any official rules not present in the provided brief remain unverified.

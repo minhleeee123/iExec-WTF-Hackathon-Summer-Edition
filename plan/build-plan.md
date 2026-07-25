@@ -1,40 +1,40 @@
 # Build Plan
 
-> Trạng thái: Completed for Phase 6; final publish and submission media remain in Phase 7.
+> Status: Completed for Phase 6; final publication and submission media remain in Phase 7.
 
 ## 1. Preconditions
 
-- [x] Participation Fit Gate đã được xác nhận.
-- [x] Product Plan đã được người dùng phê duyệt.
-- [x] Requirements, rubric và deadline đã được đọc.
-- [x] Người dùng đã yêu cầu thay toàn bộ chức năng mô phỏng bằng chức năng thật hoặc báo cáo rõ phần không thể làm.
+- [x] The Participation Fit Gate was confirmed.
+- [x] The Product Plan was approved by the user.
+- [x] Requirements, rubric, and deadline were reviewed.
+- [x] The user requested that every simulated feature be replaced by a real implementation or be explicitly reported as unsupported.
 
 ## 2. Product profile
 
 - Client: React 19 + Vite + React Router + responsive CSS.
-- Wallet/RPC: Ethers v6 `BrowserProvider`, MetaMask và Ethereum Sepolia.
+- Wallet/RPC: Ethers v6 `BrowserProvider`, MetaMask, and Ethereum Sepolia.
 - Core flow: Connect -> Faucet -> Wrap -> SDK encrypt -> Confidential swap -> SDK decrypt -> Receipt/history.
-- Supporting real flows: Unwrap với public decryption proof, ACL viewer, Chainlink reference price, MCP stdio.
+- Supporting real flows: unwrap with public-decryption proof, ACL viewer, Chainlink reference price, and MCP stdio.
 - Public frontend deployment: `https://noxswap-iexec.vercel.app`; external desktop/mobile smoke tests and a ten-order public read passed against live Sepolia data.
-- Contract deployment: Live on Ethereum Sepolia, addresses canonical trong `packages/contracts/deployment-sepolia.json`.
+- Contract deployment: Live on Ethereum Sepolia, with canonical addresses in `packages/contracts/deployment-sepolia.json`.
 
 ## 3. Tech stack
 
-| Layer | Technology | Vai trò |
+| Layer | Technology | Role |
 |---|---|---|
-| Web client | React 19, Vite 8, Vanilla CSS | Operational swap UI và responsive layout |
-| Wallet/contracts | Ethers 6 | EIP-1193 wallet, contract reads/writes và event parsing |
+| Web client | React 19, Vite 8, Vanilla CSS | Operational swap UI and responsive layout |
+| Wallet/contracts | Ethers 6 | EIP-1193 wallet, contract reads/writes, and event parsing |
 | Client Nox SDK | `@iexec-nox/handle@0.1.0-beta.13` | `encryptInput`, `decrypt`, `publicDecrypt`, `viewACL` |
 | Confidential contracts | `@iexec-nox/nox-confidential-contracts@0.2.2` | Official ERC-7984 wrapper |
-| Nox Solidity SDK | `@iexec-nox/nox-protocol-contracts@0.2.4` | Encrypted types, ACL và arithmetic primitives |
-| Contract tooling | Hardhat 3, Solidity 0.8.35, Node 24 | Compile và artifacts |
-| Oracle | Chainlink ETH/USD Sepolia feed | UI reference price, không quyết định settlement |
+| Nox Solidity SDK | `@iexec-nox/nox-protocol-contracts@0.2.4` | Encrypted types, ACLs, and arithmetic primitives |
+| Contract tooling | Hardhat 3, Solidity 0.8.35, Node 24 | Compilation and artifacts |
+| Oracle | Chainlink ETH/USD Sepolia feed | UI reference price; does not determine settlement |
 | AI strategy | Groq `openai/gpt-oss-20b` strict JSON schema | Natural-language order drafts from public market context; no signing authority |
 | Agent integration | MCP SDK stdio server | Nine read/decrypt/write/planning tools with explicit write opt-in |
 
-Không có database hoặc authentication server. Groq keys stay in server-side environment variables. MCP is an optional local adapter, starts read-only, and uses an environment-only `PRIVATE_KEY` only for signer-authorized tools.
+There is no database or authentication server. Groq keys stay in server-side environment variables. MCP is an optional local adapter, starts read-only, and uses an environment-only `PRIVATE_KEY` only for signer-authorized tools.
 
-## 4. Kiến trúc
+## 4. Architecture
 
 ```text
 [React / MetaMask]
@@ -164,7 +164,7 @@ Failure handling:
 | Risk | Impact | Mitigation |
 |---|---|---|
 | No external smart-contract audit | High for any non-testnet use | Keep testnet-only messaging; do not handle valuable assets |
-| Chưa có LP shares/remove-liquidity | Medium for completeness | Giữ scope là test pool do deployer cấp vốn; không quảng bá permissionless LP product |
+| No LP shares/remove-liquidity lifecycle | Medium for completeness | Keep the scope as deployer-funded test pools; do not market it as a permissionless LP product |
 | Public RPC rate limits/timeouts | Medium | Allow configurable RPC and use static network configuration |
 | Nox subgraph indexing delay | Medium | Bounded retries and explicit waiting status |
 | Faucet cooldown blocks repeated demo | Medium | Pre-fund demo wallet and show remaining public balance |
