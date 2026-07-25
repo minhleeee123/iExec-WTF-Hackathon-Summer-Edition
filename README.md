@@ -204,6 +204,7 @@ npm run compile
 npm test
 npm run test:nox # requires Docker
 npm run keeper:dry
+npm run verify:deployment # read-only Sepolia/source consistency check
 ```
 
 Live tests require a funded Sepolia test wallet. Never commit its private key.

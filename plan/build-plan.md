@@ -100,13 +100,13 @@ Failure handling:
 - [x] Replace linear `1..nextOrderId` polling with lifecycle-event indexes, finalized checkpoints, bounded log ranges, and active-order reads.
 - [x] Add push/PR CI for contracts, keeper, frontend, deployment consistency, and secret scanning; keep signer-backed Sepolia E2E manual.
 - [x] Manual MetaMask local/preview smoke test: provider selection, private reveal, default protected swap, post-settlement reveal refresh, operator revoke/authorize, and limit-order create/cancel.
-- [ ] Manual MetaMask smoke test in the final public-hosted URL.
+- [x] Manual MetaMask smoke test in the final public-hosted URL, confirmed by the user on 2026-07-25.
 
 ### Milestone 5: Submission
 
 - [x] Update README, developer feedback and verification report.
 - [x] Deploy frontend publicly and record its canonical URL.
-- [ ] Verify repository public accessibility.
+- [x] Verify repository public accessibility.
 - [ ] Record/publish demo video no longer than four minutes.
 - [ ] Publish X post and complete final submission review.
 
@@ -139,7 +139,7 @@ Failure handling:
 
 | Flow | Test | Evidence | Status |
 |---|---|---|---|
-| Compile/ABI/security regression | `npm run compile && npm test` | 38 passing contract/keeper/MCP tests, 46 frontend tests, plus one Docker-gated Nox runtime suite, including 2,000 deterministic swap invariants | Pass |
+| Compile/ABI/security regression | `npm run compile && npm test` | 40 passing contract/keeper/MCP tests, 51 frontend tests, plus one Docker-gated Nox runtime suite, including 2,000 deterministic swap invariants | Pass |
 | Local Nox runtime | `npm run test:nox` | Official Docker stack suite covers wrap, reserves/collateral, protected swap/refund, order execute/cancel/expire, double settlement, and unwrap proof | Added; nightly/manual CI, local run blocked by missing Docker |
 | Keeper decisions, indexing, and lifecycle | `npm test`, `npm run keeper:dry`, and live cycles | Unit coverage, incremental active-order checkpoint, order #3 permissionless execution, and an order #5-only dry scan | Pass |
 | Live Router V2 protections | `npm run test:sepolia` | Any funded signer; positive minOut settlement plus forced rejection with exact confidential refund and sanitized evidence artifact | Pass |
@@ -150,13 +150,14 @@ Failure handling:
 | Safe Treasury parity | `npm run test:safe:sepolia`, `npm run test:safe:prompt:sepolia`, `npm run test:safe:swap:sepolia`, and `npm run test:safe:unwrap:sepolia` | Module configuration, batched inputs/viewers, prevalidated 1-of-1 execution, automatic operator/ACL settlement, and complete unwrap proof lifecycle | Pass |
 | MCP protocol | `npm run test:mcp` and `npm run test:mcp:write` | Nine tools, live Chainlink/Groq planning, real small swap, order create/cancel, receipt/event/status assertions, and sanitized evidence | Pass |
 | AI strategy and observer | `npm run test:unit`, `npm run test:agent:live`, backend `npm test` | Strict-schema Groq responses, private-field rejection, local percentage compilation, responsive UI, and observer non-authority | Pass |
-| Frontend static quality | `npm run test:unit && npm run build && npm run lint` | 46 unit tests including wallet-provider selection, configurable positive minOut regression, Safe activity normalization, incremental event index/cache, observer auth/rate/body guards, production build, and zero lint errors | Pass |
+| Frontend static quality | `npm run test:unit && npm run build && npm run lint` | 51 unit tests including wallet-provider selection, configurable positive minOut regression, Safe activity normalization, incremental event index/cache, observer auth/rate/body guards, production build, and zero lint errors | Pass |
 | Continuous integration | `.github/workflows/ci.yml` | Push/PR compile, tests, lint, build, deployment consistency, and Gitleaks; latest Phase 6 commits completed successfully | Pass |
 | Responsive layout | Headless Chrome 1440x1000, 1280x900, and 390x844 | Wallet-free live orderbook; visually unified Safe Swap & Unwrap, Orders & Agent, Activity, and Access & Security; responsive detail; keyboard tabs; URL reload; owner/non-owner controls; landing/app separation; and no horizontal overflow | Pass |
 | Accessibility and discovery | Lighthouse and static route checks against the final production build | Performance 92, Accessibility 100, Best Practices 100, SEO 100, CLS 0.014; robots and sitemap resolve | Pass |
 | Public dApp accessibility | Headless external URL test | Final Phase 6 build is live at `https://noxswap-iexec.vercel.app`; all canonical routes, robots/sitemap, Wallet-first entry actions, and desktop/mobile navigation order passed production smoke tests | Pass |
 | MetaMask UI happy path (local/preview) | Manual browser wallet test | User confirmed provider selection, reveal, swap, refreshed reveal, operator revoke/authorize, and order create/cancel | Pass |
-| MetaMask UI happy path (production) | Manual browser wallet test | Final frontend build is deployed; repeat the local/preview wallet checklist on the public origin before recording | Pending Phase 7 |
+| MetaMask UI happy path (production) | Manual browser wallet test | User confirmed the final public-hosted flow passes end to end on 2026-07-25 | Pass |
+| Read-only deployment consistency | `npm run verify:deployment` | Deployment transactions, constructor arguments, executable creation bytecode, receipt addresses, runtime code hashes and Sourcify lookup for Router V2, Safe Module V5 and Safe orderbook | Pass |
 
 ## 7. Remaining risks
 
@@ -167,7 +168,6 @@ Failure handling:
 | Public RPC rate limits/timeouts | Medium | Allow configurable RPC and use static network configuration |
 | Nox subgraph indexing delay | Medium | Bounded retries and explicit waiting status |
 | Faucet cooldown blocks repeated demo | Medium | Pre-fund demo wallet and show remaining public balance |
-| Production wallet write flow not manually confirmed | Medium | Run MetaMask happy path on the public URL before recording the demo |
 | Docker-backed Nox workflow has not yet completed on GitHub | Low | Run the manual workflow, inspect service logs on failure, then decide whether it is stable enough for required PR CI |
 
 ## 8. Scope decisions

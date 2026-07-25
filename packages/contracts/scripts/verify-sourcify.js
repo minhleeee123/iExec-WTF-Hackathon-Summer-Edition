@@ -19,6 +19,12 @@ const targets = [
   ['NoxConfidentialToken', deployment.contracts.cSOL, deployment.deploymentTransactions.cSOL],
   ['NoxSwap', deployment.contracts.noxSwapRouter, deployment.deploymentTransactions.noxSwapRouter],
   ['NoxLimitOrderBook', deployment.contracts.limitOrderBook, deployment.deploymentTransactions.limitOrderBook],
+  ['NoxLimitOrderBook', deployment.safe.orderBook, deployment.deploymentTransactions.safeLimitOrderBook],
+  [
+    'NoxSafeModule',
+    deployment.safe.module,
+    deployment.deploymentTransactions[`noxSafeModuleV${deployment.safe.moduleVersion}`],
+  ],
 ];
 
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));

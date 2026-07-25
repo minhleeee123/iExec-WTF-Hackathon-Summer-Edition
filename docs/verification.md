@@ -1,6 +1,6 @@
 # NoxSwap Remediation and Verification
 
-Date: 2026-07-24
+Date: 2026-07-25
 
 Production frontend: [https://noxswap-iexec.vercel.app](https://noxswap-iexec.vercel.app)
 
@@ -31,8 +31,10 @@ Current optimized production deployment: `dpl_5tceTxxJ7qRCw97LEwz7VVyrK1S7` (Saf
 | Keeper AI observer | Optional Groq explanation receives public outcomes only and cannot alter deterministic keeper decisions | PASS, failure-isolation and no-private-field tests |
 | MCP tools | MCP v4 exposes nine public planning/read and opt-in protected write/decrypt tools over stdio | PASS, live Chainlink and Groq planning |
 | Safe Treasury prompt optimization | Module V5 batches ciphertext/viewer writes, restores allowlisted operators within settlement, uses Safe prevalidated 1-of-1 execution, and caches the session Nox authorization; the frontend refreshes only changed balance handles. | PASS, live receipt #32 verified operator restoration, all four viewer ACLs, and post-indexing decryption |
+| Production MetaMask happy path | Manual wallet flow on the canonical public URL | PASS, confirmed by the user on 2026-07-25 |
 | Responsive UI | Production build plus 51 frontend unit tests and headless Chrome at `1440x1000`, `1280x900`, and `390x844`; validates EIP-6963 wallet selection, Safe prevalidated-signature encoding, provider-aware reconnect, keyboard tab semantics, modal focus/escape/scroll behavior, Strategy Agent, personal and Safe public orderbooks/details, filter persistence, operator revoke visibility, URL persistence, owner/non-owner controls, landing/app separation, desktop sidebar, mobile wallet drawer, bottom navigation, and observer endpoint auth/rate/body guards. Safe Swap & Unwrap, Orders & Agent, Activity, and Access & Security reuse the same interaction and visual patterns as the personal workspaces without removing Safe functionality. | PASS |
-| Public source verification | Sourcify API v2 Standard JSON verification | PASS, exact creation/runtime match for all ten project contracts |
+| Public source verification | Sourcify API v2 Standard JSON verification | PASS for all ten base deployment contracts; Safe Module V5 and the Safe orderbook remain pending publication on Sourcify |
+| Read-only deployment consistency | `npm run verify:deployment` compares canonical artifacts with Sepolia deployment transactions and receipts | PASS for Router V2, Safe Module V5 and Safe confidential orderbook; the command reports Sourcify status without submitting verification |
 | Accessibility and discovery | Lighthouse against the final production build | PASS, Performance 92, Accessibility 100, Best Practices 100, SEO 100, CLS 0.014; robots and sitemap included |
 | Open-source license | Root `LICENSE`, package metadata, and README | PASS, canonical MIT license is recognized from the repository root |
 
@@ -58,17 +60,16 @@ official rubric awards whole stars and totals 14.
 | Criterion | Self-assessment | Evidence and remaining work |
 |---|---:|---|
 | Creativity | 3/3 | Confidential AMM, encrypted slippage protection/refunds, confidential limit-order escrow, selective disclosure, Safe module composability, and non-custodial Agent/MCP workflows form a differentiated, coherent system. |
-| Accessible and end-to-end without mock data | 3/3 | Core reads and writes use live Sepolia contracts, Chainlink, Nox SDK/Gateway, and real wallet signatures. Automated flows and the user-confirmed local/preview MetaMask path cover connect, reveal, swap, refreshed reveal, revoke/authorize, and order create/cancel. |
+| Accessible and end-to-end without mock data | 3/3 | Core reads and writes use live Sepolia contracts, Chainlink, Nox SDK/Gateway, and real wallet signatures. Automated flows plus user-confirmed local/preview and production MetaMask paths cover connect, reveal, swap, refreshed reveal, revoke/authorize, and order create/cancel. |
 | ETH Sepolia deployment | 2/2 | Ten NoxSwap contracts, three encrypted pools, the limit order book, Safe treasury, allowlisted module, and Safe order book are live. The final Phase 6 frontend is published at the canonical production URL. |
 | `feedback.md` | 2/2 | Root feedback records concrete SDK, ACL, indexing, Docker, version, and protected-minOut experience with actionable recommendations. |
-| Demo video, no longer than four minutes | 0/2 | Phase 7 deliverable intentionally left to the user; no final video exists yet. |
+| Demo video, no longer than four minutes | 0/2 | A 3:54.552 final candidate exists locally; publication with the X submission post remains pending. |
 | Technical implementation | 1/1 | Official Nox encrypted types, arithmetic, ERC-7984 wrappers, Handle SDK encryption/decryption, proofs, and ACLs are in the settlement path rather than attached as a label. |
 | UX | 1/1 | Personal and Safe custody are clearly separated but visually consistent, all workflows are responsive and keyboard-operable, and the final build scored Lighthouse Accessibility 100 with no horizontal overflow in tested viewports. |
 
 **Phase 6-addressable score: 12/12. Current total submission score: 12/14.**
-The missing two points are exclusively the Phase 7 demo-video deliverable. Before
-recording it, repeat the already-passing MetaMask happy path once on the public
-URL.
+The missing two points are exclusively the Phase 7 publication of the prepared
+demo video with the required X submission post.
 
 ## Repeatable Commands
 
@@ -85,6 +86,7 @@ npm run test:agent:live --workspace @noxswap/web
 npm run build
 npm run lint
 npm run test:ui
+npm run verify:deployment
 ```
 
 ## Security Notes

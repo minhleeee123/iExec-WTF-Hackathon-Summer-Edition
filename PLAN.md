@@ -5,12 +5,12 @@
 
 ## 1. Trạng thái hiện tại
 
-- Giai đoạn hiện tại: Phase 6 — Development
-- Trạng thái: Completed
-- Bước tiếp theo: Người dùng bắt đầu Phase 7 bằng MetaMask production rehearsal, quay video tối đa bốn phút và hoàn tất submission.
-- Blocker hiện tại: Không có blocker Phase 6. Safe Module V5, Safe public orderbook và dual-book keeper có live write evidence; production desktop/mobile smoke đã pass.
+- Giai đoạn hiện tại: Phase 7 — Submission
+- Trạng thái: In progress
+- Bước tiếp theo: Đăng video demo tối đa bốn phút, xuất bản X submission post và hoàn tất final review.
+- Blocker hiện tại: Không có blocker kỹ thuật. Production MetaMask happy path đã được người dùng xác nhận pass trên URL public.
 - Đang chờ phê duyệt từ: Không.
-- Cập nhật lần cuối: 2026-07-24T21:10:00+07:00
+- Cập nhật lần cuối: 2026-07-25T14:23:06+07:00
 
 Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for approval`, `Blocked`, `Completed`, `Skipped`.
 
@@ -35,7 +35,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 | 4. Product Plan | Ý tưởng được chọn | Hoàn thiện `plan/product-plan.md` | MVP, non-goals và demo scenario | Người dùng phê duyệt | Completed |
 | 5. Build Plan | Product Plan đã duyệt | Hoàn thiện `plan/build-plan.md` | Stack, kiến trúc, timeline và backlog | Người dùng phê duyệt | Completed |
 | 6. Development | Build Plan đã duyệt | Hoàn thiện core product, vượt Core Product Ready Gate, triển khai Sepolia | Demo-ready application và landing page | Milestone verification | Completed |
-| 7. Submission | Demo-ready application và landing page | Hoàn thiện mọi deliverable bắt buộc | Bài nộp hoàn chỉnh | Người dùng final review | Todo |
+| 7. Submission | Demo-ready application và landing page | Hoàn thiện mọi deliverable bắt buộc | Bài nộp hoàn chỉnh | Người dùng final review | In progress |
 
 ## 4. Approval Log
 
@@ -54,6 +54,7 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 | Phase 6 milestone verification | Completed | Codex verification | 2026-07-24T14:45:00+07:00 | Full compile/test/lint/build/UI regression passed; Safe workflows are visually unified, Lighthouse scored 92/100/100/100, canonical MIT license exists, and the Phase 6-addressable rubric self-assessment is 12/12. |
 | Safe wallet-prompt optimization | Approved | User | 2026-07-24T19:55:00+07:00 | Reopen Phase 6 to batch Safe ACL/input operations, use Safe 1-of-1 prevalidated signatures, preserve multisig authority, migrate Sepolia, test live and redeploy production. |
 | Safe wallet-prompt optimization verification | Completed | Codex verification | 2026-07-24T21:10:00+07:00 | Module V5 live; batch input/viewer, prevalidated Safe execution, auto-operator, four post-swap ACLs, Gateway-lag retry, full regression, responsive UI and canonical production smoke all passed. |
+| Production MetaMask rehearsal | Completed | User | 2026-07-25T14:23:06+07:00 | Người dùng xác nhận production MetaMask happy path hoạt động ổn định trên URL public. |
 | Final submission | Pending |  |  |  |
 
 ## 5. Blockers và câu hỏi mở
@@ -65,9 +66,9 @@ Trạng thái phase được phép dùng: `Todo`, `In progress`, `Waiting for ap
 
 ## 6. Bước tiếp theo
 
-1. Repeat the optimized Safe MetaMask happy path on the public URL and record the observed popup counts.
-2. Record a demo no longer than four minutes.
-3. Write the X submission post and complete the final submission review.
+1. Publish the prepared demo video, which is under four minutes.
+2. Publish the X submission post with the live app, GitHub repository, video and `@iEx_ec`.
+3. Complete the canonical submission checklist and final review.
 
 ## 7. Quy tắc cập nhật PLAN.md
 

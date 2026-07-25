@@ -29,6 +29,7 @@
     "test:sepolia": "npm run test:sepolia --workspace @noxswap/contracts",
     "test:web": "npm run test:unit --workspace @noxswap/web",
     "test:ui": "npm run test:ui --workspace @noxswap/web",
+    "verify:deployment": "npm run verify:deployment --workspace @noxswap/contracts",
     "verify:sourcify": "npm run verify:sourcify --workspace @noxswap/contracts"
   },
   "engines": {

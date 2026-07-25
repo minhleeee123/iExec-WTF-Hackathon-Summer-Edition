@@ -23,6 +23,7 @@
     "test:sepolia": "npx --yes node@24 scripts/test-sepolia-e2e.js",
     "sync:client": "npx --yes node@24 scripts/sync-client-artifacts.js",
     "sync:check": "npx --yes node@24 scripts/sync-client-artifacts.js --check",
+    "verify:deployment": "npx --yes node@24 scripts/verify-deployment.js",
     "verify:sourcify": "npx --yes node@24 scripts/verify-sourcify.js"
   },
   "keywords": [],
