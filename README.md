@@ -88,66 +88,53 @@ This table is the canonical mapping for source review:
 ## Architecture
 
 ```mermaid
-flowchart TB
-    subgraph Clients["Client and automation"]
-        Web["React web client"]
-        Wallet["Injected EIP-1193 wallet"]
-        MCP["MCP v4 stdio server<br/>read-only by default"]
-        Keeper["Stateless keeper"]
-        Agent["Vercel planner / observer API"]
-        Groq["Groq API"]
-    end
+flowchart LR
+    Web["React web app"] --> Wallet["Injected wallet"]
+    Web -->|Handle SDK| Nox["iExec Nox services<br/>Gateway · KMS · runner · indexer"]
+    MCP["MCP v4<br/>read-only by default"] -->|handles + proofs| Nox
+    Web -.->|intent + public context| Agent["Planner / observer API"]
+    Agent <--> Groq["Groq API"]
 
-    subgraph Nox["iExec Nox services"]
-        Handle["Handle Gateway, KMS, runner,<br/>indexer and subgraph"]
-    end
+    Wallet -->|signed calls| Chain["NoxSwap contracts<br/>Ethereum Sepolia"]
+    MCP -.->|explicit opt-in writes| Chain
+    Keeper["Stateless keeper"] -->|execute / expire| Chain
+    Keeper -.->|public outcome only| Agent
 
-    subgraph Sepolia["Ethereum Sepolia"]
-        Compute["NoxCompute<br/>encrypted operations and ACL"]
-        Underlying["4 faucet ERC-20 test tokens"]
-        Wrappers["4 ERC-7984 wrappers"]
-        Router["NoxSwap Router V2<br/>3 pools and ERC-721 receipts"]
-        PersonalBook["Personal limit order book"]
-        Safe["Safe v1.4.1<br/>1 owner / threshold 1"]
-        Module["Allowlisted Safe Module V5"]
-        SafeBook["Safe limit order book"]
-        Chainlink["Chainlink ETH/USD"]
-    end
+    classDef client fill:#ede9fe,stroke:#7c3aed,color:#111827,stroke-width:2px;
+    classDef service fill:#cffafe,stroke:#0891b2,color:#111827,stroke-width:2px;
+    classDef chain fill:#fef3c7,stroke:#d97706,color:#111827,stroke-width:2px;
 
-    Web --> Wallet
-    Web <-->|encrypt, decrypt, ACL and public-decrypt requests| Handle
-    Wallet -->|EIP-712 authorization| Handle
-    MCP <-->|Handle reads and signer-authorized operations| Handle
+    class Web,Wallet,MCP,Keeper client;
+    class Nox,Agent,Groq service;
+    class Chain chain;
+```
 
-    Wallet -->|EOA-signed personal writes| Wrappers
-    Wallet --> Router
-    Wallet --> PersonalBook
-    Wallet -->|owner input preparation| Module
-    Wallet -->|prevalidated 1-of-1 Safe execution| Safe
+### On-chain settlement
 
-    Underlying <-->|1:1 wrap and finalized unwrap| Wrappers
-    Wrappers <-->|encrypted transfers| Router
-    PersonalBook -->|escrow and authorized settlement| Router
-    PersonalBook -->|public trigger| Chainlink
+```mermaid
+flowchart LR
+    Wallet["Injected wallet"] --> Personal["Personal path<br/>EOA + OrderBook"]
+    Wallet --> Safe["Safe Treasury path<br/>1-of-1 Safe + Module V5 + OrderBook"]
 
-    Safe -->|threshold-approved call| Module
-    Module -->|allowlisted calls as the Safe| Wrappers
-    Module --> Router
-    Module --> SafeBook
-    Module --> Compute
-    SafeBook -->|authorized settlement| Router
-    SafeBook -->|public trigger| Chainlink
+    Oracle["Chainlink<br/>ETH / USD"] -->|public trigger| Personal
+    Oracle -->|public trigger| Safe
 
-    Router -.->|Nox arithmetic and ACL| Compute
-    Wrappers -.->|confidential balances and proofs| Compute
-    Keeper -->|execute or expire only| PersonalBook
-    Keeper -->|execute or expire only| SafeBook
+    Personal -->|encrypted settlement| Router["Router V2<br/>3 encrypted pools"]
+    Safe -->|allowlisted settlement| Router
+    Safe -->|operator · viewer · unwrap| Assets["4 ERC-7984 wrappers<br/>backed by 4 faucet test tokens"]
+    Router <-->|confidential transfers| Assets
+    Router --> Receipts["ERC-721<br/>settlement receipts"]
 
-    Web -->|intent and public market context| Agent
-    Keeper -->|public outcome only| Agent
-    Agent <--> Groq
-    MCP -->|personal swap and pool operations| Router
-    MCP -->|personal order operations| PersonalBook
+    Router -.->|arithmetic + ACL| Compute["NoxCompute"]
+    Safe -.->|ACL calls| Compute
+
+    classDef entry fill:#ede9fe,stroke:#7c3aed,color:#111827,stroke-width:2px;
+    classDef protocol fill:#fef3c7,stroke:#d97706,color:#111827,stroke-width:2px;
+    classDef secure fill:#dcfce7,stroke:#16a34a,color:#111827,stroke-width:2px;
+
+    class Wallet,Oracle entry;
+    class Personal,Router,Assets,Receipts protocol;
+    class Safe,Compute secure;
 ```
 
 The web client uses `@iexec-nox/handle` through the Nox service boundary.
