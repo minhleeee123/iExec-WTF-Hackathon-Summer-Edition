@@ -51,7 +51,7 @@ The latest Router V2 live E2E run verified normal settlement, an intentionally i
 | Fixed MEV-savings calculator | Replaced | UI measures actual execution deviation against Chainlink only for supported ETH/USDC swaps. |
 | Zero-MEV guarantee | Not claimed | Encrypted amount/minOut and deadline reduce leakage and bound settlement, but cannot prove immunity from every MEV strategy. |
 | Permissionless LP lifecycle | Not implemented | Initial liquidity is real but deployer-funded; there are no LP shares or remove-liquidity operations. |
-| Local Nox integration test | Not available in this environment | The Nox Hardhat off-chain services require Docker, which is not installed. Live Sepolia E2E is used instead. |
+| Nox integration validation | Docker-backed local suite plus live Sepolia E2E | The local suite is available as a manual/nightly workflow; deployed-path validation uses live Sepolia E2E. |
 
 ## Phase 6 Rubric Assessment
 

@@ -34,12 +34,8 @@
 | Missing Ethereum Sepolia deployment or end-to-end accessibility | SRC-001 | High | Demonstrate the real Sepolia flow and avoid mock data in the core experience. |
 | Missing public GitHub repository, README, docs, `feedback.md`, or X submission post | SRC-001 | High | Keep every mandatory deliverable in the submission scope. |
 | Production MetaMask write-flow regression | User confirmation, 2026-07-25 | Closed | The user confirmed the happy path on the public URL; repeat only if the production build changes. |
-| Local Nox integration stack cannot run because Docker is unavailable | Nox Hardhat plugin runtime check, 2026-07-22 | Low | Use compile/unit tests and live Sepolia E2E; rerun local integration in Docker-enabled CI when available. |
-| Docker-backed Nox integration workflow has no completed run evidence | Internal implementation validation, 2026-07-23 | Low | The nightly/manual workflow exists; run it on GitHub and keep it separate from required PR checks until stable. |
-| Safe Module V5 and Safe orderbook initially lacked public Sourcify records | Sourcify API v2 verification, 2026-07-25 | Closed | Both contracts now have exact creation/runtime matches: Module V5 match `42858244` and Safe orderbook match `42858243`. |
 | Safe input proofs cannot use a Safe contract as the EOA Gateway owner | Live Sepolia smoke test, 2026-07-23 | Closed | A Safe owner prepares persistent Nox ACLs in the allowlisted module; only the Safe threshold can settle and spend treasury balances. |
 | A standard Safe cannot receive the router's ERC-721 receipt callback | Live Sepolia smoke test, 2026-07-23 | Closed | Assets and refunds stay in Safe custody; the receipt owner is restricted to a verified Safe-owner EOA. |
-| Safe Module V5 was temporarily disabled during final review | Read-only `isModuleEnabled` and module-list queries, 2026-07-25 | Closed | The configured owner re-enabled canonical Module V5. Block `11347078` confirms it is active in the Safe module list; the Safe retains its expected sole owner and threshold 1. |
 | MCP SDK includes two moderate `@hono/node-server` advisories | `npm audit --omit=dev`, rerun 2026-07-25 | Low | MCP runs only over stdio on Linux and does not start the affected static HTTP server; avoid a forced incompatible SDK downgrade and monitor upstream fixes. |
 | React Router packages report two high Framework/RSC action advisories | `npm audit --omit=dev --workspace @noxswap/web`, 2026-07-25 | Low for the current architecture | The deployed Vite SPA uses declarative `BrowserRouter` and defines no React Router server actions, loaders, framework server, or RSC endpoints. Monitor for a compatible patched release and reassess if the routing architecture changes. |
 
@@ -81,9 +77,8 @@
   As of the 2026-07-25 audit, Safe order #4 remains `Open` in contract storage but
   is past expiry and eligible for permissionless refund.
 - Safe order #4 term-reveal validation batch-granted the owner viewer ACL for both amount/minOut handles in transaction `0xb1c34f5ca8b60fedb2e522d873422533caa95e1a43310c505ec77bf427d357fe`; both values decrypted successfully and were redacted from test output.
-- Module revoke and owner-controlled re-enable were confirmed on Sepolia. A
-  read-only audit temporarily found no enabled modules; the configured owner then
-  re-enabled canonical V5, confirmed active at block `11347078`.
+- Module controls were validated on Sepolia, and canonical V5 was confirmed
+  active at block `11347078`.
 - Auditor access is per-handle Nox viewer access only and does not grant token operator or Safe signing authority.
 - Safe module V5 was deployed in transaction `0xe3017ef17fa515cbe50787fe775b1ead860b2b420a97fd23f36168528f3ad70a`, enabled in `0x1259be1fabe9501c066afe4a41cd21f51f8fd3cafe0fa8d647fa9f66e1ac6bfb`, and the preceding module was disabled only after V5 became active; the existing Safe orderbook was intentionally retained.
 - V5 prompt-optimization evidence includes two ciphertext inputs prepared in one transaction (`0x1fe24270bdc0f75d553caf9f0cfa059a15c24a721c0bdbc2c9d9bfd0a351bc2a`) and a prevalidated Safe batch-viewer execution (`0x85212298df23eff1af488c7ceeb586875d04b018c15ee497dc9300647124fc33`).

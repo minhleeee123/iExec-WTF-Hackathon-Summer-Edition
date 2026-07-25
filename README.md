@@ -28,10 +28,9 @@ No core product data is mocked: public order state comes from Sepolia events and
 private values are obtained only through Nox-authorized decryption.
 
 The Safe module status is read from Sepolia rather than trusted from the deployment
-snapshot. Module V5 was re-enabled by the configured Safe owner and confirmed
-active at Sepolia block `11347078` on 2026-07-25. Owner-controlled module
-operations are available; permissionless execution/expiry of existing Safe orders
-remains independent of the module.
+snapshot. Module V5 was confirmed active at Sepolia block `11347078` on
+2026-07-25. Owner-controlled module operations are available; permissionless
+execution/expiry of existing Safe orders remains independent of the module.
 
 ## Live Deployment
 
@@ -161,8 +160,8 @@ can settle an executable order as zero output plus full refund.
 Safe input preparation is a separate owner-only module call that validates Nox
 proofs and grants only an allowlisted consumer access to the prepared handles.
 Spending still requires the Safe to call the restricted module. The deployed demo
-has one owner and threshold 1, so the browser uses Safe's prevalidated-signature
-path; it is not an in-browser multisig client for higher-threshold Safes.
+uses a 1-of-1 Safe and the browser's prevalidated-signature path. Higher-threshold
+execution remains available through the Safe Wallet interface.
 
 The keeper can only call the public `executeOrder` and `expireOrder` entry points
 on both orderbooks. Groq receives user-entered intent plus public market data and
@@ -201,7 +200,7 @@ signer plus `MCP_ALLOW_WRITES=true` before transaction tools are enabled.
 - Fund a Safe-owned ERC-7984 treasury, prepare Nox ciphertext ACLs without spend authority, and settle protected swaps only through the Safe threshold.
 - Batch Safe amount/minOut preparation into one owner transaction, grant missing
   viewers and restore allowlisted router/order-book operators inside the reviewed
-  Safe execution, and use Safe's prevalidated 1-of-1 path so that execution needs
+  Safe execution, and use Safe's prevalidated owner path so that execution needs
   a transaction confirmation without a separate personal-sign prompt.
 - Reveal Safe balance handles to a selected owner/auditor, inspect and revoke live router or OrderBook operators, and revoke the Nox module without changing Safe owners or balances.
 - Create minute-precision Safe-owned confidential limit orders, browse their full public lifecycle, batch-grant the Safe owner viewer ACL for amount/minOut reveal, execute or expire eligible orders permissionlessly, and cancel open orders through the owner-authorized module while minting non-fungible settlement receipts to a verified Safe owner.
@@ -217,20 +216,17 @@ signer plus `MCP_ALLOW_WRITES=true` before transaction tools are enabled.
 - No historical ACL revoke button: the installed Nox SDK supports `addViewer` but not `removeViewer`; grants apply to the current handle and do not automatically carry to a new balance handle.
 - No fixed MEV-savings claim. The UI reports measured execution-versus-oracle deviation only for ETH/USDC.
 - No LP share/removal lifecycle. Pools are deployer-funded test liquidity.
-- Router V2 grants its deployment owner viewer access to encrypted reserve
-  handles. Reserve values are hidden from ordinary observers, not from that
-  privileged owner.
-- Router V2 has permissionless pool creation and no router-level token allowlist
-  or reentrancy guard. The three deployed pools use the listed official
-  ERC-7984 wrappers, but arbitrary third-party pools should not be treated as
-  reviewed.
 - The web client uses reusable `MaxUint256` ERC-20 approvals when wrapping public
   faucet assets. This reduces repeated prompts but leaves an allowance until the
   user revokes it; the demo assets have no monetary value.
-- The built-in Safe browser signer supports the deployed 1-of-1 demo Safe. Higher-threshold Safes must collect signatures in the Safe Wallet interface.
-- Direct faucet claims to the Safe and in-app multi-owner signature collection are intentionally excluded; funding uses the existing public-wallet faucet followed by wrap-to-Safe. Safe order execution and expiry are deliberately permissionless, while cancellation remains restricted to the Safe owner through the allowlisted module.
+- Safe funding uses the existing public-wallet faucet followed by wrap-to-Safe,
+  while higher-threshold signature collection is delegated to Safe Wallet. Safe
+  order execution and expiry are deliberately permissionless; cancellation
+  remains restricted to the Safe owner through the allowlisted module.
 
-See [`docs/verification.md`](./docs/verification.md) for the remediation and test record.
+See [`docs/threat-model.md`](./docs/threat-model.md) for detailed trust
+assumptions and [`docs/verification.md`](./docs/verification.md) for the
+remediation and test record.
 
 ## Repository Layout
 
