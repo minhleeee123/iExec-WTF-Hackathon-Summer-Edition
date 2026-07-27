@@ -1,0 +1,62 @@
+{
+  "network": "ethereum-sepolia",
+  "chainId": 11155111,
+  "createdAt": "2026-07-27T07:31:27.834Z",
+  "canonicalBackup": {
+    "router": "0x6e8df82d708196e75Fb735120B4817f5c2551015",
+    "safeModule": "0xF68B864b600dBb8cbCB7524899bF79B2ec2Dfbe2",
+    "safeModuleVersion": 5
+  },
+  "safeModuleV6": {
+    "address": "0x8c17547b05835b77FeBC5Eb796d4be1a8e73e8f5",
+    "deploymentTransaction": "0x88ee1c756daa1f47734448662c47eadc25b0c5a4d28b3246b811b77a517a0103",
+    "enableTransaction": "0x9a714906844ea15d58f14c434977c98dfb70201542dcf5b79f9b67c3d69ca9b4",
+    "enabled": true,
+    "canonicalV5WasEnabled": true,
+    "canonicalV5StillEnabled": false,
+    "runtimeTest": {
+      "transactionHash": "0xe9c6b7cc5f647397abf9828b6eb4607f54c26e0d489e5b6777780d4605aab28c",
+      "blockNumber": 11360178,
+      "gasUsed": "1409986",
+      "transactionCountAfterEncryption": 1,
+      "status": "PASS",
+      "testedAt": "2026-07-27T07:33:35.671Z"
+    },
+    "promotedAt": "2026-07-27T07:34:40.525Z",
+    "v5DisableTransaction": "0x10d04653b8aa39c8a4c77ca11f5cb0b7c51f151fa4eee8582248e7ad0f8df010"
+  },
+  "routerOptimized": {
+    "address": "0x56F347a3E8bc5cDDE1477bF49824f6bE63B59Dcf",
+    "deploymentTransaction": "0xe43e6f2f4e6fa59bd9f20f129f9c4ab3d944a5ed07f6e1657af0c17c65269e1f",
+    "deploymentBlock": 11360196,
+    "deploymentGasUsed": "2783647",
+    "liquidityTransaction": "0x80bd33aabf30e006b36a49aa6ab3b1a42c291258f199553e23fea9106f4c2aa8",
+    "runtimeTest": {
+      "transactionHash": "0xbf1f3fd83ad24ffd53f6c32a3500ec252302ad768fa5234072f03700551b9d6f",
+      "blockNumber": 11360203,
+      "gasUsed": "1052488",
+      "wrapAsPublicHandleEvents": 3,
+      "status": "PASS"
+    },
+    "baseline": {
+      "address": "0x6e8df82d708196e75Fb735120B4817f5c2551015",
+      "deploymentTransaction": "0xddbc52b783879179aa19bbd369f89ead67ae8e6c14321d9671e6458a26c9b42f",
+      "deploymentGasUsed": "2752796",
+      "transactionHash": "0x0dd3184de48418839b5d18664d1c9af144bb5348cedc2f44e8cfbf81b3817d9b",
+      "gasUsed": "1043712",
+      "wrapAsPublicHandleEvents": 6
+    },
+    "comparison": {
+      "perSwapGasDelta": "8776",
+      "perSwapGasReductionPercent": -0.84,
+      "wrapAsPublicHandleEventsRemoved": 3,
+      "promoted": false,
+      "reason": "Candidate is standalone; canonical router/orderbooks/module remain the rollback-safe production graph."
+    },
+    "operatorCleanupTransactions": [
+      "0x8fe6cf11406cccd3d3455590ceaa9059e8ff03000ade859faf4de0dee9f7edb4",
+      "0xce9f9966c01368b0dc7fa0d189f27f998861680ad831ce44ddae7e899d2049db"
+    ],
+    "testedAt": "2026-07-27T07:38:34.102Z"
+  }
+}

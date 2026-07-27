@@ -15,6 +15,8 @@ npm run deploy:sepolia --workspace @noxswap/contracts
 npm run test:sepolia --workspace @noxswap/contracts
 npm run test:nox --workspace @noxswap/contracts # requires Docker
 npm run verify:deployment
+npm run test:safe:v6:candidate:sepolia --workspace @noxswap/contracts
+npm run benchmark:router:candidate:sepolia --workspace @noxswap/contracts
 ```
 
 `deployment-sepolia.json` is the canonical deployed-address artifact.
@@ -40,3 +42,9 @@ external publication action rather than a read-only check.
 The Docker-backed Nox runtime suite starts the official local Nox service stack.
 It remains separate from push CI because Docker is not available in every
 development environment; live Sepolia verification covers the deployed path.
+
+`deployment-sepolia-candidate.json` records public, sanitized candidate and
+before/after benchmark evidence. It is not consumed by the frontend. A candidate
+address becomes canonical only through its promotion workflow after a passing
+live runtime test; rejected candidates remain isolated from the production
+router/orderbook/module graph.

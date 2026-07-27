@@ -51,7 +51,7 @@ test('compiled limit order ABI supports create, execute, cancel, and expiry refu
 
 test('compiled Safe module exposes only allowlisted Nox treasury operations', () => {
   const moduleArtifact = artifact('NoxSafeModule');
-  for (const name of ['prepareInput', 'prepareInputs', 'confidentialSwap', 'createLimitOrder', 'cancelLimitOrder', 'setTokenOperator', 'addViewer', 'addViewers', 'revoke', 'isEnabled']) {
+  for (const name of ['prepareInput', 'prepareInputs', 'prepareAndSwap', 'prepareAndCreateLimitOrder', 'prepareAndRequestUnwrap', 'confidentialSwap', 'createLimitOrder', 'cancelLimitOrder', 'setTokenOperator', 'addViewer', 'addViewers', 'revoke', 'isEnabled']) {
     assert(moduleArtifact.abi.some((entry) => entry.type === 'function' && entry.name === name), `${name} missing`);
   }
   assert(moduleArtifact.abi.some((entry) => entry.type === 'event' && entry.name === 'SafeSwapExecuted'));
@@ -68,6 +68,14 @@ test('compiled contracts stay below the EVM runtime bytecode limit', () => {
     assert(runtimeBytes > 0, `${name} must have runtime bytecode`);
     assert(runtimeBytes < 24_576, `${name} exceeds EIP-170: ${runtimeBytes} bytes`);
   }
+});
+
+test('optimized router candidate reuses persistent public constant handles', () => {
+  const optimized = artifact('NoxSwapOptimized');
+  assert(optimized.abi.some((entry) => entry.type === 'function' && entry.name === 'getConstantHandles'));
+  const source = read('contracts/NoxSwapOptimized.sol');
+  assert.match(source, /Nox\.allowThis\(_feeNumeratorHandle\)/);
+  assert.doesNotMatch(source.slice(source.indexOf('function _settleSwap')), /Nox\.toEuint256/);
 });
 
 test('web and contracts reference the same current Sepolia deployment and ABI snapshot', () => {
