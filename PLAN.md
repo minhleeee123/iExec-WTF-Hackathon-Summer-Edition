@@ -9,10 +9,10 @@
 - Status: In progress
 - Next action: Publish the demo video and X submission post, then complete the
   final review.
-- Current blocker: No technical blocker. Module V5 was re-enabled by the
-  configured Safe owner and confirmed active at Sepolia block `11347078`.
+- Current blocker: No technical blocker. Module V6 passed a one-transaction
+  Sepolia runtime test and is the sole enabled canonical Safe module.
 - Awaiting approval from: None.
-- Last updated: 2026-07-25T17:27:00+07:00
+- Last updated: 2026-07-27T14:58:00+07:00
 
 Allowed phase statuses: `Todo`, `In progress`, `Waiting for approval`, `Blocked`, `Completed`, `Skipped`.
 
@@ -57,6 +57,7 @@ Allowed phase statuses: `Todo`, `In progress`, `Waiting for approval`, `Blocked`
 | Safe wallet-prompt optimization | Approved | User | 2026-07-24T19:55:00+07:00 | Reopen Phase 6 to batch Safe ACL/input operations, use Safe 1-of-1 prevalidated signatures, preserve multisig authority, migrate Sepolia, test live, and redeploy production. |
 | Safe wallet-prompt optimization verification | Completed | Codex verification | 2026-07-24T21:10:00+07:00 | Module V5 is live; batched input/viewer operations, prevalidated Safe execution, auto-operator restoration, four post-swap ACLs, Gateway-lag retries, full regression, responsive UI, and canonical production smoke all passed. |
 | Production MetaMask rehearsal | Completed | User | 2026-07-25T14:23:06+07:00 | The user confirmed that the production MetaMask happy path works reliably on the public URL. |
+| Comprehensive performance pass | Completed | Codex verification | 2026-07-27T14:58:00+07:00 | Safe Module V6 reduced the reviewed flow from two transactions to one and reduced total gas by 2.37%; targeted parallel reveal, adaptive retry, pending-result recovery, singleton block-consistent reads, incremental history, and event wakeups passed regression. The constant-handle router candidate increased per-swap gas by 0.84% and was intentionally not promoted. Production deployment `dpl_CpRhxkjMkxmXHyybyTzum7ksBfeo` passed the final archive-history and Safe Activity smoke test. |
 | Final submission | Pending |  |  |  |
 
 ## 5. Blockers and Open Questions
@@ -100,9 +101,15 @@ Allowed phase statuses: `Todo`, `In progress`, `Waiting for approval`, `Blocked`
 - [x] Safe v1.4.1 treasury, allowlisted Nox module, private swap, selective viewer, module revoke/re-enable, and confidential order create/cancel have live Sepolia evidence.
 - [x] Safe swap tolerance/deadline, on-chain Activity, draft-only Strategy Agent, and recoverable Safe unwrap have unit, responsive, contract, and live Sepolia evidence.
 - [x] Safe Treasury is a first-level desktop/mobile workspace with a compact custody header and four URL-addressable sections; Wallet, Trade, Activity, Landing, and Docs retain their previous content and pass responsive regression.
-- [x] Safe Module V5 batches amount/minOut and viewer operations, automatically restores allowlisted operators, uses prevalidated 1-of-1 execution, survives Nox indexing delay, retains cross-version Activity, and passes live receipt #32 plus production smoke.
+- [x] Safe Module V6 validates owner-bound, module-targeted Nox proofs inside one threshold-approved Safe transaction, prevents handle replay, preserves the V5 fallback path in the client, and passed a live one-transaction Sepolia swap before V5 was disabled.
+- [x] Frontend performance work uses targeted parallel decryption, adaptive jittered retries with in-flight deduplication, metadata-only pending-result recovery, optimistic session balances with reconciliation, shared block-consistent public reads, and incremental Safe/swap history.
+- [x] Keeper and orderbook refresh can wake on new blocks while retaining polling, bounded checkpoint backfill, and reorg-safe overlays.
+- [x] The optimized constant-handle router candidate passed live Sepolia settlement but was not promoted because it increased per-swap gas by 0.84%; candidate operators were revoked and the canonical router graph was preserved.
 - [x] Safe Orders reuses the complete Trade public-orderbook UX; execution/expiry remain permissionless, cancellation remains Safe-owner/module controlled, and the keeper indexes both orderbooks with a shared bounded write budget.
 - [x] Safe order parity includes minute-level expiry, creation readiness, explicit live OrderBook operator revoke/authorize, and owner-only batched ACL term reveal with live Sepolia decryption evidence.
 - [x] Official `README.md` and `feedback.md` files exist at the repository root.
+- [x] The required iExec Hello World onboarding journey was completed and recorded
+  with sanitized Sepolia deployment, encrypted-deposit, and authorized-decryption
+  evidence in `docs/verification.md`.
 - [ ] The canonical submission checklist is complete.
 - [ ] The submission has passed final review.

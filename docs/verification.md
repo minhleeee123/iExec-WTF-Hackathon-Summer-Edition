@@ -1,10 +1,36 @@
 # NoxSwap Remediation and Verification
 
-Date: 2026-07-25
+Date: 2026-07-27
 
 Production frontend: [https://noxswap-iexec.vercel.app](https://noxswap-iexec.vercel.app)
 
-Current optimized production deployment: `dpl_5tceTxxJ7qRCw97LEwz7VVyrK1S7` (Safe Module V5, public Safe orderbook, owner term reveal, minute expiry, and operator controls production smoke: PASS).
+Current public frontend deployment: `dpl_CpRhxkjMkxmXHyybyTzum7ksBfeo`.
+The canonical Sepolia backend and frontend use Safe Module V6. A production
+browser smoke test loaded 50 real Safe Activity rows with the module enabled,
+reported no runtime errors, and made no rejected archive-history request to the
+PublicNode read RPC.
+
+## Hello World onboarding verification
+
+The required iExec Nox Hello World journey was completed on Ethereum Sepolia
+with onboarding wallet
+[`0xE412d04DA2A211F7ADC80311CC0FF9F03440B64E`](https://sepolia.etherscan.io/address/0xE412d04DA2A211F7ADC80311CC0FF9F03440B64E).
+This records the wallet used for the journey; it does not claim that the address
+must receive a prize or deploy every other project component.
+
+| Evidence | Result |
+|---|---|
+| Tutorial contract | [`ConfidentialPiggyBank` at `0x3204467cB52e8b8065D52045Ed37094B030fb998`](https://sepolia.etherscan.io/address/0x3204467cB52e8b8065D52045Ed37094B030fb998) |
+| Deployment | [Transaction `0xecfd20...a1422d1`](https://sepolia.etherscan.io/tx/0xecfd20fdd9fdc68c6648390362a9827127c84fe4259011b8aa90df052a1422d1), block `11359858`, receipt status `1` |
+| Encrypted input | [Deposit transaction `0x1a1415...2da731`](https://sepolia.etherscan.io/tx/0x1a14157f2edd3d0d2d8317430b0079069fad8cdec58e03b86a4b522cc02da731), block `11359861`, receipt status `1` |
+| Contract state | Runtime bytecode present and `owner()` equals the onboarding wallet |
+| Nox verification | The target-bound input was encrypted with `@iexec-nox/handle`, accepted by `Nox.fromExternal`, and the resulting balance was successfully decrypted by the authorized owner |
+| Independent chain check | Chain ID `11155111`, both receipts, runtime bytecode, and owner were confirmed through two independent Sepolia RPC providers |
+
+The contract was compiled with Solidity `0.8.35`, which satisfies the tutorial's
+`0.8.27+` instruction, using `@iexec-nox/nox-protocol-contracts` `0.2.4`.
+Private keys, encrypted handles, proofs, authorization signatures, and the
+decrypted test value are intentionally excluded from this evidence.
 
 ## Converted to Real Features
 
@@ -30,16 +56,41 @@ Current optimized production deployment: `dpl_5tceTxxJ7qRCw97LEwz7VVyrK1S7` (Saf
 | Strategy Agent | Groq GPT-OSS strict schema converts natural language and public Chainlink context into a reviewable draft; percentage balance math and Nox encryption stay local | PASS, unit, live provider, desktop/mobile UI, and public Vercel API smoke tests |
 | Keeper AI observer | Optional Groq explanation receives public outcomes only and cannot alter deterministic keeper decisions | PASS, failure-isolation and no-private-field tests |
 | MCP tools | MCP v4 exposes nine stdio tools spanning public planning/reads, signer-authorized decryption, and explicitly enabled protected writes | PASS, live Chainlink and Groq planning |
-| Safe Treasury prompt optimization | Module V5 batches ciphertext/viewer writes, restores allowlisted operators within settlement, uses Safe prevalidated 1-of-1 execution, and caches the session Nox authorization; the frontend refreshes only changed balance handles. | PASS, live receipt #32 verified operator restoration, all four viewer ACLs, and post-indexing decryption |
+| Safe Treasury prompt optimization | Module V6 validates owner-bound, module-targeted amount/minOut proofs and settles inside one threshold-approved Safe transaction; input handles are replay-protected. The client retains its V5 two-step fallback. | PASS, live V6 tx `0xe9c6b7...5aab28c`; 1 transaction and 1,409,986 gas versus V5's 2 transactions and 1,444,219 total gas |
 | Production MetaMask happy path | Manual wallet flow on the canonical public URL | PASS, confirmed by the user on 2026-07-25 |
-| Current Safe module state | Read `Safe.isModuleEnabled(Module V5)` and `getModulesPaginated` on Sepolia | PASS at block `11347078` on 2026-07-25: Module V5 is deployed, enabled, and returned in the Safe module list. The Safe retains its expected sole owner and threshold 1. |
-| Responsive UI | Production build plus 51 frontend unit tests and headless Chrome at `1440x1000`, `1280x900`, and `390x844`; validates EIP-6963 wallet selection, Safe prevalidated-signature encoding, provider-aware reconnect, keyboard tab semantics, modal focus/escape/scroll behavior, Strategy Agent, personal and Safe public orderbooks/details, filter persistence, operator revoke visibility, URL persistence, owner/non-owner controls, landing/app separation, desktop sidebar, mobile wallet drawer, bottom navigation, and observer endpoint auth/rate/body guards. Safe Swap & Unwrap, Orders & Agent, Activity, and Access & Security reuse the same interaction and visual patterns as the personal workspaces without removing Safe functionality. | PASS |
-| Public source verification | Sourcify API v2 Standard JSON verification | PASS with exact creation/runtime matches for all twelve repository verification targets. Safe Module V5 is public as match `42858244`, and the Safe orderbook is public as match `42858243`. The personal orderbook's exact deployed source remains repository revision `407d770`, while current `NoxLimitOrderBook.sol` is the later Safe-compatible revision used by the verified Safe orderbook |
-| Read-only deployment consistency | `npm run verify:deployment` compares canonical artifacts with Sepolia deployment transactions, constructor arguments, receipts, deployed runtime code, and Sourcify lookup status | PASS for Router V2, Safe Module V5, and the Safe confidential orderbook; it performs no verification submission |
+| Current Safe module state | Read `Safe.isModuleEnabled(Module V6)` and `getModulesPaginated` on Sepolia | PASS on 2026-07-27: V6 `0x8c1754...73e8f5` is enabled, V5 is disabled after the passing runtime test, and the Safe retains its expected sole owner and threshold 1. |
+| Responsive UI | Production build plus 62 frontend unit tests and headless Chrome at `1440x1000`, `1280x900`, and `390x844`; validates EIP-6963 wallet selection, Safe prevalidated-signature encoding, provider-aware reconnect, keyboard tab semantics, modal focus/escape/scroll behavior, Strategy Agent, personal and Safe public orderbooks/details, filter persistence, operator revoke visibility, URL persistence, owner/non-owner controls, landing/app separation, desktop sidebar, mobile wallet drawer, bottom navigation, and observer endpoint auth/rate/body guards. Safe Swap & Unwrap, Orders & Agent, Activity, and Access & Security reuse the same interaction and visual patterns as the personal workspaces without removing Safe functionality. | PASS |
+| Public source verification | Sourcify API v2 Standard JSON verification | PASS with exact creation/runtime matches for all twelve repository verification targets. Safe Module V6 is public as match `42918403`, and the Safe orderbook is public as match `42858243`. The personal orderbook's exact deployed source remains repository revision `407d770`, while current `NoxLimitOrderBook.sol` is the later Safe-compatible revision used by the verified Safe orderbook |
+| Read-only deployment consistency | `npm run verify:deployment` compares canonical artifacts with Sepolia deployment transactions, constructor arguments, receipts, deployed runtime code, and Sourcify lookup status | PASS for Router V2, Safe Module V6, and the Safe confidential orderbook; it performs no verification submission |
 | Accessibility and discovery | Lighthouse against the final production build | PASS, Performance 92, Accessibility 100, Best Practices 100, SEO 100, CLS 0.014; robots and sitemap included |
 | Open-source license | Root `LICENSE`, package metadata, and README | PASS, canonical MIT license is recognized from the repository root |
 
 The latest Router V2 live E2E run verified normal settlement, an intentionally impossible minOut with exact confidential refund, both additional pools, permissionless order execution/expiry, owner-only cancellation, double-settlement rejection, ACL sharing, receipt ownership, and release of exactly `0.01 nWETH` during unwrap.
+
+## Performance Comparison
+
+The pre-change state is preserved on
+`backup/pre-performance-optimization-20260727` at commit
+`0bf09e9a1e61c3fd948dd4ffe94b2ce2178dc267`. Secrets and `.env` files are not
+part of that backup.
+
+| Area | Before | After | Decision |
+|---|---:|---:|---|
+| Safe protected swap after client encryption | 2 Sepolia transactions | 1 Sepolia transaction | Keep V6; one fewer signature/confirmation transaction |
+| Safe protected swap gas | `1,444,219` total (`185,032` prepare + `1,259,187` settle) | `1,409,986` | Keep V6; `34,233` gas lower (`2.37%`) |
+| Private balance refresh | Decrypt every handle through one generic fixed retry loop | Decrypt only changed handles concurrently, deduplicate in-flight requests, preserve successful partial results, then reconcile in the background | Keep; less avoidable Gateway work and no whole-view failure when one handle lags |
+| Gateway retry | 12 attempts at a fixed 8-second interval, including terminal errors | Exponential backoff with jitter, abort support, and immediate failure for invalid proofs or rejected signatures | Keep; avoids retrying non-transient failures and synchronized request bursts |
+| Read path | Recreated providers and repeated immutable reads; history could rescan broad ranges | Shared providers, same-block snapshots, immutable-read cache, finalized checkpoints, and a reorg overlay | Keep; bounded and internally consistent reads |
+| Keeper wake-up | Timer-only polling | New-block event wake-up with a polling fallback and clean abort | Keep; reacts to blocks without making correctness depend on WebSocket availability |
+| Router constant handles | `1,043,712` gas/swap, 6 `WrapAsPublicHandle` events | `1,052,488` gas/swap, 3 events | Reject candidate; `8,776` more gas (`+0.84%`) and higher deployment gas |
+| Automated regression | 92 tests: 91 pass, 1 Docker-only skip; `7.001 s` | 109 tests: 108 pass, 1 Docker-only skip; `6.921 s` | Keep; 17 more cases with no test-time regression |
+| Main frontend bundle | `365.27 kB` / `112.46 kB` gzip | `378.08 kB` / `116.21 kB` gzip | Accepted trade-off: `+3.75 kB` gzip (`+3.33%`) for recovery, caching, and V6 support |
+| Lint / production build wall time | `1.201 s` / `6.928 s` | `1.259 s` / `6.954 s` | No material regression in this workspace |
+
+Gateway response time is external and variable, so no synthetic wall-clock
+speedup is claimed for decryption. The comparison instead records deterministic
+request behavior, transaction count, gas, bundle size, regression coverage, and
+live Sepolia/production outcomes.
 
 ## Remaining Unsupported Features
 

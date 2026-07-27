@@ -22,14 +22,15 @@ The canonical UI/UX language and review checklist are documented in
 | Public proof without a wallet | Open [the live orderbook](https://noxswap-iexec.vercel.app/app/trade?mode=orders) to inspect real lifecycle events, Chainlink readiness, encrypted handles, and Sepolia transaction links. |
 | End-to-end confidential trade | Connect MetaMask on Sepolia → claim faucet assets → wrap → submit a protected swap → reveal the authorized encrypted output and receipt. |
 | Safe Treasury flow | Open [Safe Treasury](https://noxswap-iexec.vercel.app/app/safe) to inspect Safe-owned encrypted balances, module controls, protected swaps, and confidential orders. |
+| Required Hello World onboarding | Wallet [`0xE412...B64E`](https://sepolia.etherscan.io/address/0xE412d04DA2A211F7ADC80311CC0FF9F03440B64E) deployed the tutorial [`ConfidentialPiggyBank`](https://sepolia.etherscan.io/address/0x3204467cB52e8b8065D52045Ed37094B030fb998) and completed an [encrypted deposit](https://sepolia.etherscan.io/tx/0x1a14157f2edd3d0d2d8317430b0079069fad8cdec58e03b86a4b522cc02da731). Detailed evidence is in [`docs/verification.md`](docs/verification.md#hello-world-onboarding-verification). |
 | Demo video | Attach it to the required X submission post before final submission (maximum four minutes). |
 
 No core product data is mocked: public order state comes from Sepolia events and
 private values are obtained only through Nox-authorized decryption.
 
 The Safe module status is read from Sepolia rather than trusted from the deployment
-snapshot. Module V5 was confirmed active at Sepolia block `11347078` on
-2026-07-25. Owner-controlled module operations are available; permissionless
+snapshot. Module V6 passed its live one-transaction swap at block `11360178` on
+2026-07-27 and is the sole enabled canonical module. Owner-controlled module operations are available; permissionless
 execution/expiry of existing Safe orders remains independent of the module.
 
 ## Live Deployment
@@ -43,7 +44,7 @@ User documentation: [https://noxswap-iexec.vercel.app/docs](https://noxswap-iexe
 | NoxSwap Router V2 and receipt NFT | [`0x6e8d...1015`](https://sepolia.etherscan.io/address/0x6e8df82d708196e75Fb735120B4817f5c2551015) |
 | Confidential limit order book | [`0xab90...96fb`](https://sepolia.etherscan.io/address/0xab903F78edEAF96faE78c0BF46810122fC9896fb) |
 | Safe v1.4.1 treasury | [`0x5495...fffF`](https://sepolia.etherscan.io/address/0x549585Be4d75b388B4f825E0bCbBaA85B4FbfffF) |
-| Allowlisted Nox Safe module V5 | [`0xF68B...fbe2`](https://sepolia.etherscan.io/address/0xF68B864b600dBb8cbCB7524899bF79B2ec2Dfbe2) |
+| Allowlisted Nox Safe module V6 | [`0x8c17...e8f5`](https://sepolia.etherscan.io/address/0x8c17547b05835b77FeBC5Eb796d4be1a8e73e8f5) |
 | Safe confidential order book | [`0xd803...9908`](https://sepolia.etherscan.io/address/0xd8037cb70163eC52aa774f54590BB266ee0d9908) |
 | cUSDC ERC-7984 wrapper | [`0x6932...28fE`](https://sepolia.etherscan.io/address/0x6932075FBfd847E453992A8A1EEefB6C6cb328fE) |
 | cETH ERC-7984 wrapper | [`0x04Dc...D4a4`](https://sepolia.etherscan.io/address/0x04Dc3bebDc4E1dfcB423bB7C38Ed280144B5D4a4) |
@@ -60,7 +61,7 @@ The three encrypted pools were initialized in transactions [`0xb509...6ae87`](ht
 All twelve NoxSwap deployment targets submitted by the repository verification
 script have exact creation/runtime source matches on Sourcify. Inspect the
 verified [Router V2](https://repo.sourcify.dev/11155111/0x6e8df82d708196e75Fb735120B4817f5c2551015),
-[Safe Module V5](https://repo.sourcify.dev/11155111/0xF68B864b600dBb8cbCB7524899bF79B2ec2Dfbe2),
+[Safe Module V6](https://repo.sourcify.dev/11155111/0x8c17547b05835b77FeBC5Eb796d4be1a8e73e8f5),
 and [Safe orderbook](https://repo.sourcify.dev/11155111/0xd8037cb70163eC52aa774f54590BB266ee0d9908)
 sources.
 The personal orderbook was deployed from the earlier repository revision linked
@@ -83,7 +84,7 @@ This table is the canonical mapping for source review:
 | NoxSwap Router V2 | [`NoxSwap.sol`](./packages/contracts/contracts/NoxSwap.sol) | `Router V2` is the deployment label; the Solidity contract remains `NoxSwap`. |
 | Personal limit order book | [`NoxLimitOrderBook.sol` at `407d770`](https://github.com/minhleeee123/iExec-WTF-Hackathon-Summer-Edition/blob/407d770218fb82ea14d680380bfedea2a24c341a/packages/contracts/contracts/NoxLimitOrderBook.sol) | Exact deployed revision, also published on Sourcify; orders are owned by their creating EOA. |
 | Safe confidential order book | [`NoxLimitOrderBook.sol`](./packages/contracts/contracts/NoxLimitOrderBook.sol) | Current source adds `createOrderAuthorized` and receipt-owner routing; its creation bytecode exactly matches the Safe orderbook deployment. |
-| Allowlisted Safe Module V5 | [`NoxSafeModule.sol`](./packages/contracts/contracts/NoxSafeModule.sol) | `V5` is the current deployed module version; this file is its canonical source. |
+| Allowlisted Safe Module V6 | [`NoxSafeModule.sol`](./packages/contracts/contracts/NoxSafeModule.sol) | `V6` validates owner-bound inputs inside one Safe transaction and prevents handle replay; this file exactly matches the deployed module. |
 | Four ERC-7984 wrappers | [`NoxConfidentialToken.sol`](./packages/contracts/contracts/NoxConfidentialToken.sol) | Thin extension of the official `ERC20ToERC7984Wrapper`. |
 | Four faucet test tokens | [`NoxTestToken.sol`](./packages/contracts/contracts/NoxTestToken.sol) | Public Sepolia-only collateral with one-hour faucet cooldowns. |
 
@@ -116,7 +117,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     Wallet["Injected wallet"] --> Personal["Personal path<br/>EOA + OrderBook"]
-    Wallet --> Safe["Safe Treasury path<br/>1-of-1 Safe + Module V5 + OrderBook"]
+    Wallet --> Safe["Safe Treasury path<br/>1-of-1 Safe + Module V6 + OrderBook"]
 
     Oracle["Chainlink<br/>ETH / USD"] -->|public trigger| Personal
     Oracle -->|public trigger| Safe
