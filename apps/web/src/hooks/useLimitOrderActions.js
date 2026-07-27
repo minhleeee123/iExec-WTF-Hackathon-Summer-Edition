@@ -3,7 +3,8 @@ import { ethers } from 'ethers';
 import deployment from '../deployment.json';
 import { CONFIDENTIAL_TOKEN_ABI, LIMIT_ORDER_ABI } from '../contracts';
 import { TOKENS } from '../config';
-import { createHandleClient, retry } from '../lib/nox';
+import { createHandleClient, decryptWithRetry } from '../lib/nox';
+import { getPublicProvider } from '../lib/providers';
 import { formatInputAmount, formatToken, shorten } from '../lib/format';
 import { DEFAULT_LIMIT_ORDER_PROTECTION_BPS, deriveLimitOrderMinOut } from '../lib/min-out';
 import { CONTRACT_ORDER_STATUS, getOrderPermissions, settlementOutcome, shouldDecryptSettlement } from '../lib/orders.js';
@@ -95,7 +96,7 @@ export default function useLimitOrderActions({
       }
       setReadinessLoading(true);
       try {
-        const provider = new ethers.BrowserProvider(walletProvider);
+        const provider = getPublicProvider();
         const wrapper = new ethers.Contract(tokenIn.wrapper, CONFIDENTIAL_TOKEN_ABI, provider);
         const [authorized, handle] = await Promise.all([
           wrapper.isOperator(account, deployment.contracts.limitOrderBook),
@@ -222,7 +223,7 @@ export default function useLimitOrderActions({
     const handles = kind === 'execute'
       ? [event.args.encryptedOutput, event.args.encryptedRefund]
       : [event.args.encryptedRefund];
-    const decrypted = await Promise.all(handles.map((handle) => retry(() => client.decrypt(handle))));
+    const decrypted = await Promise.all(handles.map((handle) => decryptWithRetry(client, handle)));
     onGatewayEvidence({ verifiedAt: Date.now(), handles: handles.length });
     if (kind === 'execute') {
       const output = TOKENS[order.tokenOut];
@@ -302,8 +303,8 @@ export default function useLimitOrderActions({
       const wallet = await getWallet();
       const client = await createHandleClient(wallet.signer);
       const [amountResult, minOutResult] = await Promise.all([
-        retry(() => client.decrypt(order.amountHandle)),
-        retry(() => client.decrypt(order.minOutHandle)),
+        decryptWithRetry(client, order.amountHandle),
+        decryptWithRetry(client, order.minOutHandle),
       ]);
       const input = TOKENS[order.tokenIn];
       const output = TOKENS[order.tokenOut];

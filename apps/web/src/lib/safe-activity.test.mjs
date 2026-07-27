@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ethers } from 'ethers';
-import { normalizeSafeActivityEvent } from './safe-activity.js';
+import {
+  loadSafeActivityIndex,
+  normalizeSafeActivityEvent,
+  saveSafeActivityIndex,
+} from './safe-activity.js';
 
 test('normalizes Safe treasury funding without exposing an amount', () => {
   const activity = normalizeSafeActivityEvent({
@@ -62,4 +66,37 @@ test('keeps Safe unwrap recovery identifiers in public activity metadata', () =>
   assert.equal(activity.type, 'unwrap-request');
   assert.equal(activity.requestId, requestId);
   assert.equal(activity.tokenSymbol, 'cUSDC');
+});
+
+test('Safe activity checkpoint cache is deployment-scoped and public-only', () => {
+  const values = new Map();
+  const storage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+  };
+  const identity = {
+    chainId: 11155111,
+    safeAddress: '0x1111111111111111111111111111111111111111',
+    deploymentBlock: 100,
+  };
+  const index = {
+    version: 1,
+    chainId: identity.chainId,
+    safeAddress: identity.safeAddress,
+    deploymentBlock: identity.deploymentBlock,
+    checkpointBlock: 120,
+    items: [{
+      id: '0xtx-0',
+      hash: '0xtx',
+      blockNumber: 110,
+      logIndex: 0,
+      timestamp: 1,
+      type: 'order',
+      title: 'Safe order #1 created',
+      detail: 'Amount and minimum output remain encrypted.',
+    }],
+  };
+  assert.equal(saveSafeActivityIndex(storage, index), true);
+  assert.deepEqual(loadSafeActivityIndex(storage, identity), index);
+  assert.doesNotMatch(JSON.stringify(index), /plaintext|proof|signature|privateKey/i);
 });

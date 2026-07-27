@@ -1,11 +1,11 @@
-import deployment from './deployment.json';
+import deployment from './deployment.json' with { type: 'json' };
 
 export const ZERO_HANDLE = `0x${'0'.repeat(64)}`;
 export const SEPOLIA_HEX = '0xaa36a7';
 export const RPC_URL = 'https://ethereum-sepolia-rpc.publicnode.com';
 // The history provider must support eth_getLogs for the deployed orderbook.
 // Keep the env override for operators with a dedicated archive endpoint.
-export const ORDER_HISTORY_RPC_URL = import.meta.env.VITE_SEPOLIA_ARCHIVE_RPC_URL ?? 'https://eth-sepolia.api.onfinality.io/public';
+export const ORDER_HISTORY_RPC_URL = (import.meta.env ?? {}).VITE_SEPOLIA_ARCHIVE_RPC_URL ?? 'https://eth-sepolia.api.onfinality.io/public';
 export const FAUCET_COOLDOWN_SECONDS = 60 * 60;
 
 export const TOKENS = {

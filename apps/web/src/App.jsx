@@ -19,12 +19,16 @@ import {
   createInitialFaucets,
   FAUCET_COOLDOWN_SECONDS,
   OUTPUT_TOKENS,
-  RPC_URL,
   SEPOLIA_HEX,
   TOKENS,
 } from './config';
-import { createHandleClient, retry } from './lib/nox';
-import { queryRecentSwapEvents } from './lib/history';
+import {
+  createHandleClient,
+  decryptWithRetry,
+  publicDecryptWithRetry,
+  retry,
+} from './lib/nox';
+import { queryRecentSwapHistory } from './lib/history';
 import { DEFAULT_SWAP_PROTECTION_BPS, deriveSwapMinOut } from './lib/min-out';
 import {
   appendOperationStep,
@@ -34,6 +38,13 @@ import {
 import { discoverWalletProvider } from './lib/wallet-providers';
 import { executeSafeModule, executeSafeTransaction, parseSafeModuleEvent, SAFE_SENTINEL_MODULE } from './lib/safe';
 import { querySafeActivity } from './lib/safe-activity';
+import { applySwapBalanceDelta, decryptChangedBalances } from './lib/private-balances';
+import { cachedImmutableRead, getHistoryProvider, getPublicProvider } from './lib/providers';
+import {
+  loadPendingNoxJobs,
+  removePendingNoxJob,
+  savePendingNoxJob,
+} from './lib/pending-nox-jobs';
 import {
   decodeReceiptImage,
   formatDuration,
@@ -126,6 +137,12 @@ export default function App() {
   const [operationProgress, setOperationProgress] = useState(null);
   const safeRevealSession = useRef(false);
   const activeOperation = useRef('');
+  const balancesRef = useRef(balances);
+  const safeBalancesRef = useRef(safeBalances);
+  const pendingJobsResuming = useRef(false);
+
+  useEffect(() => { balancesRef.current = balances; }, [balances]);
+  useEffect(() => { safeBalancesRef.current = safeBalances; }, [safeBalances]);
 
   const connected = Boolean(account);
   const correctNetwork = chainId === deployment.chainId;
@@ -280,17 +297,20 @@ export default function App() {
   };
 
   const loadMarket = async () => {
-    const provider = new ethers.JsonRpcProvider(RPC_URL, deployment.chainId, { staticNetwork: true });
+    const provider = getPublicProvider();
     const router = new ethers.Contract(deployment.contracts.noxSwapRouter, NOX_SWAP_ABI, provider);
     const feed = new ethers.Contract(deployment.feeds?.ethUsd ?? CHAINLINK_ETH_USD, CHAINLINK_FEED_ABI, provider);
     const poolEntries = Object.entries(deployment.pools);
+    const latestBlock = await provider.getBlock('latest');
+    if (!latestBlock) throw new Error('Latest Sepolia block is unavailable.');
+    const blockTag = latestBlock.number;
     const [poolData, round, feedDecimals] = await Promise.all([
       Promise.all(poolEntries.map(async ([key, item]) => {
-        const handles = await router.getPoolHandles(item.token0, item.token1);
+        const handles = await router.getPoolHandles(item.token0, item.token1, { blockTag });
         return [key, { token0: handles.token0, token1: handles.token1, reserve0: handles.reserve0, reserve1: handles.reserve1 }];
       })),
-      feed.latestRoundData(),
-      feed.decimals(),
+      feed.latestRoundData({ blockTag }),
+      cachedImmutableRead(`feed-decimals:${deployment.feeds?.ethUsd ?? CHAINLINK_ETH_USD}`, () => feed.decimals()),
     ]);
     setPool(Object.fromEntries(poolData));
     setEthPrice(Number(ethers.formatUnits(round.answer, feedDecimals)));
@@ -299,17 +319,20 @@ export default function App() {
 
   const loadAccount = useCallback(async (address = account) => {
     if (!address || !walletProvider) return;
-    const provider = new ethers.BrowserProvider(walletProvider);
+    const provider = getPublicProvider();
+    const latestBlock = await provider.getBlock('latest');
+    if (!latestBlock) throw new Error('Latest Sepolia block is unavailable.');
+    const blockTag = latestBlock.number;
     const next = {};
     const nextFaucets = {};
     await Promise.all(Object.values(TOKENS).map(async (token) => {
       const underlying = new ethers.Contract(token.underlying, TEST_TOKEN_ABI, provider);
       const wrapper = new ethers.Contract(token.wrapper, CONFIDENTIAL_TOKEN_ABI, provider);
       const [publicBalance, handle, faucetAmount, lastClaimAt] = await Promise.all([
-        underlying.balanceOf(address),
-        wrapper.confidentialBalanceOf(address),
-        underlying.faucetAmount(),
-        underlying.lastClaimAt(address),
+        underlying.balanceOf(address, { blockTag }),
+        wrapper.confidentialBalanceOf(address, { blockTag }),
+        cachedImmutableRead(`faucet-amount:${token.underlying}`, () => underlying.faucetAmount()),
+        underlying.lastClaimAt(address, { blockTag }),
       ]);
       next[token.symbol] = { public: publicBalance, handle, decrypted: null };
       nextFaucets[token.symbol] = {
@@ -317,10 +340,9 @@ export default function App() {
         nextClaimAt: lastClaimAt === 0n ? 0 : Number(lastClaimAt) + FAUCET_COOLDOWN_SECONDS,
       };
     }));
-    const [activeAccounts, nativeBalance, latestBlock] = await Promise.all([
-      provider.send('eth_accounts', []),
-      provider.getBalance(address),
-      provider.getBlock('latest'),
+    const [activeAccounts, nativeBalance] = await Promise.all([
+      walletProvider.request({ method: 'eth_accounts' }),
+      provider.getBalance(address, blockTag),
     ]);
     if (activeAccounts[0]?.toLowerCase() !== address.toLowerCase()) return;
 
@@ -333,22 +355,28 @@ export default function App() {
     })));
     setFaucets(nextFaucets);
     setEthBalance(nativeBalance);
-    if (latestBlock) setChainTimeOffset(Number(latestBlock.timestamp) - Math.floor(Date.now() / 1000));
+    setChainTimeOffset(Number(latestBlock.timestamp) - Math.floor(Date.now() / 1000));
 
-    const router = new ethers.Contract(deployment.contracts.noxSwapRouter, NOX_SWAP_ABI, provider);
+    const router = new ethers.Contract(
+      deployment.contracts.noxSwapRouter,
+      NOX_SWAP_ABI,
+      getHistoryProvider(),
+    );
     try {
-      const deploymentReceipt = await provider.getTransactionReceipt(deployment.deploymentTransactions.noxSwapRouter);
-      const events = await queryRecentSwapEvents(router, address, deploymentReceipt.blockNumber, latestBlock.number);
-      setHistory(events.slice(-12).reverse().map((event) => ({
-        hash: event.transactionHash,
-        block: event.blockNumber,
-        tokenIn: event.args.tokenIn,
-        tokenOut: event.args.tokenOut,
-        inputHandle: event.args.encryptedInput,
-        outputHandle: event.args.encryptedOutput,
-        refundHandle: event.args.encryptedRefund,
-        receiptId: event.args.receiptId.toString(),
-      })));
+      const deploymentReceipt = await cachedImmutableRead(
+        `deployment-receipt:${deployment.deploymentTransactions.noxSwapRouter}`,
+        () => provider.getTransactionReceipt(deployment.deploymentTransactions.noxSwapRouter),
+      );
+      const events = await queryRecentSwapHistory({
+        address,
+        chainId: deployment.chainId,
+        deploymentBlock: deploymentReceipt.blockNumber,
+        latestBlock: latestBlock.number,
+        router,
+        routerAddress: deployment.contracts.noxSwapRouter,
+        storage: window.localStorage,
+      });
+      setHistory(events.slice(-12).reverse());
     } catch (error) {
       console.warn('Swap history is temporarily unavailable.', error);
       setHistory([]);
@@ -361,25 +389,27 @@ export default function App() {
   const loadSafeAccount = useCallback(async () => {
     const configuredSafe = deployment.safe;
     if (!configuredSafe?.address || !configuredSafe.module || !walletProvider) return null;
-    const provider = new ethers.BrowserProvider(walletProvider);
+    const provider = getPublicProvider();
+    const latestBlock = await provider.getBlock('latest');
+    if (!latestBlock) throw new Error('Latest Sepolia block is unavailable.');
+    const blockTag = latestBlock.number;
     const safeContract = new ethers.Contract(configuredSafe.address, SAFE_ABI, provider);
     const safeOrderBookAddress = configuredSafe.orderBook ?? deployment.contracts.limitOrderBook;
-    const [owners, threshold, moduleEnabled, ownerAddress] = await Promise.all([
-      safeContract.getOwners(),
-      safeContract.getThreshold(),
-      safeContract.isModuleEnabled(configuredSafe.module),
-      provider.getSigner().then((signer) => signer.getAddress()),
+    const [owners, threshold, moduleEnabled] = await Promise.all([
+      safeContract.getOwners({ blockTag }),
+      safeContract.getThreshold({ blockTag }),
+      safeContract.isModuleEnabled(configuredSafe.module, { blockTag }),
     ]);
     const nextBalances = createInitialBalances();
     const nextOperators = {};
     await Promise.all(Object.values(TOKENS).map(async (token) => {
       const wrapper = new ethers.Contract(token.wrapper, CONFIDENTIAL_TOKEN_ABI, provider);
       const [handle, routerResult, orderBookResult] = await Promise.all([
-        wrapper.confidentialBalanceOf(configuredSafe.address),
-        Promise.resolve(wrapper.isOperator(configuredSafe.address, deployment.contracts.noxSwapRouter))
+        wrapper.confidentialBalanceOf(configuredSafe.address, { blockTag }),
+        Promise.resolve(wrapper.isOperator(configuredSafe.address, deployment.contracts.noxSwapRouter, { blockTag }))
           .then((value) => ({ value }))
           .catch(() => ({ value: false })),
-        Promise.resolve(wrapper.isOperator(configuredSafe.address, safeOrderBookAddress))
+        Promise.resolve(wrapper.isOperator(configuredSafe.address, safeOrderBookAddress, { blockTag }))
           .then((value) => ({ value }))
           .catch(() => ({ value: false })),
       ]);
@@ -396,7 +426,7 @@ export default function App() {
       moduleEnabled,
       owners: [...owners],
       threshold: Number(threshold),
-      isOwner: owners.some((owner) => owner.toLowerCase() === ownerAddress.toLowerCase()),
+      isOwner: Boolean(account) && owners.some((owner) => owner.toLowerCase() === account.toLowerCase()),
       operators: nextOperators,
     };
     setSafeState(nextState);
@@ -416,10 +446,9 @@ export default function App() {
       const moduleDeploymentHashes = Object.entries(deployment.deploymentTransactions ?? {})
         .filter(([key]) => /^noxSafeModule(?:V\d+)?$/.test(key))
         .map(([, hash]) => hash);
-      const [moduleDeploymentReceipts, latestBlock] = await Promise.all([
-        Promise.all(moduleDeploymentHashes.map((hash) => provider.getTransactionReceipt(hash))),
-        provider.getBlockNumber(),
-      ]);
+      const moduleDeploymentReceipts = await Promise.all(moduleDeploymentHashes.map((hash) => (
+        cachedImmutableRead(`deployment-receipt:${hash}`, () => provider.getTransactionReceipt(hash))
+      )));
       const moduleAddresses = [...new Set([
         configuredSafe.module,
         ...moduleDeploymentReceipts.map((receipt) => receipt?.contractAddress).filter(Boolean),
@@ -429,13 +458,15 @@ export default function App() {
         .filter(Number.isInteger)
         .reduce((minimum, blockNumber) => Math.min(minimum, blockNumber), Number.POSITIVE_INFINITY);
       const activity = await querySafeActivity({
-        provider,
+        provider: getHistoryProvider(),
         safeAddress: configuredSafe.address,
         moduleAddress: configuredSafe.module,
         moduleAddresses,
         tokens: TOKENS,
-        deploymentBlock: Number.isFinite(firstModuleBlock) ? firstModuleBlock : Math.max(0, latestBlock - 1200),
-        latestBlock,
+        chainId: deployment.chainId,
+        deploymentBlock: Number.isFinite(firstModuleBlock) ? firstModuleBlock : Math.max(0, blockTag - 1200),
+        latestBlock: blockTag,
+        storage: window.localStorage,
       });
       setSafeActivity(activity);
       const pendingUnwraps = [];
@@ -443,7 +474,7 @@ export default function App() {
         const token = TOKENS[item.tokenSymbol];
         if (!token) return;
         const wrapper = new ethers.Contract(token.wrapper, CONFIDENTIAL_TOKEN_ABI, provider);
-        const recipient = await wrapper.unwrapRequester(item.requestId);
+        const recipient = await wrapper.unwrapRequester(item.requestId, { blockTag });
         if (recipient === ethers.ZeroAddress) return;
         pendingUnwraps.push({
           id: item.requestId,
@@ -460,7 +491,7 @@ export default function App() {
       setSafePendingUnwraps([]);
     }
     return nextBalances;
-  }, [walletProvider]);
+  }, [account, walletProvider]);
 
   const refresh = async () => {
     try {
@@ -596,6 +627,50 @@ export default function App() {
     if (account && correctNetwork) Promise.all([loadAccount(account), loadSafeAccount()]).catch(fail);
   }, [account, correctNetwork, loadAccount, loadSafeAccount]);
 
+  useEffect(() => {
+    if (!account || !correctNetwork || !walletProvider || pendingJobsResuming.current) return;
+    const jobs = loadPendingNoxJobs(window.localStorage, {
+      account,
+      chainId: deployment.chainId,
+    });
+    if (jobs.length === 0) return;
+    pendingJobsResuming.current = true;
+    const resume = async () => {
+      const wallet = await getWallet();
+      const client = await createHandleClient(wallet.signer);
+      let recovered = 0;
+      for (const job of jobs) {
+        try {
+          if (job.operationType.endsWith('swap')) {
+            await Promise.all(job.handles.map((handle) => decryptWithRetry(client, handle)));
+          } else {
+            const requestId = job.handles[0];
+            const readWrapper = new ethers.Contract(job.contract, CONFIDENTIAL_TOKEN_ABI, getPublicProvider());
+            if (await readWrapper.unwrapRequester(requestId) !== ethers.ZeroAddress) {
+              const result = await publicDecryptWithRetry(client, requestId);
+              const wrapper = new ethers.Contract(job.contract, CONFIDENTIAL_TOKEN_ABI, wallet.signer);
+              const transaction = await wrapper.finalizeUnwrap(requestId, result.decryptionProof);
+              addLog('Finalize recovered confidential unwrap', transaction.hash);
+              await transaction.wait();
+            }
+          }
+          removePendingNoxJob(window.localStorage, job);
+          recovered += 1;
+        } catch (error) {
+          console.warn('A confirmed Nox result is still pending and will be retried.', error);
+        }
+      }
+      if (recovered > 0) {
+        setGatewayEvidence({ verifiedAt: Date.now(), handles: recovered });
+        setNotice({ type: 'success', text: `${recovered} confirmed Nox result${recovered === 1 ? '' : 's'} recovered in the background.` });
+        await Promise.all([loadAccount(account), loadSafeAccount()]);
+      }
+    };
+    resume()
+      .catch((error) => console.warn('Pending Nox result recovery is temporarily unavailable.', error))
+      .finally(() => { pendingJobsResuming.current = false; });
+  }, [account, correctNetwork, loadAccount, loadSafeAccount, walletProvider]);
+
   const faucet = async (symbol) => {
     try {
       setBusy(`faucet-${symbol}`);
@@ -633,6 +708,8 @@ export default function App() {
 
   const manageAsset = async () => {
     const restorePrivateBalances = privateBalancesVisible;
+    let backgroundReleased = false;
+    let pendingJob = null;
     try {
       const token = TOKENS[asset];
       if (assetValidation.error) throw new Error(assetValidation.error);
@@ -673,11 +750,22 @@ export default function App() {
           .map((log) => { try { return wrapper.interface.parseLog(log); } catch { return null; } })
           .find((item) => item?.name === 'UnwrapRequested');
         if (!event) throw new Error('UnwrapRequested event was not found.');
-        setNotice({ type: 'info', text: 'Waiting for public decryption proof from Nox Gateway...' });
-        const publicResult = await retry(() => client.publicDecrypt(event.args.amount));
+        pendingJob = savePendingNoxJob(window.localStorage, {
+          account: wallet.address,
+          chainId: deployment.chainId,
+          contract: token.wrapper,
+          handles: [event.args.amount],
+          operationType: 'personal-unwrap',
+          transactionHash: request.hash,
+        });
+        setNotice({ type: 'success', text: 'Unwrap request confirmed. Nox proof finalization is continuing in the background.' });
+        setBusy('');
+        backgroundReleased = true;
+        const publicResult = await publicDecryptWithRetry(client, event.args.amount);
         const finalize = await wrapper.finalizeUnwrap(event.args.amount, publicResult.decryptionProof);
         addLog(`Finalize unwrap: ${formatToken(publicResult.value, token.decimals)} ${token.publicSymbol}`, finalize.hash);
         await finalize.wait();
+        removePendingNoxJob(window.localStorage, pendingJob);
       }
 
       setNotice({ type: 'success', text: `${assetMode === 'wrap' ? 'Wrap' : 'Unwrap'} completed on Sepolia.` });
@@ -690,31 +778,45 @@ export default function App() {
         }
       }
     } catch (error) {
-      fail(error);
+      if (pendingJob) {
+        console.warn('The unwrap request is confirmed; proof finalization remains pending.', error);
+        setNotice({ type: 'info', text: `Unwrap request confirmed, but Nox proof finalization will retry later: ${error.shortMessage ?? error.message}` });
+      } else {
+        fail(error);
+      }
     } finally {
-      setBusy('');
+      if (!backgroundReleased) setBusy('');
     }
   };
 
-  const decryptBalanceSnapshot = async (wallet, snapshot) => {
+  const decryptBalanceSnapshot = async (wallet, snapshot, tokenSymbols = Object.keys(TOKENS)) => {
       const client = await createHandleClient(wallet.signer);
-      const next = { ...snapshot };
-      for (const token of Object.values(TOKENS)) {
-        const current = snapshot[token.symbol];
-        if (isHandle(current.handle)) {
-          const result = await retry(() => client.decrypt(current.handle), 5, 3000);
-          next[token.symbol] = { ...current, decrypted: result.value };
-        } else {
-          next[token.symbol] = { ...current, decrypted: 0n };
-        }
-      }
-      setBalances(next);
+      const result = await decryptChangedBalances({
+        client,
+        current: balancesRef.current,
+        decrypt: (handleClient, handle) => decryptWithRetry(handleClient, handle, {
+          attempts: 5,
+          baseDelayMs: 1_000,
+          maxDelayMs: 6_000,
+        }),
+        isEncryptedHandle: isHandle,
+        snapshot,
+        tokenSymbols,
+      });
+      balancesRef.current = result.balances;
+      setBalances(result.balances);
       setPrivateBalancesVisible(true);
       setGatewayEvidence({
         verifiedAt: Date.now(),
-        handles: Object.values(next).filter((balance) => isHandle(balance.handle)).length,
+        handles: Object.values(result.balances).filter((balance) => isHandle(balance.handle)).length,
       });
-      return next;
+      if (result.errors.length > 0) {
+        throw new AggregateError(
+          result.errors.map(({ error }) => error),
+          `Nox Gateway could not reveal ${result.errors.map(({ symbol }) => symbol).join(', ')} yet.`,
+        );
+      }
+      return result.balances;
   };
 
   const decryptBalances = async () => {
@@ -742,6 +844,8 @@ export default function App() {
 
   const swap = async () => {
     const restorePrivateBalances = privateBalancesVisible;
+    let backgroundReleased = false;
+    let pendingJob = null;
     try {
       const input = TOKENS[tokenIn];
       const output = TOKENS[tokenOut];
@@ -787,11 +891,22 @@ export default function App() {
         .find((item) => item?.name === 'SwapExecuted');
       if (!event) throw new Error('SwapExecuted event was not found.');
 
-      setNotice({ type: 'info', text: 'Swap settled. Decrypting authorized output and refund handles...' });
+      pendingJob = savePendingNoxJob(window.localStorage, {
+        account: wallet.address,
+        chainId: deployment.chainId,
+        contract: deployment.contracts.noxSwapRouter,
+        handles: [event.args.encryptedOutput, event.args.encryptedRefund],
+        operationType: 'personal-swap',
+        transactionHash: transaction.hash,
+      });
+      setNotice({ type: 'success', text: 'Swap confirmed on Sepolia. Authorized result reveal is continuing in the background.' });
+      setBusy('');
+      backgroundReleased = true;
       const [decrypted, refund] = await Promise.all([
-        retry(() => client.decrypt(event.args.encryptedOutput)),
-        retry(() => client.decrypt(event.args.encryptedRefund)),
+        decryptWithRetry(client, event.args.encryptedOutput),
+        decryptWithRetry(client, event.args.encryptedRefund),
       ]);
+      removePendingNoxJob(window.localStorage, pendingJob);
       const tokenUri = await router.tokenURI(event.args.receiptId);
       const receiptData = {
         id: event.args.receiptId.toString(),
@@ -833,11 +948,24 @@ export default function App() {
         setNotice({ type: 'success', text: `Swap confirmed. Received ${outputText}; refund ${refundText}; receipt #${receiptData.id} minted.` });
       }
       addLog(`Settled output ${outputText}; refund ${refundText}`, transaction.hash);
-      setPrivateBalancesVisible(false);
+      if (restorePrivateBalances) {
+        const optimistic = applySwapBalanceDelta({
+          balances: balancesRef.current,
+          amountIn: amount,
+          outputAmount: decrypted.value,
+          refundAmount: refund.value,
+          tokenIn,
+          tokenOut,
+        });
+        balancesRef.current = optimistic;
+        setBalances(optimistic);
+      } else {
+        setPrivateBalancesVisible(false);
+      }
       const [refreshedBalances] = await Promise.all([loadAccount(wallet.address), loadMarket()]);
       if (restorePrivateBalances) {
         try {
-          await decryptBalanceSnapshot(wallet, refreshedBalances);
+          await decryptBalanceSnapshot(wallet, refreshedBalances, [tokenIn, tokenOut]);
           setNotice((current) => current ? { ...current, text: `${current.text} Private balances refreshed.` } : current);
         } catch (decryptError) {
           setNotice((current) => ({
@@ -847,9 +975,15 @@ export default function App() {
         }
       }
     } catch (error) {
-      fail(error);
+      if (pendingJob) {
+        console.warn('The swap is confirmed; owner-authorized result reveal remains pending.', error);
+        setNotice({ type: 'info', text: `Swap confirmed on Sepolia, but the authorized reveal will retry later: ${error.shortMessage ?? error.message}` });
+        await Promise.all([loadAccount().catch(console.error), loadMarket().catch(console.error)]);
+      } else {
+        fail(error);
+      }
     } finally {
-      setBusy('');
+      if (!backgroundReleased) setBusy('');
     }
   };
 
@@ -894,9 +1028,13 @@ export default function App() {
 
   const decryptSafeSnapshot = async (wallet, snapshot, tokenSymbols = Object.keys(TOKENS), { allowViewerGrant = true } = {}) => {
     const client = await createHandleClient(wallet.signer);
-    const next = { ...snapshot };
     const tokens = tokenSymbols.map((symbol) => TOKENS[symbol]).filter(Boolean);
-    const initialized = tokens.filter((token) => isHandle(snapshot[token.symbol]?.handle));
+    const current = safeBalancesRef.current;
+    const changedTokens = tokens.filter((token) => (
+      current[token.symbol]?.handle !== snapshot[token.symbol]?.handle
+      || typeof current[token.symbol]?.decrypted !== 'bigint'
+    ));
+    const initialized = changedTokens.filter((token) => isHandle(snapshot[token.symbol]?.handle));
     const compute = new ethers.Contract(deployment.contracts.noxCompute, NOX_COMPUTE_ABI, wallet.provider);
     const permissions = await Promise.all(
       initialized.map((token) => compute.isViewer(snapshot[token.symbol].handle, wallet.address)),
@@ -918,15 +1056,19 @@ export default function App() {
       addLog(`Grant Safe owner access to ${missingHandles.length} balance handle${missingHandles.length === 1 ? '' : 's'}`, grant.transaction.hash);
       await grant.transaction.wait();
     }
-    for (const token of tokens) {
-      const handle = snapshot[token.symbol].handle;
-      if (!isHandle(handle)) {
-        next[token.symbol] = { ...snapshot[token.symbol], decrypted: 0n };
-        continue;
-      }
-      const decrypted = await retry(() => client.decrypt(handle), 12, 4000);
-      next[token.symbol] = { ...snapshot[token.symbol], decrypted: decrypted.value };
-    }
+    const result = await decryptChangedBalances({
+      client,
+      current,
+      decrypt: (handleClient, handle) => decryptWithRetry(handleClient, handle, {
+        attempts: 12,
+        baseDelayMs: 1_000,
+        maxDelayMs: 8_000,
+      }),
+      isEncryptedHandle: isHandle,
+      snapshot,
+      tokenSymbols,
+    });
+    const next = result.balances;
     setSafeBalances((current) => {
       const merged = { ...snapshot };
       for (const token of Object.values(TOKENS)) {
@@ -938,10 +1080,17 @@ export default function App() {
             ? { ...refreshed, decrypted: previous.decrypted }
             : refreshed;
       }
+      safeBalancesRef.current = merged;
       return merged;
     });
     setSafeBalancesVisible(true);
     setSafeBalanceRefreshFailed(false);
+    if (result.errors.length > 0) {
+      throw new AggregateError(
+        result.errors.map(({ error }) => error),
+        `Nox Gateway could not reveal ${result.errors.map(({ symbol }) => symbol).join(', ')} yet.`,
+      );
+    }
     return next;
   };
 
@@ -982,7 +1131,11 @@ export default function App() {
     const client = await createHandleClient(wallet.signer);
     const wrapper = new ethers.Contract(token.wrapper, CONFIDENTIAL_TOKEN_ABI, wallet.signer);
     setNotice({ type: 'info', text: `Waiting for the public ${token.symbol} unwrap proof from Nox Gateway...` });
-    const publicResult = await retry(() => client.publicDecrypt(requestId), 12, 4000);
+    const publicResult = await publicDecryptWithRetry(client, requestId, {
+      attempts: 12,
+      baseDelayMs: 1_000,
+      maxDelayMs: 8_000,
+    });
     const finalize = await wrapper.finalizeUnwrap(requestId, publicResult.decryptionProof);
     addLog(`Finalize Safe unwrap: ${formatToken(publicResult.value, token.decimals)} ${token.publicSymbol}`, finalize.hash);
     await finalize.wait();
@@ -991,6 +1144,8 @@ export default function App() {
 
   const safeUnwrap = async ({ token: tokenSymbol, amount, recipient }) => {
     let confirmedRequestId = '';
+    let backgroundReleased = false;
+    let pendingJob = null;
     const restoreSafeBalances = safeRevealSession.current;
     try {
       if (!safeState.moduleEnabled || !safeState.isOwner) throw new Error('The connected wallet must be an owner of an enabled Safe module.');
@@ -1015,22 +1170,39 @@ export default function App() {
       const client = await createHandleClient(wallet.signer);
       const encrypted = await client.encryptInput(amountValue, 'uint256', safeState.moduleAddress);
       const module = new ethers.Contract(safeState.moduleAddress, SAFE_MODULE_ABI, wallet.signer);
-      const preparation = await module.prepareInput(encrypted.handle, encrypted.handleProof, token.wrapper);
-      addLog(`Prepare Safe ${tokenSymbol} unwrap input`, preparation.hash);
-      await preparation.wait();
+      const moduleV6 = Number(deployment.safe?.moduleVersion ?? 0) >= 6;
+      if (!moduleV6) {
+        const preparation = await module.prepareInput(encrypted.handle, encrypted.handleProof, token.wrapper);
+        addLog(`Prepare Safe ${tokenSymbol} unwrap input`, preparation.hash);
+        await preparation.wait();
+      }
       const execution = await executeSafeModule({
         signer: wallet.signer,
         safeAddress: safeState.address,
         moduleAddress: safeState.moduleAddress,
-        method: 'requestUnwrap',
-        args: [token.wrapper, encrypted.handle, recipient],
+        method: moduleV6 ? 'prepareAndRequestUnwrap' : 'requestUnwrap',
+        args: moduleV6
+          ? [token.wrapper, encrypted.handle, encrypted.handleProof, wallet.address, recipient]
+          : [token.wrapper, encrypted.handle, recipient],
       });
       addLog(`Request Safe unwrap: ${amount} ${tokenSymbol}`, execution.transaction.hash);
       const receipt = await execution.transaction.wait();
       const event = parseSafeModuleEvent(receipt, module, 'SafeUnwrapRequested');
       if (!event) throw new Error('SafeUnwrapRequested event was not found.');
       confirmedRequestId = event.args.unwrapRequestId;
+      pendingJob = savePendingNoxJob(window.localStorage, {
+        account: wallet.address,
+        chainId: deployment.chainId,
+        contract: token.wrapper,
+        handles: [confirmedRequestId],
+        operationType: 'safe-unwrap',
+        transactionHash: execution.transaction.hash,
+      });
+      setNotice({ type: 'success', text: 'Safe unwrap request confirmed. Nox proof finalization is continuing in the background.' });
+      setBusy('');
+      backgroundReleased = true;
       const released = await finalizeSafeUnwrapRequest({ wallet, tokenSymbol, requestId: confirmedRequestId });
+      removePendingNoxJob(window.localStorage, pendingJob);
       setNotice({ type: 'success', text: `Safe unwrap completed. Released ${formatToken(released, token.decimals)} ${token.publicSymbol} to ${shorten(recipient)}.` });
       const [snapshot] = await Promise.all([loadSafeAccount(), loadAccount(wallet.address)]);
       if (restoreSafeBalances) {
@@ -1051,7 +1223,7 @@ export default function App() {
         fail(error);
       }
     } finally {
-      setBusy('');
+      if (!backgroundReleased) setBusy('');
     }
   };
 
@@ -1061,6 +1233,11 @@ export default function App() {
       setBusy(`safe-finalize-${requestId}`);
       const wallet = await getWallet();
       const released = await finalizeSafeUnwrapRequest({ wallet, tokenSymbol, requestId });
+      for (const job of loadPendingNoxJobs(window.localStorage, { account: wallet.address, chainId: deployment.chainId })) {
+        if (job.operationType === 'safe-unwrap' && job.handles.includes(requestId)) {
+          removePendingNoxJob(window.localStorage, job);
+        }
+      }
       const token = TOKENS[tokenSymbol];
       const [snapshot] = await Promise.all([loadSafeAccount(), loadAccount(wallet.address)]);
       const restored = restoreSafeBalances ? await restoreSafeRevealSession(wallet, snapshot) : false;
@@ -1079,6 +1256,8 @@ export default function App() {
 
   const safeSwap = async ({ tokenIn: tokenInSymbol, tokenOut: tokenOutSymbol, amount, minOut: minimum, deadlineMinutes: requestedDeadline }) => {
     let confirmedTransactionHash = '';
+    let backgroundReleased = false;
+    let pendingJob = null;
     const restoreSafeBalances = safeRevealSession.current;
     try {
       if (!safeState.moduleEnabled || !safeState.isOwner) throw new Error('The connected wallet must be an owner of an enabled Safe module.');
@@ -1098,35 +1277,82 @@ export default function App() {
         client.encryptInput(minimumValue, 'uint256', safeState.moduleAddress),
       ]);
       const module = new ethers.Contract(safeState.moduleAddress, SAFE_MODULE_ABI, wallet.signer);
-      const preparation = await module.prepareInputs(
-        [encrypted.handle, encryptedMinimum.handle],
-        [encrypted.handleProof, encryptedMinimum.handleProof],
-        deployment.contracts.noxSwapRouter,
-      );
-      addLog('Prepare Safe swap ciphertext ACL', preparation.hash);
-      await preparation.wait();
+      const moduleV6 = Number(deployment.safe?.moduleVersion ?? 0) >= 6;
+      if (!moduleV6) {
+        const preparation = await module.prepareInputs(
+          [encrypted.handle, encryptedMinimum.handle],
+          [encrypted.handleProof, encryptedMinimum.handleProof],
+          deployment.contracts.noxSwapRouter,
+        );
+        addLog('Prepare Safe swap ciphertext ACL', preparation.hash);
+        await preparation.wait();
+      }
       const execution = await executeSafeModule({
         signer: wallet.signer,
         safeAddress: safeState.address,
         moduleAddress: safeState.moduleAddress,
-        method: 'confidentialSwap',
-        args: [input.wrapper, output.wrapper, encrypted.handle, encryptedMinimum.handle, wallet.address, deadline],
+        method: moduleV6 ? 'prepareAndSwap' : 'confidentialSwap',
+        args: moduleV6
+          ? [
+              input.wrapper,
+              output.wrapper,
+              encrypted.handle,
+              encrypted.handleProof,
+              encryptedMinimum.handle,
+              encryptedMinimum.handleProof,
+              wallet.address,
+              wallet.address,
+              deadline,
+            ]
+          : [input.wrapper, output.wrapper, encrypted.handle, encryptedMinimum.handle, wallet.address, deadline],
       });
       addLog('Safe confidential swap submitted', execution.transaction.hash);
       const mined = await execution.transaction.wait();
       confirmedTransactionHash = execution.transaction.hash;
       const event = parseSafeModuleEvent(mined, module, 'SafeSwapExecuted');
       if (!event) throw new Error('SafeSwapExecuted event was not found.');
+      pendingJob = savePendingNoxJob(window.localStorage, {
+        account: wallet.address,
+        chainId: deployment.chainId,
+        contract: safeState.moduleAddress,
+        handles: [event.args.encryptedOutput, event.args.encryptedRefund],
+        operationType: 'safe-swap',
+        transactionHash: execution.transaction.hash,
+      });
+      setNotice({ type: 'success', text: 'Safe swap confirmed. Authorized result reveal is continuing in the background.' });
+      setBusy('');
+      backgroundReleased = true;
       const [decrypted, refund] = await Promise.all([
-        retry(() => client.decrypt(event.args.encryptedOutput), 12, 4000),
-        retry(() => client.decrypt(event.args.encryptedRefund), 12, 4000),
+        decryptWithRetry(client, event.args.encryptedOutput, {
+          attempts: 12,
+          baseDelayMs: 1_000,
+          maxDelayMs: 8_000,
+        }),
+        decryptWithRetry(client, event.args.encryptedRefund, {
+          attempts: 12,
+          baseDelayMs: 1_000,
+          maxDelayMs: 8_000,
+        }),
       ]);
+      removePendingNoxJob(window.localStorage, pendingJob);
       const received = formatToken(decrypted.value, output.decimals);
       const returned = formatToken(refund.value, input.decimals);
       setNotice({ type: 'success', text: `Safe swap confirmed. Received ${received} ${output.symbol}; refund ${returned} ${input.symbol}.` });
+      if (restoreSafeBalances) {
+        const optimistic = applySwapBalanceDelta({
+          balances: safeBalancesRef.current,
+          amountIn: amountValue,
+          outputAmount: decrypted.value,
+          refundAmount: refund.value,
+          tokenIn: tokenInSymbol,
+          tokenOut: tokenOutSymbol,
+        });
+        safeBalancesRef.current = optimistic;
+        setSafeBalances(optimistic);
+      }
       const [snapshot] = await Promise.all([loadSafeAccount(), loadAccount(wallet.address)]);
       if (restoreSafeBalances) {
-        const restored = await restoreSafeRevealSession(wallet, snapshot);
+        const restored = await restoreSafeRevealSession(wallet, snapshot, [tokenInSymbol, tokenOutSymbol]);
         setNotice({
           type: restored ? 'success' : 'info',
           text: restored
@@ -1143,7 +1369,7 @@ export default function App() {
         fail(error);
       }
     } finally {
-      setBusy('');
+      if (!backgroundReleased) setBusy('');
     }
   };
 
@@ -1169,19 +1395,35 @@ export default function App() {
         client.encryptInput(minimumValue, 'uint256', safeState.moduleAddress),
       ]);
       const module = new ethers.Contract(safeState.moduleAddress, SAFE_MODULE_ABI, wallet.signer);
-      const preparation = await module.prepareInputs(
-        [encrypted.handle, encryptedMinimum.handle],
-        [encrypted.handleProof, encryptedMinimum.handleProof],
-        safeState.orderBook,
-      );
-      addLog('Prepare Safe order ciphertext ACL', preparation.hash);
-      await preparation.wait();
+      const moduleV6 = Number(deployment.safe?.moduleVersion ?? 0) >= 6;
+      if (!moduleV6) {
+        const preparation = await module.prepareInputs(
+          [encrypted.handle, encryptedMinimum.handle],
+          [encrypted.handleProof, encryptedMinimum.handleProof],
+          safeState.orderBook,
+        );
+        addLog('Prepare Safe order ciphertext ACL', preparation.hash);
+        await preparation.wait();
+      }
       const execution = await executeSafeModule({
         signer: wallet.signer,
         safeAddress: safeState.address,
         moduleAddress: safeState.moduleAddress,
-        method: 'createLimitOrder',
-        args: [input.wrapper, output.wrapper, encrypted.handle, encryptedMinimum.handle, wallet.address, trigger, expiry],
+        method: moduleV6 ? 'prepareAndCreateLimitOrder' : 'createLimitOrder',
+        args: moduleV6
+          ? [
+              input.wrapper,
+              output.wrapper,
+              encrypted.handle,
+              encrypted.handleProof,
+              encryptedMinimum.handle,
+              encryptedMinimum.handleProof,
+              wallet.address,
+              wallet.address,
+              trigger,
+              expiry,
+            ]
+          : [input.wrapper, output.wrapper, encrypted.handle, encryptedMinimum.handle, wallet.address, trigger, expiry],
       });
       addLog('Safe confidential limit order submitted', execution.transaction.hash);
       await execution.transaction.wait();
@@ -1320,7 +1562,11 @@ export default function App() {
       setNotice({ type: 'info', text: `Viewer access confirmed. Requesting authorized decryption for Safe order #${order.id}...` });
       const client = await createHandleClient(wallet.signer);
       const [amountResult, minOutResult] = await Promise.all(
-        handles.map((handle) => retry(() => client.decrypt(handle), 12, 4000)),
+        handles.map((handle) => decryptWithRetry(client, handle, {
+          attempts: 12,
+          baseDelayMs: 1_000,
+          maxDelayMs: 8_000,
+        })),
       );
       const input = TOKENS[order.tokenIn];
       const output = TOKENS[order.tokenOut];
@@ -1460,7 +1706,7 @@ export default function App() {
   const openHistoryReceipt = async (item) => {
     try {
       setBusy(`receipt-${item.receiptId}`);
-      const provider = new ethers.JsonRpcProvider(RPC_URL, deployment.chainId, { staticNetwork: true });
+      const provider = getPublicProvider();
       const router = new ethers.Contract(deployment.contracts.noxSwapRouter, NOX_SWAP_ABI, provider);
       const tokenUri = await router.tokenURI(item.receiptId);
       setReceipt({

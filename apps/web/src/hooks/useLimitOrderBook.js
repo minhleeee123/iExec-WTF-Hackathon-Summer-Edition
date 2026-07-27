@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ethers } from 'ethers';
 import deployment from '../deployment.json';
 import { CHAINLINK_FEED_ABI, LIMIT_ORDER_ABI } from '../contracts';
-import { ORDER_HISTORY_RPC_URL, RPC_URL, TOKENS } from '../config';
+import { TOKENS } from '../config';
 import {
   ORDER_INDEX_FINALITY_BLOCKS,
   ORDER_INDEX_HEAD_LAG_BLOCKS,
@@ -16,6 +16,7 @@ import {
   splitFinalizedEvents,
 } from '../lib/order-event-index.js';
 import { CONTRACT_ORDER_STATUS, ORDER_STATE_LABEL, deriveOrderState, isOrderOwner } from '../lib/orders.js';
+import { cachedImmutableRead, getHistoryProvider, getPublicProvider } from '../lib/providers.js';
 
 const REFRESH_INTERVAL_MS = 20_000;
 const READ_CONCURRENCY = 5;
@@ -60,22 +61,26 @@ export default function useLimitOrderBook({
   const previousStates = useRef(null);
   const requestId = useRef(0);
   const finalizedIndex = useRef(null);
+  const lastBlockWakeup = useRef(0);
 
   const refresh = useCallback(async ({ quiet = false } = {}) => {
     const currentRequest = requestId.current + 1;
     requestId.current = currentRequest;
     if (!quiet) setRefreshing(true);
     try {
-      const provider = new ethers.JsonRpcProvider(RPC_URL, deployment.chainId, { staticNetwork: true });
-      const historyProvider = new ethers.JsonRpcProvider(ORDER_HISTORY_RPC_URL, deployment.chainId, { staticNetwork: true });
+      const provider = getPublicProvider();
+      const historyProvider = getHistoryProvider();
       const orderBook = new ethers.Contract(orderBookAddress, LIMIT_ORDER_ABI, provider);
       const feed = new ethers.Contract(deployment.feeds.ethUsd, CHAINLINK_FEED_ABI, provider);
       const [latestBlock, historyLatestBlock, deploymentReceipt, priceDecimals, maxOracleAge] = await Promise.all([
         provider.getBlock('latest'),
         historyProvider.getBlockNumber(),
-        provider.getTransactionReceipt(deploymentTransactionHash),
-        orderBook.priceDecimals(),
-        orderBook.MAX_ORACLE_AGE(),
+        cachedImmutableRead(
+          `deployment-receipt:${deploymentTransactionHash}`,
+          () => provider.getTransactionReceipt(deploymentTransactionHash),
+        ),
+        cachedImmutableRead(`order-price-decimals:${orderBookAddress}`, () => orderBook.priceDecimals()),
+        cachedImmutableRead(`order-max-oracle-age:${orderBookAddress}`, () => orderBook.MAX_ORACLE_AGE()),
       ]);
       if (!latestBlock || !deploymentReceipt) throw new Error('Orderbook deployment or latest block is unavailable.');
 
@@ -106,7 +111,7 @@ export default function useLimitOrderBook({
           address: orderBookAddress,
           topics: [lifecycleTopics],
         }, fromBlock, eventTip),
-        feed.latestRoundData(),
+        feed.latestRoundData({ blockTag: latestBlock.number }),
       ]);
 
       let displayIndex = baseIndex;
@@ -170,7 +175,7 @@ export default function useLimitOrderBook({
         let readinessError = '';
         if (contractStatus === CONTRACT_ORDER_STATUS.OPEN && latestBlock.timestamp <= Number(order.expiry) && oracleState.available) {
           try {
-            [executable] = await orderBook.canExecute(order.id);
+            [executable] = await orderBook.canExecute(order.id, { blockTag: latestBlock.number });
           } catch (readError) {
             orderOracleAvailable = false;
             readinessError = readError.shortMessage ?? readError.message;
@@ -236,10 +241,21 @@ export default function useLimitOrderBook({
     previousStates.current = null;
     setLoading(true);
     refresh();
+    const provider = getPublicProvider();
+    const onBlock = () => {
+      const now = Date.now();
+      if (document.visibilityState !== 'visible' || now - lastBlockWakeup.current < 4_000) return;
+      lastBlockWakeup.current = now;
+      refresh({ quiet: true });
+    };
+    provider.on('block', onBlock);
     const timer = window.setInterval(() => {
       if (document.visibilityState === 'visible') refresh({ quiet: true });
     }, REFRESH_INTERVAL_MS);
-    return () => window.clearInterval(timer);
+    return () => {
+      provider.off('block', onBlock);
+      window.clearInterval(timer);
+    };
   }, [refresh]);
 
   useEffect(() => {
