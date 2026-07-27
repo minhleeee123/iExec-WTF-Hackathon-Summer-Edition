@@ -1,10 +1,32 @@
 # NoxSwap Remediation and Verification
 
-Date: 2026-07-25
+Date: 2026-07-27
 
 Production frontend: [https://noxswap-iexec.vercel.app](https://noxswap-iexec.vercel.app)
 
 Current optimized production deployment: `dpl_5tceTxxJ7qRCw97LEwz7VVyrK1S7` (Safe Module V5, public Safe orderbook, owner term reveal, minute expiry, and operator controls production smoke: PASS).
+
+## Hello World onboarding verification
+
+The required iExec Nox Hello World journey was completed on Ethereum Sepolia
+with onboarding wallet
+[`0xE412d04DA2A211F7ADC80311CC0FF9F03440B64E`](https://sepolia.etherscan.io/address/0xE412d04DA2A211F7ADC80311CC0FF9F03440B64E).
+This records the wallet used for the journey; it does not claim that the address
+must receive a prize or deploy every other project component.
+
+| Evidence | Result |
+|---|---|
+| Tutorial contract | [`ConfidentialPiggyBank` at `0x3204467cB52e8b8065D52045Ed37094B030fb998`](https://sepolia.etherscan.io/address/0x3204467cB52e8b8065D52045Ed37094B030fb998) |
+| Deployment | [Transaction `0xecfd20...a1422d1`](https://sepolia.etherscan.io/tx/0xecfd20fdd9fdc68c6648390362a9827127c84fe4259011b8aa90df052a1422d1), block `11359858`, receipt status `1` |
+| Encrypted input | [Deposit transaction `0x1a1415...2da731`](https://sepolia.etherscan.io/tx/0x1a14157f2edd3d0d2d8317430b0079069fad8cdec58e03b86a4b522cc02da731), block `11359861`, receipt status `1` |
+| Contract state | Runtime bytecode present and `owner()` equals the onboarding wallet |
+| Nox verification | The target-bound input was encrypted with `@iexec-nox/handle`, accepted by `Nox.fromExternal`, and the resulting balance was successfully decrypted by the authorized owner |
+| Independent chain check | Chain ID `11155111`, both receipts, runtime bytecode, and owner were confirmed through two independent Sepolia RPC providers |
+
+The contract was compiled with Solidity `0.8.35`, which satisfies the tutorial's
+`0.8.27+` instruction, using `@iexec-nox/nox-protocol-contracts` `0.2.4`.
+Private keys, encrypted handles, proofs, authorization signatures, and the
+decrypted test value are intentionally excluded from this evidence.
 
 ## Converted to Real Features
 

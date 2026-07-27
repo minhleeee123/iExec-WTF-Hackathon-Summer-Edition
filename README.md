@@ -22,6 +22,7 @@ The canonical UI/UX language and review checklist are documented in
 | Public proof without a wallet | Open [the live orderbook](https://noxswap-iexec.vercel.app/app/trade?mode=orders) to inspect real lifecycle events, Chainlink readiness, encrypted handles, and Sepolia transaction links. |
 | End-to-end confidential trade | Connect MetaMask on Sepolia → claim faucet assets → wrap → submit a protected swap → reveal the authorized encrypted output and receipt. |
 | Safe Treasury flow | Open [Safe Treasury](https://noxswap-iexec.vercel.app/app/safe) to inspect Safe-owned encrypted balances, module controls, protected swaps, and confidential orders. |
+| Required Hello World onboarding | Wallet [`0xE412...B64E`](https://sepolia.etherscan.io/address/0xE412d04DA2A211F7ADC80311CC0FF9F03440B64E) deployed the tutorial [`ConfidentialPiggyBank`](https://sepolia.etherscan.io/address/0x3204467cB52e8b8065D52045Ed37094B030fb998) and completed an [encrypted deposit](https://sepolia.etherscan.io/tx/0x1a14157f2edd3d0d2d8317430b0079069fad8cdec58e03b86a4b522cc02da731). Detailed evidence is in [`docs/verification.md`](docs/verification.md#hello-world-onboarding-verification). |
 | Demo video | Attach it to the required X submission post before final submission (maximum four minutes). |
 
 No core product data is mocked: public order state comes from Sepolia events and

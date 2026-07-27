@@ -12,7 +12,7 @@
 - Current blocker: No technical blocker. Module V5 was re-enabled by the
   configured Safe owner and confirmed active at Sepolia block `11347078`.
 - Awaiting approval from: None.
-- Last updated: 2026-07-25T17:27:00+07:00
+- Last updated: 2026-07-27T13:44:15+07:00
 
 Allowed phase statuses: `Todo`, `In progress`, `Waiting for approval`, `Blocked`, `Completed`, `Skipped`.
 
@@ -104,5 +104,8 @@ Allowed phase statuses: `Todo`, `In progress`, `Waiting for approval`, `Blocked`
 - [x] Safe Orders reuses the complete Trade public-orderbook UX; execution/expiry remain permissionless, cancellation remains Safe-owner/module controlled, and the keeper indexes both orderbooks with a shared bounded write budget.
 - [x] Safe order parity includes minute-level expiry, creation readiness, explicit live OrderBook operator revoke/authorize, and owner-only batched ACL term reveal with live Sepolia decryption evidence.
 - [x] Official `README.md` and `feedback.md` files exist at the repository root.
+- [x] The required iExec Hello World onboarding journey was completed and recorded
+  with sanitized Sepolia deployment, encrypted-deposit, and authorized-decryption
+  evidence in `docs/verification.md`.
 - [ ] The canonical submission checklist is complete.
 - [ ] The submission has passed final review.
