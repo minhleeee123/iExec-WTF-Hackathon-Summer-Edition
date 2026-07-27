@@ -2,18 +2,20 @@ import 'dotenv/config';
 
 import { LIMIT_ORDER_ABI } from '@noxswap/contracts/client-abis';
 import deployment from '@noxswap/contracts/deployment-sepolia.json' with { type: 'json' };
-import { Contract, JsonRpcProvider, Wallet, parseEther } from 'ethers';
+import { Contract, JsonRpcProvider, Wallet, WebSocketProvider, parseEther } from 'ethers';
 import { createHealthState } from './keeper-health.js';
 import { startHealthServer } from './keeper-health-server.js';
 import { createNotifier, writeStructuredLog } from './keeper-notifier.js';
 import { createKeeperOrderSource } from './keeper-order-index.js';
 import { runKeeperCycle } from './keeper-scanner.js';
+import { waitForBlockOrTimeout } from './keeper-wakeup.js';
 import { createRemoteKeeperObserver } from './observer-client.js';
 
 const args = new Set(process.argv.slice(2));
 const once = args.has('--once');
 const dryRun = args.has('--dry-run') || process.env.KEEPER_DRY_RUN === 'true';
 const rpcUrl = process.env.SEPOLIA_RPC_URL ?? 'https://ethereum-sepolia-rpc.publicnode.com';
+const websocketRpcUrl = process.env.KEEPER_WS_RPC_URL ?? '';
 const historyRpcUrl = process.env.KEEPER_HISTORY_RPC_URL || 'https://eth-sepolia.api.onfinality.io/public';
 const privateKey = process.env.KEEPER_PRIVATE_KEY ?? '';
 if (!dryRun && !privateKey) throw new Error('Set KEEPER_PRIVATE_KEY for write mode.');
@@ -24,6 +26,9 @@ if (
 ) throw new Error('Invalid Sepolia deployment configuration.');
 
 const provider = new JsonRpcProvider(rpcUrl, 11155111, { staticNetwork: true });
+const wakeupProvider = websocketRpcUrl
+  ? new WebSocketProvider(websocketRpcUrl, 11155111, { staticNetwork: true })
+  : provider;
 const historyProvider = new JsonRpcProvider(historyRpcUrl, 11155111, { staticNetwork: true });
 const signer = privateKey ? new Wallet(privateKey, provider) : null;
 const config = {
@@ -101,7 +106,13 @@ const runtimes = await Promise.all(orderBookDefinitions.map(async (definition) =
 
 let stopped = false;
 let healthServer;
-const stop = () => { stopped = true; healthServer?.close(); };
+const shutdown = new AbortController();
+const stop = () => {
+  stopped = true;
+  shutdown.abort();
+  healthServer?.close();
+  if (wakeupProvider !== provider) wakeupProvider.destroy();
+};
 process.on('SIGINT', stop);
 process.on('SIGTERM', stop);
 
@@ -125,12 +136,10 @@ async function main() {
       }
     }
     if (once || stopped) break;
-    await new Promise((resolve) => {
-      let watcher;
-      const timer = setTimeout(() => { clearInterval(watcher); resolve(); }, config.pollIntervalMs);
-      watcher = setInterval(() => {
-        if (stopped) { clearTimeout(timer); clearInterval(watcher); resolve(); }
-      }, 100);
+    await waitForBlockOrTimeout({
+      provider: wakeupProvider,
+      signal: shutdown.signal,
+      timeoutMs: config.pollIntervalMs,
     });
   } while (!stopped);
 }
