@@ -147,6 +147,58 @@ test('NoxSafeModule executes a private swap through the Safe and preserves Safe 
   assert.equal(await compute.allowed(ethers.zeroPadValue('0x7777', 32), owner.address), true);
 });
 
+test('NoxSafeModule V6 validates owner-bound inputs and swaps in one Safe transaction', async () => {
+  const fixture = await deployFixture();
+  const { ethers, owner, safe, module, router, compute } = fixture;
+  const amountHandle = ethers.zeroPadValue('0xa1', 32);
+  const minOutHandle = ethers.zeroPadValue('0xa2', 32);
+  const data = module.interface.encodeFunctionData('prepareAndSwap', [
+    await fixture.token.getAddress(),
+    await fixture.tokenOut.getAddress(),
+    amountHandle,
+    '0x1234',
+    minOutHandle,
+    '0x5678',
+    owner.address,
+    owner.address,
+    4_000_000_000n,
+  ]);
+  await safeExec(fixture, await module.getAddress(), data);
+  assert.equal(await router.lastCaller(), await safe.getAddress());
+  assert.equal(await router.swapCalls(), 1n);
+  assert.equal(await compute.validatedOwner(amountHandle), owner.address);
+  assert.equal(await compute.validatedOwner(minOutHandle), owner.address);
+  assert.equal(await compute.allowed(amountHandle, await router.getAddress()), true);
+  assert.equal(await module.consumedInput(amountHandle), true);
+
+  await assert.rejects(
+    safeExec(fixture, await module.getAddress(), data),
+    /revert|GS013/i,
+  );
+  assert.equal(await router.swapCalls(), 1n, 'a consumed handle must never settle twice');
+});
+
+test('NoxSafeModule V6 rejects input proofs attributed to a non-owner', async () => {
+  const fixture = await deployFixture();
+  const { ethers, owner, module } = fixture;
+  const stranger = ethers.Wallet.createRandom().address;
+  const data = module.interface.encodeFunctionData('prepareAndSwap', [
+    await fixture.token.getAddress(),
+    await fixture.tokenOut.getAddress(),
+    ethers.zeroPadValue('0xb1', 32),
+    '0x12',
+    ethers.zeroPadValue('0xb2', 32),
+    '0x34',
+    stranger,
+    owner.address,
+    4_000_000_000n,
+  ]);
+  await assert.rejects(
+    safeExec(fixture, await module.getAddress(), data),
+    /revert|GS013/i,
+  );
+});
+
 test('NoxSafeModule routes order creation and operator authorization with Safe as msg.sender', async () => {
   const fixture = await deployFixture();
   const { ethers, owner, safe, module, orderBook, token } = fixture;

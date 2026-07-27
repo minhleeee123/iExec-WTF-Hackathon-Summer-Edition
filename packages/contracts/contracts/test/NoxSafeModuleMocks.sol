@@ -100,6 +100,7 @@ contract NoxSafeModuleMockCompute {
     address public lastViewer;
     uint256 public viewerCalls;
     mapping(bytes32 handle => mapping(address viewer => bool allowed)) public allowed;
+    mapping(bytes32 handle => address owner) public validatedOwner;
 
     function addViewer(bytes32 handle, address viewer) external {
         lastCaller = msg.sender;
@@ -111,5 +112,15 @@ contract NoxSafeModuleMockCompute {
 
     function isViewer(bytes32 handle, address viewer) external view returns (bool) {
         return allowed[handle][viewer];
+    }
+
+    function validateInputProof(bytes32 handle, address owner, bytes calldata, uint8) external {
+        validatedOwner[handle] = owner;
+        allowed[handle][msg.sender] = true;
+    }
+
+    function allow(bytes32 handle, address account) external {
+        require(allowed[handle][msg.sender], "caller not allowed");
+        allowed[handle][account] = true;
     }
 }

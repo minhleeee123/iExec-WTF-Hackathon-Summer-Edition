@@ -6,6 +6,7 @@ import {
     euint256,
     externalEuint256
 } from "@iexec-nox/nox-protocol-contracts/contracts/sdk/Nox.sol";
+import {TEEType} from "@iexec-nox/nox-protocol-contracts/contracts/utils/TypeUtils.sol";
 
 enum SafeOperation {
     Call,
@@ -43,6 +44,13 @@ interface INoxSafeOperator {
 interface INoxSafeCompute {
     function addViewer(bytes32 handle, address viewer) external;
     function isViewer(bytes32 handle, address viewer) external view returns (bool);
+    function allow(bytes32 handle, address account) external;
+    function validateInputProof(
+        bytes32 handle,
+        address owner,
+        bytes calldata proof,
+        TEEType teeType
+    ) external;
 }
 
 /**
@@ -65,6 +73,7 @@ contract NoxSafeModule {
     error InvalidConsumer();
     error InvalidRecipient();
     error InvalidBatch();
+    error InputAlreadyConsumed(bytes32 handle);
     error SafeCallFailed(address target, bytes data);
     error InvalidReturnData();
 
@@ -103,6 +112,7 @@ contract NoxSafeModule {
     address public immutable orderBook;
     address public immutable noxCompute;
     mapping(address token => bool allowed) public immutableToken;
+    mapping(bytes32 handle => bool consumed) public consumedInput;
 
     modifier onlySafe() {
         if (msg.sender != safe) revert OnlySafe();
@@ -207,6 +217,64 @@ contract NoxSafeModule {
         address receiptOwner,
         uint64 deadline
     ) external onlySafe onlyEnabled returns (bytes32 encryptedOutput, bytes32 encryptedRefund, uint256 receiptId) {
+        return _confidentialSwap(
+            tokenIn,
+            tokenOut,
+            preparedAmountIn,
+            preparedMinOut,
+            receiptOwner,
+            deadline
+        );
+    }
+
+    /**
+     * @notice Validate owner-bound inputs and settle through the Safe in one
+     *         threshold-approved transaction. Proof app binding remains this
+     *         module, while inputOwner is checked explicitly because msg.sender
+     *         is the Safe during execution.
+     */
+    function prepareAndSwap(
+        address tokenIn,
+        address tokenOut,
+        externalEuint256 encryptedAmountIn,
+        bytes calldata inputProof,
+        externalEuint256 encryptedMinOut,
+        bytes calldata minOutProof,
+        address inputOwner,
+        address receiptOwner,
+        uint64 deadline
+    ) external onlySafe onlyEnabled returns (bytes32 encryptedOutput, bytes32 encryptedRefund, uint256 receiptId) {
+        if (!INoxSafeHost(safe).isOwner(inputOwner)) revert OnlySafeOwner();
+        bytes32 preparedAmountIn = _validateFreshInput(
+            encryptedAmountIn,
+            inputProof,
+            inputOwner,
+            router
+        );
+        bytes32 preparedMinOut = _validateFreshInput(
+            encryptedMinOut,
+            minOutProof,
+            inputOwner,
+            router
+        );
+        return _confidentialSwap(
+            tokenIn,
+            tokenOut,
+            preparedAmountIn,
+            preparedMinOut,
+            receiptOwner,
+            deadline
+        );
+    }
+
+    function _confidentialSwap(
+        address tokenIn,
+        address tokenOut,
+        bytes32 preparedAmountIn,
+        bytes32 preparedMinOut,
+        address receiptOwner,
+        uint64 deadline
+    ) private returns (bytes32 encryptedOutput, bytes32 encryptedRefund, uint256 receiptId) {
         _requireToken(tokenIn);
         _requireToken(tokenOut);
         if (!INoxSafeHost(safe).isOwner(receiptOwner)) revert OnlySafeOwner();
@@ -244,6 +312,66 @@ contract NoxSafeModule {
         uint256 triggerPrice,
         uint64 expiry
     ) external onlySafe onlyEnabled returns (uint256 orderId) {
+        return _createLimitOrder(
+            tokenIn,
+            tokenOut,
+            preparedAmountIn,
+            preparedMinOut,
+            receiptOwner,
+            triggerPrice,
+            expiry
+        );
+    }
+
+    /**
+     * @notice Validate owner-bound order inputs and escrow through the Safe in
+     *         one threshold-approved transaction.
+     */
+    function prepareAndCreateLimitOrder(
+        address tokenIn,
+        address tokenOut,
+        externalEuint256 encryptedAmountIn,
+        bytes calldata inputProof,
+        externalEuint256 encryptedMinOut,
+        bytes calldata minOutProof,
+        address inputOwner,
+        address receiptOwner,
+        uint256 triggerPrice,
+        uint64 expiry
+    ) external onlySafe onlyEnabled returns (uint256 orderId) {
+        if (!INoxSafeHost(safe).isOwner(inputOwner)) revert OnlySafeOwner();
+        bytes32 preparedAmountIn = _validateFreshInput(
+            encryptedAmountIn,
+            inputProof,
+            inputOwner,
+            orderBook
+        );
+        bytes32 preparedMinOut = _validateFreshInput(
+            encryptedMinOut,
+            minOutProof,
+            inputOwner,
+            orderBook
+        );
+        return _createLimitOrder(
+            tokenIn,
+            tokenOut,
+            preparedAmountIn,
+            preparedMinOut,
+            receiptOwner,
+            triggerPrice,
+            expiry
+        );
+    }
+
+    function _createLimitOrder(
+        address tokenIn,
+        address tokenOut,
+        bytes32 preparedAmountIn,
+        bytes32 preparedMinOut,
+        address receiptOwner,
+        uint256 triggerPrice,
+        uint64 expiry
+    ) private returns (uint256 orderId) {
         _requireToken(tokenIn);
         _requireToken(tokenOut);
         if (!INoxSafeHost(safe).isOwner(receiptOwner)) revert OnlySafeOwner();
@@ -315,6 +443,44 @@ contract NoxSafeModule {
     }
 
     /**
+     * @notice Validate an owner-bound unwrap amount and create the request in
+     *         one threshold-approved Safe transaction.
+     */
+    function prepareAndRequestUnwrap(
+        address token,
+        externalEuint256 encryptedAmount,
+        bytes calldata inputProof,
+        address inputOwner,
+        address recipient
+    ) external onlySafe onlyEnabled returns (bytes32 unwrapRequestId) {
+        if (!INoxSafeHost(safe).isOwner(inputOwner)) revert OnlySafeOwner();
+        bytes32 preparedAmount = _validateFreshInput(
+            encryptedAmount,
+            inputProof,
+            inputOwner,
+            token
+        );
+        _requireToken(token);
+        if (
+            recipient == address(0) ||
+            (recipient != safe && !INoxSafeHost(safe).isOwner(recipient))
+        ) revert InvalidRecipient();
+        bytes memory data = abi.encodeWithSignature(
+            "unwrap(address,address,bytes32)",
+            safe,
+            recipient,
+            preparedAmount
+        );
+        bytes memory returnData = _safeCallWithReturnData(token, data);
+        if (returnData.length != 32) revert InvalidReturnData();
+        unwrapRequestId = abi.decode(returnData, (bytes32));
+        if (INoxSafeHost(safe).isOwner(recipient)) {
+            _grantBalanceViewerIfInitialized(token, recipient);
+        }
+        emit SafeUnwrapRequested(safe, token, recipient, unwrapRequestId);
+    }
+
+    /**
      * @notice Authorize or revoke the router/order book as an ERC-7984 operator
      *         for the Safe. The token call is executed with the Safe as sender.
      */
@@ -365,6 +531,29 @@ contract NoxSafeModule {
 
     function _requireToken(address token) private view {
         if (!immutableToken[token]) revert InvalidToken();
+    }
+
+    function _validateFreshInput(
+        externalEuint256 encryptedInput,
+        bytes calldata inputProof,
+        address inputOwner,
+        address consumer
+    ) private returns (bytes32 handle) {
+        if (consumer != router && consumer != orderBook && !immutableToken[consumer]) {
+            revert InvalidConsumer();
+        }
+        handle = externalEuint256.unwrap(encryptedInput);
+        if (consumedInput[handle]) revert InputAlreadyConsumed(handle);
+        INoxSafeCompute(noxCompute).validateInputProof(
+            handle,
+            inputOwner,
+            inputProof,
+            TEEType.Uint256
+        );
+        consumedInput[handle] = true;
+        INoxSafeCompute(noxCompute).allow(handle, consumer);
+        INoxSafeCompute(noxCompute).allow(handle, safe);
+        emit SafeInputPrepared(inputOwner, consumer, handle);
     }
 
     function _ensureOperator(address token, address operator) private {
