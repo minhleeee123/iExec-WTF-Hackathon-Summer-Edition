@@ -30,7 +30,12 @@ private values are obtained only through Nox-authorized decryption.
 
 The Safe module status is read from Sepolia rather than trusted from the deployment
 snapshot. Module V6 passed its live one-transaction swap at block `11360178` on
-2026-07-27 and is the sole enabled canonical module. Owner-controlled module operations are available; permissionless
+2026-07-27 and is the sole enabled canonical module. On the same date, the project
+owner completed the manual Safe V6 test suite on the production flow, reported
+that every exercised check passed, and found the flow noticeably faster than V5.
+This qualitative result is consistent with the measured reduction from two
+post-encryption transactions to one; no controlled Gateway wall-clock benchmark
+is claimed. Owner-controlled module operations are available; permissionless
 execution/expiry of existing Safe orders remains independent of the module.
 
 ## Live Deployment
@@ -84,7 +89,7 @@ This table is the canonical mapping for source review:
 | NoxSwap Router V2 | [`NoxSwap.sol`](./packages/contracts/contracts/NoxSwap.sol) | `Router V2` is the deployment label; the Solidity contract remains `NoxSwap`. |
 | Personal limit order book | [`NoxLimitOrderBook.sol` at `407d770`](https://github.com/minhleeee123/iExec-WTF-Hackathon-Summer-Edition/blob/407d770218fb82ea14d680380bfedea2a24c341a/packages/contracts/contracts/NoxLimitOrderBook.sol) | Exact deployed revision, also published on Sourcify; orders are owned by their creating EOA. |
 | Safe confidential order book | [`NoxLimitOrderBook.sol`](./packages/contracts/contracts/NoxLimitOrderBook.sol) | Current source adds `createOrderAuthorized` and receipt-owner routing; its creation bytecode exactly matches the Safe orderbook deployment. |
-| Allowlisted Safe Module V6 | [`NoxSafeModule.sol`](./packages/contracts/contracts/NoxSafeModule.sol) | `V6` validates owner-bound inputs inside one Safe transaction and prevents handle replay; this file exactly matches the deployed module. |
+| Allowlisted Safe Module V6 | [`NoxSafeModule.sol`](./packages/contracts/contracts/NoxSafeModule.sol) | `V6` validates owner-bound inputs inside one Safe transaction and prevents handle reuse through its combined entry points; this file exactly matches the deployed module. |
 | Four ERC-7984 wrappers | [`NoxConfidentialToken.sol`](./packages/contracts/contracts/NoxConfidentialToken.sol) | Thin extension of the official `ERC20ToERC7984Wrapper`. |
 | Four faucet test tokens | [`NoxTestToken.sol`](./packages/contracts/contracts/NoxTestToken.sol) | Public Sepolia-only collateral with one-hour faucet cooldowns. |
 

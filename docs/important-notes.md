@@ -86,11 +86,15 @@
 - V5 prompt-optimization evidence includes two ciphertext inputs prepared in one transaction (`0x1fe24270bdc0f75d553caf9f0cfa059a15c24a721c0bdbc2c9d9bfd0a351bc2a`) and a prevalidated Safe batch-viewer execution (`0x85212298df23eff1af488c7ceeb586875d04b018c15ee497dc9300647124fc33`).
 - Live receipt #32 verified automatic router-operator restoration, output/refund viewer ACLs, refreshed input/output balance ACLs, and post-indexing decryption through V5; the final passing regression settled in Safe transaction `0x0954954a2c297a8e4227da9bceb77aa60b3ba8b657f98b1ceacdef09d4431cbb`.
 - V6 validates the owner and app-bound Nox proofs inside the Safe execution,
-  consumes each input handle once, and settles after encryption in one Safe
-  transaction. The live V6 transaction
+  prevents input-handle reuse through its combined entry points, and settles
+  after encryption in one Safe transaction. The live V6 transaction
   `0xe9c6b7cc5f647397abf9828b6eb4607f54c26e0d489e5b6777780d4605aab28c`
   used `1,409,986` gas versus V5's `185,032`-gas preparation plus
   `1,259,187`-gas settlement: one fewer transaction and 2.37% less total gas.
+- On 2026-07-27, the project owner completed the manual Safe V6 test suite
+  against the production flow, confirmed that every exercised check passed, and
+  reported a clearly faster experience than V5. This is recorded as qualitative
+  user validation; no controlled Gateway wall-clock result is inferred from it.
 - The constant-handle router candidate
   `0x56F347a3E8bc5cDDE1477bF49824f6bE63B59Dcf` removed three
   `WrapAsPublicHandle` events per swap but increased swap gas from `1,043,712`

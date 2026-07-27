@@ -9,10 +9,10 @@
 - Status: In progress
 - Next action: Publish the demo video and X submission post, then complete the
   final review.
-- Current blocker: No technical blocker. Module V6 passed a one-transaction
-  Sepolia runtime test and is the sole enabled canonical Safe module.
+- Current blocker: No technical blocker. Module V6 passed its automated/live
+  checks and the project owner's complete manual production test suite.
 - Awaiting approval from: None.
-- Last updated: 2026-07-27T14:58:00+07:00
+- Last updated: 2026-07-27T16:43:01+07:00
 
 Allowed phase statuses: `Todo`, `In progress`, `Waiting for approval`, `Blocked`, `Completed`, `Skipped`.
 
@@ -58,6 +58,7 @@ Allowed phase statuses: `Todo`, `In progress`, `Waiting for approval`, `Blocked`
 | Safe wallet-prompt optimization verification | Completed | Codex verification | 2026-07-24T21:10:00+07:00 | Module V5 is live; batched input/viewer operations, prevalidated Safe execution, auto-operator restoration, four post-swap ACLs, Gateway-lag retries, full regression, responsive UI, and canonical production smoke all passed. |
 | Production MetaMask rehearsal | Completed | User | 2026-07-25T14:23:06+07:00 | The user confirmed that the production MetaMask happy path works reliably on the public URL. |
 | Comprehensive performance pass | Completed | Codex verification | 2026-07-27T14:58:00+07:00 | Safe Module V6 reduced the reviewed flow from two transactions to one and reduced total gas by 2.37%; targeted parallel reveal, adaptive retry, pending-result recovery, singleton block-consistent reads, incremental history, and event wakeups passed regression. The constant-handle router candidate increased per-swap gas by 0.84% and was intentionally not promoted. Production deployment `dpl_CpRhxkjMkxmXHyybyTzum7ksBfeo` passed the final archive-history and Safe Activity smoke test. |
+| Safe V6 manual production validation | Completed | User | 2026-07-27T16:43:01+07:00 | The user confirmed that every check in the manual Safe V6 production suite passed and that the flow felt clearly faster than V5. This qualitative result supports the measured one-transaction and 2.37% gas improvements without claiming a controlled Gateway timing benchmark. |
 | Final submission | Pending |  |  |  |
 
 ## 5. Blockers and Open Questions
@@ -101,7 +102,7 @@ Allowed phase statuses: `Todo`, `In progress`, `Waiting for approval`, `Blocked`
 - [x] Safe v1.4.1 treasury, allowlisted Nox module, private swap, selective viewer, module revoke/re-enable, and confidential order create/cancel have live Sepolia evidence.
 - [x] Safe swap tolerance/deadline, on-chain Activity, draft-only Strategy Agent, and recoverable Safe unwrap have unit, responsive, contract, and live Sepolia evidence.
 - [x] Safe Treasury is a first-level desktop/mobile workspace with a compact custody header and four URL-addressable sections; Wallet, Trade, Activity, Landing, and Docs retain their previous content and pass responsive regression.
-- [x] Safe Module V6 validates owner-bound, module-targeted Nox proofs inside one threshold-approved Safe transaction, prevents handle replay, preserves the V5 fallback path in the client, and passed a live one-transaction Sepolia swap before V5 was disabled.
+- [x] Safe Module V6 validates owner-bound, module-targeted Nox proofs inside one threshold-approved Safe transaction, prevents handle reuse through its combined entry points, preserves the V5 fallback path in the client, passed a live one-transaction Sepolia swap before V5 was disabled, and passed the project owner's complete manual production test suite.
 - [x] Frontend performance work uses targeted parallel decryption, adaptive jittered retries with in-flight deduplication, metadata-only pending-result recovery, optimistic session balances with reconciliation, shared block-consistent public reads, and incremental Safe/swap history.
 - [x] Keeper and orderbook refresh can wake on new blocks while retaining polling, bounded checkpoint backfill, and reorg-safe overlays.
 - [x] The optimized constant-handle router candidate passed live Sepolia settlement but was not promoted because it increased per-swap gas by 0.84%; candidate operators were revoked and the canonical router graph was preserved.

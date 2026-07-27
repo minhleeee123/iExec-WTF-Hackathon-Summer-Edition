@@ -8,7 +8,9 @@ Current public frontend deployment: `dpl_CpRhxkjMkxmXHyybyTzum7ksBfeo`.
 The canonical Sepolia backend and frontend use Safe Module V6. A production
 browser smoke test loaded 50 real Safe Activity rows with the module enabled,
 reported no runtime errors, and made no rejected archive-history request to the
-PublicNode read RPC.
+PublicNode read RPC. On 2026-07-27, the project owner also completed the manual
+Safe V6 test suite against the production flow, confirmed that every exercised
+check passed, and reported a clearly faster experience than V5.
 
 ## Hello World onboarding verification
 
@@ -56,7 +58,8 @@ decrypted test value are intentionally excluded from this evidence.
 | Strategy Agent | Groq GPT-OSS strict schema converts natural language and public Chainlink context into a reviewable draft; percentage balance math and Nox encryption stay local | PASS, unit, live provider, desktop/mobile UI, and public Vercel API smoke tests |
 | Keeper AI observer | Optional Groq explanation receives public outcomes only and cannot alter deterministic keeper decisions | PASS, failure-isolation and no-private-field tests |
 | MCP tools | MCP v4 exposes nine stdio tools spanning public planning/reads, signer-authorized decryption, and explicitly enabled protected writes | PASS, live Chainlink and Groq planning |
-| Safe Treasury prompt optimization | Module V6 validates owner-bound, module-targeted amount/minOut proofs and settles inside one threshold-approved Safe transaction; input handles are replay-protected. The client retains its V5 two-step fallback. | PASS, live V6 tx `0xe9c6b7...5aab28c`; 1 transaction and 1,409,986 gas versus V5's 2 transactions and 1,444,219 total gas |
+| Safe Treasury prompt optimization | Module V6 validates owner-bound, module-targeted amount/minOut proofs and settles inside one threshold-approved Safe transaction; its combined entry points prevent input-handle reuse. The client retains its V5 two-step fallback. | PASS, live V6 tx `0xe9c6b7...5aab28c`; 1 transaction and 1,409,986 gas versus V5's 2 transactions and 1,444,219 total gas |
+| Production Safe V6 manual suite | Project-owner execution of the intended production Safe V6 checks | PASS, confirmed by the user on 2026-07-27; every exercised check passed and the V6 flow felt clearly faster than V5 |
 | Production MetaMask happy path | Manual wallet flow on the canonical public URL | PASS, confirmed by the user on 2026-07-25 |
 | Current Safe module state | Read `Safe.isModuleEnabled(Module V6)` and `getModulesPaginated` on Sepolia | PASS on 2026-07-27: V6 `0x8c1754...73e8f5` is enabled, V5 is disabled after the passing runtime test, and the Safe retains its expected sole owner and threshold 1. |
 | Responsive UI | Production build plus 62 frontend unit tests and headless Chrome at `1440x1000`, `1280x900`, and `390x844`; validates EIP-6963 wallet selection, Safe prevalidated-signature encoding, provider-aware reconnect, keyboard tab semantics, modal focus/escape/scroll behavior, Strategy Agent, personal and Safe public orderbooks/details, filter persistence, operator revoke visibility, URL persistence, owner/non-owner controls, landing/app separation, desktop sidebar, mobile wallet drawer, bottom navigation, and observer endpoint auth/rate/body guards. Safe Swap & Unwrap, Orders & Agent, Activity, and Access & Security reuse the same interaction and visual patterns as the personal workspaces without removing Safe functionality. | PASS |
@@ -78,6 +81,7 @@ part of that backup.
 |---|---:|---:|---|
 | Safe protected swap after client encryption | 2 Sepolia transactions | 1 Sepolia transaction | Keep V6; one fewer signature/confirmation transaction |
 | Safe protected swap gas | `1,444,219` total (`185,032` prepare + `1,259,187` settle) | `1,409,986` | Keep V6; `34,233` gas lower (`2.37%`) |
+| Production manual experience | Two-stage V5 confirmation flow | All user-executed V6 checks passed and the flow felt clearly faster | Keep V6; qualitative user validation, not a controlled wall-clock benchmark |
 | Private balance refresh | Decrypt every handle through one generic fixed retry loop | Decrypt only changed handles concurrently, deduplicate in-flight requests, preserve successful partial results, then reconcile in the background | Keep; less avoidable Gateway work and no whole-view failure when one handle lags |
 | Gateway retry | 12 attempts at a fixed 8-second interval, including terminal errors | Exponential backoff with jitter, abort support, and immediate failure for invalid proofs or rejected signatures | Keep; avoids retrying non-transient failures and synchronized request bursts |
 | Read path | Recreated providers and repeated immutable reads; history could rescan broad ranges | Shared providers, same-block snapshots, immutable-read cache, finalized checkpoints, and a reorg overlay | Keep; bounded and internally consistent reads |
@@ -87,10 +91,11 @@ part of that backup.
 | Main frontend bundle | `365.27 kB` / `112.46 kB` gzip | `378.08 kB` / `116.21 kB` gzip | Accepted trade-off: `+3.75 kB` gzip (`+3.33%`) for recovery, caching, and V6 support |
 | Lint / production build wall time | `1.201 s` / `6.928 s` | `1.259 s` / `6.954 s` | No material regression in this workspace |
 
-Gateway response time is external and variable, so no synthetic wall-clock
-speedup is claimed for decryption. The comparison instead records deterministic
-request behavior, transaction count, gas, bundle size, regression coverage, and
-live Sepolia/production outcomes.
+Gateway response time is external and variable, so the user-confirmed speed
+improvement is recorded as a qualitative production observation rather than a
+synthetic wall-clock benchmark. The quantitative comparison remains limited to
+deterministic request behavior, transaction count, gas, bundle size, regression
+coverage, and live Sepolia/production outcomes.
 
 ## Remaining Unsupported Features
 
