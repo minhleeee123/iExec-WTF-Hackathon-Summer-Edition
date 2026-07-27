@@ -1,0 +1,11 @@
+title = "NoxSwap Gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Public localStorage namespace, not an API credential"
+condition = "AND"
+regexTarget = "match"
+regexes = ['''noxswap\.pending-nox-jobs\.v1''']
+paths = ['''^apps/web/src/lib/pending-nox-jobs\.js$''']

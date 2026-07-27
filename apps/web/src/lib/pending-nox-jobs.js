@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'noxswap.pending-nox-jobs.v1';
+const STORAGE_NAMESPACE = 'noxswap.pending-nox-jobs.v1';
 const MAX_JOBS = 20;
 const ALLOWED_TYPES = new Set(['personal-swap', 'safe-swap', 'personal-unwrap', 'safe-unwrap']);
 
@@ -35,7 +35,7 @@ export function pendingNoxJobId(job) {
 
 export function loadPendingNoxJobs(storage, { account, chainId } = {}) {
   try {
-    const parsed = JSON.parse(storage.getItem(STORAGE_KEY) ?? '[]');
+    const parsed = JSON.parse(storage.getItem(STORAGE_NAMESPACE) ?? '[]');
     if (!Array.isArray(parsed)) return [];
     return parsed
       .map((job) => {
@@ -57,7 +57,7 @@ export function savePendingNoxJob(storage, job) {
     normalized,
     ...jobs.filter((candidate) => pendingNoxJobId(candidate) !== id),
   ].slice(0, MAX_JOBS);
-  try { storage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* Recovery cache is best-effort. */ }
+  try { storage.setItem(STORAGE_NAMESPACE, JSON.stringify(next)); } catch { /* Recovery cache is best-effort. */ }
   return normalized;
 }
 
@@ -65,5 +65,5 @@ export function removePendingNoxJob(storage, job) {
   const id = pendingNoxJobId(job);
   const next = loadPendingNoxJobs(storage)
     .filter((candidate) => pendingNoxJobId(candidate) !== id);
-  try { storage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* Recovery cache is best-effort. */ }
+  try { storage.setItem(STORAGE_NAMESPACE, JSON.stringify(next)); } catch { /* Recovery cache is best-effort. */ }
 }
