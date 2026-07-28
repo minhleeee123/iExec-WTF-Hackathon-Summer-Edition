@@ -4,17 +4,17 @@ Date: 2026-07-29
 
 Production frontend: [https://noxswap-iexec.vercel.app](https://noxswap-iexec.vercel.app)
 
-Current public frontend deployment: `dpl_6CigmnouWQWVcnPWLe6gSYfmrwBr`.
+Current public frontend deployment: `dpl_EKKN5G5ZvZLGwHBSp7kbTRrWV4uU`.
 The canonical Sepolia backend and frontend use Safe Module V6. On 2026-07-29,
 the per-account Safe frontend was assigned to the canonical production alias.
 Direct production smoke checks confirmed the root, Docs, Safe route, factory
 address, legacy-owner custody state, missing-owner create state, and separate
-Grant/Shared viewer controls without runtime errors. The earlier production
-browser smoke loaded 50 real Safe Activity rows with the module enabled and made
-no rejected archive-history request to the PublicNode read RPC. On 2026-07-27,
-the project owner also completed the manual Safe V6 test suite against the
-production flow, confirmed that every exercised check passed, and reported a
-clearly faster experience than V5.
+Grant/Shared viewer controls without runtime errors. A fresh-owner production
+smoke resolved its newly created Safe, confirmed the owner and enabled module,
+and loaded all 23 indexed Safe Activity rows without browser errors. On
+2026-07-27, the project owner also completed the manual Safe V6 test suite
+against the production flow, confirmed that every exercised check passed, and
+reported a clearly faster experience than V5.
 
 ## Hello World onboarding verification
 
@@ -56,7 +56,7 @@ decrypted test value are intentionally excluded from this evidence.
 | Unwrap | Encrypted request, public decryption proof, contract finalization, and underlying release | PASS, `0.01 nWETH` verified |
 | Selective ACL | Wrapper grants a viewer on the current balance handle; Nox subgraph confirms the account | PASS |
 | Viewer recipient surfaces | Wallet and Safe Treasury `Shared with me` surfaces reread current handles, check the connected wallet's viewer ACL, reveal only authorized rows, and keep plaintext separate from Safe owner balances | PASS, unit coverage validates ACL status isolation, current-handle matching, changed-handle invalidation, and session-only viewer state |
-| Per-account Safe factory | Official Safe v1.4.1 proxy factory creates one proxy and one constructor-bound Nox module per owner, initializes threshold 1, enables the module atomically, rejects duplicates, and registers the legacy demo Safe | PASS, contract isolation tests plus live canary [creation tx `0x1e8d36...1e41f7`](https://sepolia.etherscan.io/tx/0x1e8d36c83c9b778a5efa03bf53bdf4cef65039adc0eb6673991d0d72091e41f7) created Safe `0xf074...35cC` and enabled module `0xD016...3346` |
+| Per-account Safe factory | Official Safe v1.4.1 proxy factory creates one proxy and one constructor-bound Nox module per owner, initializes threshold 1, enables the module atomically, rejects duplicates, and registers the legacy demo Safe | PASS, contract isolation tests, live canary creation, and the 22-transaction fresh-owner lifecycle below |
 | Receipt NFT | Router mints ERC-721 receipt and returns on-chain base64 JSON/SVG metadata | PASS, receipt `#2` verified on the current deployment |
 | Swap history | Frontend reads actual `SwapExecuted` logs from the router deployment block | PASS |
 | Proof inspector | Frontend displays actual tx hash, calldata, input/output handles, proof byte length, and block | PASS by build and source test |
@@ -68,13 +68,43 @@ decrypted test value are intentionally excluded from this evidence.
 | Production Safe V6 manual suite | Project-owner execution of the intended production Safe V6 checks | PASS, confirmed by the user on 2026-07-27; every exercised check passed and the V6 flow felt clearly faster than V5 |
 | Production MetaMask happy path | Manual wallet flow on the canonical public URL | PASS, confirmed by the user on 2026-07-25 |
 | Current Safe module state | Read `Safe.isModuleEnabled(Module V6)` and `getModulesPaginated` on Sepolia | PASS on 2026-07-27: V6 `0x8c1754...73e8f5` is enabled, V5 is disabled after the passing runtime test, and the Safe retains its expected sole owner and threshold 1. |
-| Responsive UI | Production build plus 68 frontend unit tests and browser checks at `1440x1000`, `1280x900`, and `390x844`; validates EIP-6963 wallet selection, per-owner Safe discovery/create state, legacy Safe compatibility, shared-Safe lookup, Safe prevalidated signatures, keyboard tabs, Strategy Agent, orderbooks, owner/non-owner controls, landing/app separation, desktop sidebar, mobile navigation, and API guards. | PASS for unit/build and targeted live browser smoke; the full local browser matrix is pending Chrome process-resource recovery after `ERR_INSUFFICIENT_RESOURCES` and screenshot-renderer crashes in this workspace |
+| Responsive UI | Production build plus 71 frontend unit tests and browser checks at `1440x1000`, `1280x900`, and `390x844`; validates EIP-6963 wallet selection, per-owner Safe discovery/create state, legacy Safe compatibility, shared-Safe lookup, fresh-Safe activity indexing, Safe prevalidated signatures, keyboard tabs, Strategy Agent, orderbooks, owner/non-owner controls, landing/app separation, desktop sidebar, mobile navigation, and API guards. | PASS for unit/build and targeted live browser smoke; the fresh owner loaded 23 production Activity rows without browser errors |
 | Public source verification | Sourcify API v2 Standard JSON verification | PASS with exact creation/runtime matches for all thirteen repository verification targets. Safe factory is public as match `42989366`, Safe Module V6 as `42918403`, and the Safe orderbook as `42858243`. |
 | Read-only deployment consistency | `npm run verify:deployment` compares canonical artifacts with Sepolia deployment transactions, constructor arguments, receipts, deployed runtime code, and Sourcify lookup status | PASS for Router V2, Safe Module V6, Safe confidential orderbook, and per-account Safe factory; it performs no verification submission |
 | Accessibility and discovery | Lighthouse against the final production build | PASS, Performance 92, Accessibility 100, Best Practices 100, SEO 100, CLS 0.014; robots and sitemap included |
 | Open-source license | Root `LICENSE`, package metadata, and README | PASS, canonical MIT license is recognized from the repository root |
 
 The latest Router V2 live E2E run verified normal settlement, an intentionally impossible minOut with exact confidential refund, both additional pools, permissionless order execution/expiry, owner-only cancellation, double-settlement rejection, ACL sharing, receipt ownership, and release of exactly `0.01 nWETH` during unwrap.
+
+## Fresh-owner Safe lifecycle verification
+
+On 2026-07-29, the full Safe flow was rerun with an isolated owner generated in
+memory and funded by the configured Sepolia test wallet. The test created
+[`Safe 0x961E...F499`](https://sepolia.etherscan.io/address/0x961Ec2DAD6260748Be7F5C170c82E2a227BBF499)
+for owner
+[`0x28EA...5231`](https://sepolia.etherscan.io/address/0x28EA15dC02E3e1f3C14aB0c3d974CebF76d45231)
+with bound
+[`module 0x65E2...C178`](https://sepolia.etherscan.io/address/0x65E2b55aB4425eC78e7541B81C1C661C7473C178).
+All 22 submitted transactions succeeded. The generated owner key was never
+printed or persisted and was intentionally discarded after its remaining ETH
+was swept back to the funder; the test owner ended with `0 ETH`.
+
+| Exercised flow | Public evidence |
+|---|---|
+| Fund isolated owner and create one-owner/threshold-1 Safe | [Fund tx `0x086f73...dda2f5`](https://sepolia.etherscan.io/tx/0x086f73d51f7a6a6e59450d295f97afb6434ea7525756cbd85566beae79dda2f5), [factory tx `0x4a230c...dd1bc4`](https://sepolia.etherscan.io/tx/0x4a230c17a30e7565c2666a9ce5ddf3b690282b9a5d8e698ce7cffb3200dd1bc4) |
+| Faucet, approve, wrap, and fund the new Safe | [Faucet tx](https://sepolia.etherscan.io/tx/0xb8a004395c566d571ed05c78de4a60fb308b5d7385bfbc28354ee82a306c989b), [approval tx](https://sepolia.etherscan.io/tx/0x429a846bb322c86a00f8b27b23d98513984f0da92bcd41d9b4499e04f0c92d39), [wrap tx](https://sepolia.etherscan.io/tx/0x250bd5b60292e6dd96c592f50acd6900c14c854014788c0dc10cc87d4d65c3d3) |
+| Owner and external-viewer ACL grant plus authorized Nox decryption | [Owner grant tx](https://sepolia.etherscan.io/tx/0x6ce342c1e95d051d7d61101ca2dc49033ef01b3e802198f1f036a141a3b830e6), [external viewer grant tx](https://sepolia.etherscan.io/tx/0xe4f8bef9397f37b19653572a9f81ccf0e673dc6bb976180fbb688d8254dc2224) |
+| Safe Module V6 protected swap and handle-specific viewer refresh | [One-transaction swap](https://sepolia.etherscan.io/tx/0x53db9ce13d2d11e3505393abf78c8028aaaecd97e38d084d28f891de91693554), [rotated-handle regrant](https://sepolia.etherscan.io/tx/0x42387a3a5f852da0e4dd8312a0a9aeb11eb42de5e754be12de80e5a33d4796f3) |
+| Confidential Safe order creation, term reveal, cancel, and exact encrypted refund | [Create order #12](https://sepolia.etherscan.io/tx/0xd41d907b7c07c0547287f12b9eef543af760267acfdc294a8371774d70fe067c), [term grant](https://sepolia.etherscan.io/tx/0x77bd518b0d67971253dc9265d3dc9491ced9e6ec465504bbbe7fd5092b222bb6), [cancel/refund](https://sepolia.etherscan.io/tx/0x47699c44bbc066b4d829e0d038e8d5a08dcc02621304f9dc1cdfc20ee9bd0938) |
+| Safe unwrap request and public-proof finalization | [Request tx](https://sepolia.etherscan.io/tx/0x4a2947f381689c07d1556242cefe182d842e3b85f3e7793fbf1d32b921120792), [finalize tx](https://sepolia.etherscan.io/tx/0x6cc4a4dab93980f6e68e6a059246f05ca126e092f3bc735870b1b0e6c832a951) |
+| Router/OrderBook operator revoke-restore and module emergency revoke-re-enable | [Router revoke](https://sepolia.etherscan.io/tx/0x3db5c2610d43584560520ed8d7408b2767d01eb69b7d589ad7e60dc9e5fe0f6d), [Router restore](https://sepolia.etherscan.io/tx/0x0c48d4ab2058d806a4ac55f493dbcbd2cd52541a0fd156a2bdca32cee9c9f745), [OrderBook revoke](https://sepolia.etherscan.io/tx/0x66a51a9be3d4fffe45cdd25ba67aea83732662c9a740d2dd38233f5aa47f70b2), [OrderBook restore](https://sepolia.etherscan.io/tx/0x2e30be2b4f3da2402bd7f67572c57d8be7e5b612ac24ad5c6701e3c9079f2710), [module revoke](https://sepolia.etherscan.io/tx/0x0990062f1f66944465a5f528ad3a4a26ca74b97cae4142eb5b973b040fbba3be), [module re-enable](https://sepolia.etherscan.io/tx/0xb5e1b3649d0a7f0a9027fd0fa9df25e57db93025e225b320e5b138b6fc33337b) |
+| Return unused gas funds | [Sweep tx](https://sepolia.etherscan.io/tx/0x0e71b2e68947a0fa649afda29b11585b7f057e477c852a61edbee288d0d3d5fa) |
+
+The same owner was then injected into a read-only browser session against the
+canonical production URL. The UI resolved the correct Safe and module, showed
+the separate Grant/Shared access surfaces, and rendered all 23 indexed activity
+events with no browser error. Decrypted values, handles, proofs, signatures, and
+private keys are intentionally omitted.
 
 ## Performance Comparison
 
@@ -144,6 +174,7 @@ npm run keeper:dry
 PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:sepolia
 PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:safe:prompt:sepolia --workspace @noxswap/contracts
 PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:safe:swap:sepolia --workspace @noxswap/contracts
+PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:safe:factory:full:sepolia --workspace @noxswap/contracts
 PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:mcp:live
 npm run test:agent:live --workspace @noxswap/web
 npm run build

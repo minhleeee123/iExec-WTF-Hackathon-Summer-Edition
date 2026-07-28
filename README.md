@@ -350,6 +350,7 @@ Live tests require a funded Sepolia test wallet. Never commit its private key.
 
 ```bash
 PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:sepolia
+PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:safe:factory:full:sepolia --workspace @noxswap/contracts
 PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:mcp:live
 PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run test:mcp:write
 npm run verify:sourcify
@@ -357,7 +358,12 @@ npm run verify:sourcify
 
 The live E2E signer can be any funded Sepolia wallet; it does not need to be the
 deployment owner. Each run writes sanitized JSON evidence under
-`packages/contracts/artifacts/evidence/`. The local Nox off-chain Hardhat stack
+`packages/contracts/artifacts/evidence/`.
+The full Safe factory command creates an isolated owner in memory, funds it,
+exercises the complete new-Safe lifecycle with live writes, returns its remaining
+ETH, and never prints or persists the generated keys.
+
+The local Nox off-chain Hardhat stack
 requires Docker. When Docker is unavailable, the acceptance path is compile plus
 unit tests plus the live Sepolia E2E test.
 

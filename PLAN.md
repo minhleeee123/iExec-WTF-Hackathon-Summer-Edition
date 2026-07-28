@@ -10,9 +10,10 @@
 - Next action: Publish the demo video and X submission post, then complete the
   final review.
 - Current blocker: No technical blocker. Module V6 passed its automated/live
-  checks and the project owner's complete manual production test suite.
+  checks, the project owner's complete manual production test suite, and a
+  fresh-owner full Safe lifecycle.
 - Awaiting approval from: None.
-- Last updated: 2026-07-29T05:11:29+07:00
+- Last updated: 2026-07-29T05:49:35+07:00
 
 Allowed phase statuses: `Todo`, `In progress`, `Waiting for approval`, `Blocked`, `Completed`, `Skipped`.
 
@@ -60,7 +61,8 @@ Allowed phase statuses: `Todo`, `In progress`, `Waiting for approval`, `Blocked`
 | Comprehensive performance pass | Completed | Codex verification | 2026-07-27T14:58:00+07:00 | Safe Module V6 reduced the reviewed flow from two transactions to one and reduced total gas by 2.37%; targeted parallel reveal, adaptive retry, pending-result recovery, singleton block-consistent reads, incremental history, and event wakeups passed regression. The constant-handle router candidate increased per-swap gas by 0.84% and was intentionally not promoted. Production deployment `dpl_CpRhxkjMkxmXHyybyTzum7ksBfeo` passed the final archive-history and Safe Activity smoke test. |
 | Safe V6 manual production validation | Completed | User | 2026-07-27T16:43:01+07:00 | The user confirmed that every check in the manual Safe V6 production suite passed and that the flow felt clearly faster than V5. This qualitative result supports the measured one-transaction and 2.37% gas improvements without claiming a controlled Gateway timing benchmark. |
 | Viewer recipient surfaces | Completed | Codex implementation | 2026-07-29 | Added separate `Shared with me` recipient surfaces in Wallet and Safe Treasury below the owner grant control; both recheck the current handle/ACL before session-only reveal and preserve owner-spend boundaries. |
-| Per-account Safe Treasury | Completed | Codex verification | 2026-07-29 | Factory `0xdDB5...2B36`, frontend discovery/create flow, exact Sourcify verification, live canary creation, full release checks, and production deployment `dpl_6CigmnouWQWVcnPWLe6gSYfmrwBr` are complete. Canonical smoke verified the legacy-owner, missing-owner, and separate Grant/Shared viewer states without runtime errors. |
+| Per-account Safe Treasury | Completed | Codex verification | 2026-07-29 | Factory `0xdDB5...2B36`, frontend discovery/create flow, exact Sourcify verification, live canary creation, full release checks, and production deployment `dpl_EKKN5G5ZvZLGwHBSp7kbTRrWV4uU` are complete. Canonical smoke verified the legacy-owner, missing-owner, and separate Grant/Shared viewer states without runtime errors. |
+| Fresh-owner full Safe lifecycle | Completed | Codex verification | 2026-07-29T05:49:35+07:00 | An isolated in-memory owner created Safe `0x961E...F499` and passed all 22 live transactions covering funding, wrap, owner/external viewer decryption, V6 swap, order create/reveal/cancel, unwrap, operator controls, module revoke/re-enable, and ETH recovery. Production then resolved the Safe and rendered all 23 Activity rows without browser errors. |
 | Final submission | Pending |  |  |  |
 
 ## 5. Blockers and Open Questions
@@ -112,7 +114,8 @@ Allowed phase statuses: `Todo`, `In progress`, `Waiting for approval`, `Blocked`
 - [x] Safe order parity includes minute-level expiry, creation readiness, explicit live OrderBook operator revoke/authorize, and owner-only batched ACL term reveal with live Sepolia decryption evidence.
 - [x] The per-account Safe factory is live and exact-verified; it atomically creates
   one official proxy and bound module per owner, preserves the legacy Safe mapping,
-  and passed a two-owner isolation suite plus live Sepolia canary creation.
+  and passed a two-owner isolation suite, live Sepolia canary creation, and a
+  22-transaction fresh-owner lifecycle with production Activity verification.
 - [x] Official `README.md` and `feedback.md` files exist at the repository root.
 - [x] The required iExec Hello World onboarding journey was completed and recorded
   with sanitized Sepolia deployment, encrypted-deposit, and authorized-decryption
