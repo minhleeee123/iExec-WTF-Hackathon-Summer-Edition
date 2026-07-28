@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ethers } from 'ethers';
-import { createPrevalidatedSafeSignature, normalizeSafeEthSign, parseSafeCreatedEvent, resolveOwnedSafe } from './safe.js';
+import { createPrevalidatedSafeSignature, findSafeCreationBlock, normalizeSafeEthSign, parseSafeCreatedEvent, resolveOwnedSafe } from './safe.js';
 
 test('Safe browser signature is normalized to the eth_sign v=31/32 format', async () => {
   const owner = ethers.Wallet.createRandom();
@@ -52,4 +52,58 @@ test('Safe creation parser ignores unrelated logs and returns the factory event'
   const factory = { interface: { parseLog: (log) => { if (log.kind === 'created') return expected; throw new Error('unknown'); } } };
   assert.equal(parseSafeCreatedEvent({ logs: [{ kind: 'other' }, { kind: 'created' }] }, factory), expected);
   assert.equal(parseSafeCreatedEvent({ logs: [{ kind: 'other' }] }, factory), null);
+});
+
+test('Safe creation block lookup scans exact factory events backward in bounded ranges', async () => {
+  const owner = ethers.Wallet.createRandom().address;
+  const safeAddress = ethers.Wallet.createRandom().address;
+  const moduleAddress = ethers.Wallet.createRandom().address;
+  const calls = [];
+  const filter = { owner, safeAddress, moduleAddress };
+  const factory = {
+    filters: {
+      NoxSafeCreated: (...args) => {
+        assert.deepEqual(args, [owner, safeAddress, moduleAddress]);
+        return filter;
+      },
+    },
+    queryFilter: async (receivedFilter, start, end) => {
+      calls.push([receivedFilter, start, end]);
+      return start <= 742 && end >= 742 ? [{ blockNumber: 742 }] : [];
+    },
+  };
+  assert.equal(await findSafeCreationBlock(factory, {
+    owner,
+    safeAddress,
+    moduleAddress,
+    fromBlock: 100,
+    toBlock: 1_000,
+    chunkSize: 200,
+  }), 742);
+  assert.deepEqual(calls, [
+    [filter, 801, 1_000],
+    [filter, 601, 800],
+  ]);
+});
+
+test('Safe creation block lookup handles invalid ranges and missing events', async () => {
+  const factory = {
+    filters: { NoxSafeCreated: () => ({}) },
+    queryFilter: async () => [],
+  };
+  const addresses = {
+    owner: ethers.Wallet.createRandom().address,
+    safeAddress: ethers.Wallet.createRandom().address,
+    moduleAddress: ethers.Wallet.createRandom().address,
+  };
+  assert.equal(await findSafeCreationBlock(factory, {
+    ...addresses,
+    fromBlock: 50,
+    toBlock: 40,
+  }), null);
+  assert.equal(await findSafeCreationBlock(factory, {
+    ...addresses,
+    fromBlock: 40,
+    toBlock: 50,
+  }), null);
 });

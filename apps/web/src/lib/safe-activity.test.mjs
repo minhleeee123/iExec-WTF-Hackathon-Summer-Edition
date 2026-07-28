@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 import {
   loadSafeActivityIndex,
   normalizeSafeActivityEvent,
+  querySafeActivity,
   saveSafeActivityIndex,
 } from './safe-activity.js';
 
@@ -99,4 +100,31 @@ test('Safe activity checkpoint cache is deployment-scoped and public-only', () =
   assert.equal(saveSafeActivityIndex(storage, index), true);
   assert.deepEqual(loadSafeActivityIndex(storage, identity), index);
   assert.doesNotMatch(JSON.stringify(index), /plaintext|proof|signature|privateKey/i);
+});
+
+test('Safe activity queries each source address separately for RPC compatibility', async () => {
+  const calls = [];
+  const provider = {
+    getLogs: async (filter) => {
+      calls.push(filter);
+      return [];
+    },
+  };
+  const tokens = {
+    cUSDC: { symbol: 'cUSDC', wrapper: '0x1111111111111111111111111111111111111111' },
+    cETH: { symbol: 'cETH', wrapper: '0x2222222222222222222222222222222222222222' },
+  };
+  const items = await querySafeActivity({
+    provider,
+    safeAddress: '0x3333333333333333333333333333333333333333',
+    moduleAddress: '0x4444444444444444444444444444444444444444',
+    moduleAddresses: ['0x4444444444444444444444444444444444444444'],
+    tokens,
+    deploymentBlock: 100,
+    latestBlock: 120,
+    storage: null,
+  });
+  assert.deepEqual(items, []);
+  assert.equal(calls.length, 4);
+  assert(calls.every(({ address }) => typeof address === 'string'));
 });

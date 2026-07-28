@@ -13,15 +13,16 @@ function short(value, leading = 8, trailing = 6) {
 
 async function getAddressLogs(provider, address, fromBlock, toBlock) {
   if (fromBlock > toBlock) return [];
+  if (Array.isArray(address)) {
+    const logs = [];
+    for (const singleAddress of address) {
+      logs.push(...await getAddressLogs(provider, singleAddress, fromBlock, toBlock));
+    }
+    return logs;
+  }
   try {
     return await provider.getLogs({ address, fromBlock, toBlock });
   } catch {
-    if (Array.isArray(address)) {
-      const logsByAddress = await Promise.all(
-        address.map((singleAddress) => getAddressLogs(provider, singleAddress, fromBlock, toBlock)),
-      );
-      return logsByAddress.flat();
-    }
     const logs = [];
     for (let start = fromBlock; start <= toBlock; start += LOG_CHUNK_SIZE) {
       const end = Math.min(toBlock, start + LOG_CHUNK_SIZE - 1);
@@ -123,6 +124,7 @@ export function normalizeSafeActivityEvent({ eventName, args, source, tokenSymbo
 
 export async function querySafeActivity({
   provider,
+  blockProvider = provider,
   safeAddress,
   moduleAddress,
   moduleAddresses = [moduleAddress],
@@ -198,9 +200,9 @@ export async function querySafeActivity({
     .filter((item) => item.type !== 'unwrap-finalized' || safeUnwrapIds.has(item.requestId))
     .filter((item, itemIndex, all) => all.findIndex((candidate) => candidate.hash === item.hash && candidate.title === item.title) === itemIndex);
   const blocks = new Map();
-  await Promise.all([...new Set(normalizedCandidates.map((item) => item.blockNumber))].map(async (blockNumber) => {
-    blocks.set(blockNumber, await provider.getBlock(blockNumber));
-  }));
+  for (const blockNumber of new Set(normalizedCandidates.map((item) => item.blockNumber))) {
+    blocks.set(blockNumber, await blockProvider.getBlock(blockNumber));
+  }
   const timestamped = normalizedCandidates.map((item) => ({
     ...item,
     timestamp: Number(blocks.get(item.blockNumber)?.timestamp ?? 0),

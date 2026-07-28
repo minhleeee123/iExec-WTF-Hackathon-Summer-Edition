@@ -37,7 +37,7 @@ import {
   finishOperationProgress,
 } from './lib/operation-progress';
 import { discoverWalletProvider } from './lib/wallet-providers';
-import { executeSafeModule, executeSafeTransaction, parseSafeCreatedEvent, parseSafeModuleEvent, resolveOwnedSafe, SAFE_SENTINEL_MODULE } from './lib/safe';
+import { executeSafeModule, executeSafeTransaction, findSafeCreationBlock, parseSafeCreatedEvent, parseSafeModuleEvent, resolveOwnedSafe, SAFE_SENTINEL_MODULE } from './lib/safe';
 import { querySafeActivity } from './lib/safe-activity';
 import { applySwapBalanceDelta, decryptChangedBalances } from './lib/private-balances';
 import { cachedImmutableRead, getHistoryProvider, getPublicProvider } from './lib/providers';
@@ -499,14 +499,29 @@ export default function App() {
         .map((receipt) => receipt?.blockNumber)
         .filter(Number.isInteger)
         .reduce((minimum, blockNumber) => Math.min(minimum, blockNumber), Number.POSITIVE_INFINITY);
+      let activityDeploymentBlock = Number.isFinite(firstModuleBlock)
+        ? firstModuleBlock
+        : Math.max(0, blockTag - 1200);
+      if (!isLegacySafe && Number.isFinite(firstModuleBlock)) {
+        const historyFactory = new ethers.Contract(factoryAddress, SAFE_FACTORY_ABI, getHistoryProvider());
+        const creationBlock = await findSafeCreationBlock(historyFactory, {
+          owner: ownerAddress,
+          safeAddress,
+          moduleAddress,
+          fromBlock: firstModuleBlock,
+          toBlock: blockTag,
+        });
+        activityDeploymentBlock = creationBlock ?? Math.max(firstModuleBlock, blockTag - 1200);
+      }
       const activity = await querySafeActivity({
         provider: getHistoryProvider(),
+        blockProvider: provider,
         safeAddress,
         moduleAddress,
         moduleAddresses,
         tokens: TOKENS,
         chainId: deployment.chainId,
-        deploymentBlock: Number.isFinite(firstModuleBlock) ? firstModuleBlock : Math.max(0, blockTag - 1200),
+        deploymentBlock: activityDeploymentBlock,
         latestBlock: blockTag,
         storage: window.localStorage,
       });

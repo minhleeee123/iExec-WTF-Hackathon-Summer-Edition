@@ -21,6 +21,29 @@ export async function resolveOwnedSafe(factory, owner, overrides = {}) {
   return { safeAddress, moduleAddress };
 }
 
+export async function findSafeCreationBlock(factory, {
+  owner,
+  safeAddress,
+  moduleAddress,
+  fromBlock,
+  toBlock,
+  chunkSize = 500,
+}) {
+  if (!owner || !safeAddress || !moduleAddress) return null;
+  const firstBlock = Number(fromBlock);
+  const lastBlock = Number(toBlock);
+  if (!Number.isInteger(firstBlock) || !Number.isInteger(lastBlock) || firstBlock > lastBlock) return null;
+  const filter = factory.filters.NoxSafeCreated(owner, safeAddress, moduleAddress);
+  for (let end = lastBlock; end >= firstBlock; end -= chunkSize) {
+    const start = Math.max(firstBlock, end - chunkSize + 1);
+    const events = await factory.queryFilter(filter, start, end);
+    if (events.length > 0) {
+      return Math.min(...events.map((event) => Number(event.blockNumber)));
+    }
+  }
+  return null;
+}
+
 export function parseSafeCreatedEvent(receipt, factory) {
   return receipt.logs
     .map((log) => { try { return factory.interface.parseLog(log); } catch { return null; } })
