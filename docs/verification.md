@@ -1,6 +1,6 @@
 # NoxSwap Remediation and Verification
 
-Date: 2026-07-27
+Date: 2026-07-29
 
 Production frontend: [https://noxswap-iexec.vercel.app](https://noxswap-iexec.vercel.app)
 
@@ -52,6 +52,7 @@ decrypted test value are intentionally excluded from this evidence.
 | Unwrap | Encrypted request, public decryption proof, contract finalization, and underlying release | PASS, `0.01 nWETH` verified |
 | Selective ACL | Wrapper grants a viewer on the current balance handle; Nox subgraph confirms the account | PASS |
 | Viewer recipient surfaces | Wallet and Safe Treasury `Shared with me` surfaces reread current handles, check the connected wallet's viewer ACL, reveal only authorized rows, and keep plaintext separate from Safe owner balances | PASS, unit coverage validates ACL status isolation, current-handle matching, changed-handle invalidation, and session-only viewer state |
+| Per-account Safe factory | Official Safe v1.4.1 proxy factory creates one proxy and one constructor-bound Nox module per owner, initializes threshold 1, enables the module atomically, rejects duplicates, and registers the legacy demo Safe | PASS, contract isolation tests plus live canary [creation tx `0x1e8d36...1e41f7`](https://sepolia.etherscan.io/tx/0x1e8d36c83c9b778a5efa03bf53bdf4cef65039adc0eb6673991d0d72091e41f7) created Safe `0xf074...35cC` and enabled module `0xD016...3346` |
 | Receipt NFT | Router mints ERC-721 receipt and returns on-chain base64 JSON/SVG metadata | PASS, receipt `#2` verified on the current deployment |
 | Swap history | Frontend reads actual `SwapExecuted` logs from the router deployment block | PASS |
 | Proof inspector | Frontend displays actual tx hash, calldata, input/output handles, proof byte length, and block | PASS by build and source test |
@@ -63,9 +64,9 @@ decrypted test value are intentionally excluded from this evidence.
 | Production Safe V6 manual suite | Project-owner execution of the intended production Safe V6 checks | PASS, confirmed by the user on 2026-07-27; every exercised check passed and the V6 flow felt clearly faster than V5 |
 | Production MetaMask happy path | Manual wallet flow on the canonical public URL | PASS, confirmed by the user on 2026-07-25 |
 | Current Safe module state | Read `Safe.isModuleEnabled(Module V6)` and `getModulesPaginated` on Sepolia | PASS on 2026-07-27: V6 `0x8c1754...73e8f5` is enabled, V5 is disabled after the passing runtime test, and the Safe retains its expected sole owner and threshold 1. |
-| Responsive UI | Production build plus 62 frontend unit tests and headless Chrome at `1440x1000`, `1280x900`, and `390x844`; validates EIP-6963 wallet selection, Safe prevalidated-signature encoding, provider-aware reconnect, keyboard tab semantics, modal focus/escape/scroll behavior, Strategy Agent, personal and Safe public orderbooks/details, filter persistence, operator revoke visibility, URL persistence, owner/non-owner controls, landing/app separation, desktop sidebar, mobile wallet drawer, bottom navigation, and observer endpoint auth/rate/body guards. Safe Swap & Unwrap, Orders & Agent, Activity, and Access & Security reuse the same interaction and visual patterns as the personal workspaces without removing Safe functionality. | PASS |
-| Public source verification | Sourcify API v2 Standard JSON verification | PASS with exact creation/runtime matches for all twelve repository verification targets. Safe Module V6 is public as match `42918403`, and the Safe orderbook is public as match `42858243`. The personal orderbook's exact deployed source remains repository revision `407d770`, while current `NoxLimitOrderBook.sol` is the later Safe-compatible revision used by the verified Safe orderbook |
-| Read-only deployment consistency | `npm run verify:deployment` compares canonical artifacts with Sepolia deployment transactions, constructor arguments, receipts, deployed runtime code, and Sourcify lookup status | PASS for Router V2, Safe Module V6, and the Safe confidential orderbook; it performs no verification submission |
+| Responsive UI | Production build plus 68 frontend unit tests and browser checks at `1440x1000`, `1280x900`, and `390x844`; validates EIP-6963 wallet selection, per-owner Safe discovery/create state, legacy Safe compatibility, shared-Safe lookup, Safe prevalidated signatures, keyboard tabs, Strategy Agent, orderbooks, owner/non-owner controls, landing/app separation, desktop sidebar, mobile navigation, and API guards. | PASS for unit/build and targeted live browser smoke; the full local browser matrix is pending Chrome process-resource recovery after `ERR_INSUFFICIENT_RESOURCES` and screenshot-renderer crashes in this workspace |
+| Public source verification | Sourcify API v2 Standard JSON verification | PASS with exact creation/runtime matches for all thirteen repository verification targets. Safe factory is public as match `42989366`, Safe Module V6 as `42918403`, and the Safe orderbook as `42858243`. |
+| Read-only deployment consistency | `npm run verify:deployment` compares canonical artifacts with Sepolia deployment transactions, constructor arguments, receipts, deployed runtime code, and Sourcify lookup status | PASS for Router V2, Safe Module V6, Safe confidential orderbook, and per-account Safe factory; it performs no verification submission |
 | Accessibility and discovery | Lighthouse against the final production build | PASS, Performance 92, Accessibility 100, Best Practices 100, SEO 100, CLS 0.014; robots and sitemap included |
 | Open-source license | Root `LICENSE`, package metadata, and README | PASS, canonical MIT license is recognized from the repository root |
 
@@ -119,7 +120,7 @@ official rubric awards whole stars and totals 14.
 |---|---:|---|
 | Creativity | 3/3 | Confidential AMM, encrypted slippage protection/refunds, confidential limit-order escrow, selective disclosure, Safe module composability, and non-custodial Agent/MCP workflows form a differentiated, coherent system. |
 | Accessible and end-to-end without mock data | 3/3 | Core reads and writes use live Sepolia contracts, Chainlink, Nox SDK/Gateway, and real wallet signatures. Automated flows plus user-confirmed local/preview and production MetaMask paths cover connect, reveal, swap, refreshed reveal, revoke/authorize, and order create/cancel. |
-| ETH Sepolia deployment | 2/2 | Ten NoxSwap contracts, three encrypted pools, the limit order book, Safe treasury, allowlisted module, and Safe order book are live. The final Phase 6 frontend is published at the canonical production URL. |
+| ETH Sepolia deployment | 2/2 | The canonical NoxSwap contracts, three encrypted pools, personal and Safe orderbooks, legacy Safe treasury/module, and per-account Safe factory are live. The final frontend is published at the canonical production URL. |
 | `feedback.md` | 2/2 | Root feedback records concrete SDK, ACL, indexing, Docker, version, and protected-minOut experience with actionable recommendations. |
 | Demo video, no longer than four minutes | 0/2 | A 3:54.552 final candidate exists locally; publication with the X submission post remains pending. |
 | Technical implementation | 1/1 | Official Nox encrypted types, arithmetic, ERC-7984 wrappers, Handle SDK encryption/decryption, proofs, and ACLs are in the settlement path rather than attached as a label. |

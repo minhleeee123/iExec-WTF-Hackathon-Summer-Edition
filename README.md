@@ -21,7 +21,7 @@ The canonical UI/UX language and review checklist are documented in
 | Network | Ethereum Sepolia (`chainId` `11155111`) |
 | Public proof without a wallet | Open [the live orderbook](https://noxswap-iexec.vercel.app/app/trade?mode=orders) to inspect real lifecycle events, Chainlink readiness, encrypted handles, and Sepolia transaction links. |
 | End-to-end confidential trade | Connect MetaMask on Sepolia → claim faucet assets → wrap → submit a protected swap → reveal the authorized encrypted output and receipt. |
-| Safe Treasury flow | Open [Safe Treasury](https://noxswap-iexec.vercel.app/app/safe) to inspect Safe-owned encrypted balances, module controls, protected swaps, and confidential orders. |
+| Safe Treasury flow | Open [Safe Treasury](https://noxswap-iexec.vercel.app/app/safe); the connected owner loads its registered treasury or creates a Safe proxy plus restricted Nox module in one transaction. |
 | Required Hello World onboarding | Wallet [`0xE412...B64E`](https://sepolia.etherscan.io/address/0xE412d04DA2A211F7ADC80311CC0FF9F03440B64E) deployed the tutorial [`ConfidentialPiggyBank`](https://sepolia.etherscan.io/address/0x3204467cB52e8b8065D52045Ed37094B030fb998) and completed an [encrypted deposit](https://sepolia.etherscan.io/tx/0x1a14157f2edd3d0d2d8317430b0079069fad8cdec58e03b86a4b522cc02da731). Detailed evidence is in [`docs/verification.md`](docs/verification.md#hello-world-onboarding-verification). |
 | Demo video | Attach it to the required X submission post before final submission (maximum four minutes). |
 
@@ -50,6 +50,7 @@ User documentation: [https://noxswap-iexec.vercel.app/docs](https://noxswap-iexe
 | Confidential limit order book | [`0xab90...96fb`](https://sepolia.etherscan.io/address/0xab903F78edEAF96faE78c0BF46810122fC9896fb) |
 | Safe v1.4.1 treasury | [`0x5495...fffF`](https://sepolia.etherscan.io/address/0x549585Be4d75b388B4f825E0bCbBaA85B4FbfffF) |
 | Allowlisted Nox Safe module V6 | [`0x8c17...e8f5`](https://sepolia.etherscan.io/address/0x8c17547b05835b77FeBC5Eb796d4be1a8e73e8f5) |
+| Per-account Safe factory | [`0xdDB5...2B36`](https://sepolia.etherscan.io/address/0xdDB5C64eAa1c69426ad7bed8b98aE9F79B652B36) |
 | Safe confidential order book | [`0xd803...9908`](https://sepolia.etherscan.io/address/0xd8037cb70163eC52aa774f54590BB266ee0d9908) |
 | cUSDC ERC-7984 wrapper | [`0x6932...28fE`](https://sepolia.etherscan.io/address/0x6932075FBfd847E453992A8A1EEefB6C6cb328fE) |
 | cETH ERC-7984 wrapper | [`0x04Dc...D4a4`](https://sepolia.etherscan.io/address/0x04Dc3bebDc4E1dfcB423bB7C38Ed280144B5D4a4) |
@@ -63,10 +64,11 @@ User documentation: [https://noxswap-iexec.vercel.app/docs](https://noxswap-iexe
 
 The three encrypted pools were initialized in transactions [`0xb509...6ae87`](https://sepolia.etherscan.io/tx/0xb50926c8d71c293e5f13b0f79c46d0f4260b5c4a4301c78fbb34eac96f6ae87b), [`0xdd08...3c72`](https://sepolia.etherscan.io/tx/0xdd08e2eff23401b32b682090162f84dff01e06b3639c37a2bf137d495c3c3c72), and [`0xa650...1f5e`](https://sepolia.etherscan.io/tx/0xa650ae996f1faa9c5d1449154a0c378d6f089f505ec5f53700f0a4f620351f5e). Full addresses and transactions are in [`packages/contracts/deployment-sepolia.json`](./packages/contracts/deployment-sepolia.json).
 
-All twelve NoxSwap deployment targets submitted by the repository verification
+All thirteen NoxSwap deployment targets submitted by the repository verification
 script have exact creation/runtime source matches on Sourcify. Inspect the
 verified [Router V2](https://repo.sourcify.dev/11155111/0x6e8df82d708196e75Fb735120B4817f5c2551015),
 [Safe Module V6](https://repo.sourcify.dev/11155111/0x8c17547b05835b77FeBC5Eb796d4be1a8e73e8f5),
+[per-account Safe factory](https://repo.sourcify.dev/11155111/0xdDB5C64eAa1c69426ad7bed8b98aE9F79B652B36),
 and [Safe orderbook](https://repo.sourcify.dev/11155111/0xd8037cb70163eC52aa774f54590BB266ee0d9908)
 sources.
 The personal orderbook was deployed from the earlier repository revision linked
@@ -90,6 +92,7 @@ This table is the canonical mapping for source review:
 | Personal limit order book | [`NoxLimitOrderBook.sol` at `407d770`](https://github.com/minhleeee123/iExec-WTF-Hackathon-Summer-Edition/blob/407d770218fb82ea14d680380bfedea2a24c341a/packages/contracts/contracts/NoxLimitOrderBook.sol) | Exact deployed revision, also published on Sourcify; orders are owned by their creating EOA. |
 | Safe confidential order book | [`NoxLimitOrderBook.sol`](./packages/contracts/contracts/NoxLimitOrderBook.sol) | Current source adds `createOrderAuthorized` and receipt-owner routing; its creation bytecode exactly matches the Safe orderbook deployment. |
 | Allowlisted Safe Module V6 | [`NoxSafeModule.sol`](./packages/contracts/contracts/NoxSafeModule.sol) | `V6` validates owner-bound inputs inside one Safe transaction and prevents handle reuse through its combined entry points; this file exactly matches the deployed module. |
+| Per-account Safe factory | [`NoxSafeFactory.sol`](./packages/contracts/contracts/NoxSafeFactory.sol) | Creates one official Safe v1.4.1 proxy plus one bound restricted module per owner in a single transaction and registers the legacy demo Safe without moving its assets. |
 | Four ERC-7984 wrappers | [`NoxConfidentialToken.sol`](./packages/contracts/contracts/NoxConfidentialToken.sol) | Thin extension of the official `ERC20ToERC7984Wrapper`. |
 | Four faucet test tokens | [`NoxTestToken.sol`](./packages/contracts/contracts/NoxTestToken.sol) | Public Sepolia-only collateral with one-hour faucet cooldowns. |
 
@@ -104,6 +107,8 @@ flowchart LR
     Agent <--> Groq["Groq API"]
 
     Wallet -->|signed calls| Chain["NoxSwap contracts<br/>Ethereum Sepolia"]
+    Wallet -->|create or resolve| SafeFactory["Per-account Safe factory"]
+    SafeFactory --> Chain
     MCP -.->|explicit opt-in writes| Chain
     Keeper["Stateless keeper"] -->|execute / expire| Chain
     Keeper -.->|public outcome only| Agent
@@ -114,7 +119,7 @@ flowchart LR
 
     class Web,Wallet,MCP,Keeper client;
     class Nox,Agent,Groq service;
-    class Chain chain;
+    class Chain,SafeFactory chain;
 ```
 
 ### On-chain settlement
@@ -165,9 +170,11 @@ can settle an executable order as zero output plus full refund.
 
 Safe input preparation is a separate owner-only module call that validates Nox
 proofs and grants only an allowlisted consumer access to the prepared handles.
-Spending still requires the Safe to call the restricted module. The deployed demo
-uses a 1-of-1 Safe and the browser's prevalidated-signature path. Higher-threshold
-execution remains available through the Safe Wallet interface.
+Spending still requires the Safe to call its restricted module. The factory maps
+each connected owner to one Safe v1.4.1 proxy and creates a bound module in one
+transaction; the original demo Safe remains registered to its existing owner.
+Factory-created treasuries use the browser's 1-of-1 prevalidated-signature path.
+Higher-threshold execution remains available through the Safe Wallet interface.
 
 The keeper can only call the public `executeOrder` and `expireOrder` entry points
 on both orderbooks. Groq receives user-entered intent plus public market data and
@@ -207,6 +214,8 @@ signer plus `MCP_ALLOW_WRITES=true` before transaction tools are enabled.
 - Configure a 0.5%-10% Chainlink-reference tolerance for swap `minOut` (10% default for the current test-pool/reference basis); balances already revealed in the current session are automatically refreshed after settlement when the existing viewer authorization remains valid.
 - Revoke an ERC-7984 OrderBook operator authorization for the selected input token; already escrowed orders remain active until settlement or cancellation.
 - Fund a Safe-owned ERC-7984 treasury, prepare Nox ciphertext ACLs without spend authority, and settle protected swaps only through the Safe threshold.
+- Load the connected account's registered Safe or create an official Safe proxy,
+  bound Nox module, and enabled module in one Sepolia transaction when none exists.
 - Batch Safe amount/minOut preparation into one owner transaction, grant missing
   viewers and restore allowlisted router/order-book operators inside the reviewed
   Safe execution, and use Safe's prevalidated owner path so that execution needs
@@ -265,9 +274,12 @@ packages/
     contracts/NoxSwap.sol
     contracts/NoxLimitOrderBook.sol
     contracts/NoxSafeModule.sol
+    contracts/NoxSafeFactory.sol
     client/abis.js
     scripts/deploy-sepolia.js
+    scripts/deploy-safe-factory-sepolia.js
     scripts/test-sepolia-e2e.js
+    scripts/test-safe-factory-sepolia.js
     scripts/sync-client-artifacts.js
     deployment-sepolia.json
 ```

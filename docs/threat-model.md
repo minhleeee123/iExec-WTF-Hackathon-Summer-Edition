@@ -48,16 +48,18 @@ otherwise encrypted values.
 ### Wallet and browser
 
 The selected injected wallet controls personal transaction authorization. The
-deployed Safe browser path additionally requires the connected address to be its
-sole configured owner and executes the Safe's threshold-1 transaction with a
+Safe factory resolves one registered treasury per owner and creates an official
+Safe v1.4.1 proxy plus a Safe-bound restricted module in one transaction when no
+registration exists. The browser Safe path requires the connected address to be
+the discovered Safe's sole owner and executes threshold-1 transactions with a
 prevalidated Safe signature. The frontend holds revealed plaintext only in React
 session state and clears order terms when the account or network changes. A
 compromised browser, wallet extension, or injected script can observe values after
 the user authorizes decryption.
 
 The recipient viewer pages follow the same boundary: the Wallet `Shared with me`
-page requires the source holder address, while Safe Treasury shows a fixed Safe
-owner source. Each row rereads the current ERC-7984 handle and checks `isViewer`
+page requires the source holder address, while Safe Treasury requires the source
+Safe address or accepts it from a share link. Each row rereads the current ERC-7984 handle and checks `isViewer`
 before requesting an EIP-712 session reveal. Viewer plaintext is stored separately
 from owner balances, so it cannot authorize Safe spending or order validation;
 changing the handle clears the row and requires a new grant.
@@ -76,8 +78,9 @@ component authorized to update encrypted pool reserves. Two
 `NoxLimitOrderBook` instances escrow personal-wallet and Safe-owned order inputs
 and use public Chainlink data to determine execution readiness. The restricted
 Safe module can route only allowlisted token, router, orderbook, and NoxCompute
-ACL calls on behalf of the configured Safe. The contracts have not received an
-independent audit.
+ACL calls on behalf of its constructor-bound Safe. The factory deploys a fresh
+bound module for every created Safe and registers the legacy demo Safe. The
+contracts have not received an independent audit.
 
 ### RPC, Chainlink, keeper, and MCP
 
@@ -112,6 +115,8 @@ independent audit.
 |---|---|---|
 | Public calldata reveals amount/minOut | Values enter as Nox handles plus proofs | Metadata and timing remain public |
 | Unauthorized balance decryption | Nox ACL and wallet EIP-712 authorization | Compromised wallet/browser can authorize disclosure |
+| Uninitialized Safe proxy takeover | Factory creates the proxy without an initializer, deploys its bound module, and calls `setup` in the same atomic transaction | Factory, canonical Safe singleton, or proxy-factory defects could compromise creation |
+| Account receives another owner's Safe | Factory enforces one mapping per creator and validates the final Safe owner/module binding before registration | Later Safe owner changes are outside the current factory discovery model |
 | Slippage or bad execution | Encrypted positive minOut and full encrypted refund | Chainlink-derived UI estimate is not an AMM quote and pool price can diverge |
 | Replay/double settlement | Canonical order status changes before router settlement; orderbook entry points use a reentrancy guard | Contract correctness is unaudited |
 | Malicious keeper | Keeper has only permissionless execute/expire methods | Keeper can choose ordering/timing and spend its own gas |
