@@ -13,7 +13,8 @@
     "underlyingSOL": "0x674020dd2C1fB45E26f6e31AC1a7EeceF3E8595f",
     "cWBTC": "0x1b8fa85acB318A8599EB2382638020b458028375",
     "cSOL": "0xa7E60411AB2e8683572b260d545507B22bf28179",
-    "limitOrderBook": "0xab903F78edEAF96faE78c0BF46810122fC9896fb"
+    "limitOrderBook": "0xab903F78edEAF96faE78c0BF46810122fC9896fb",
+    "noxSafeFactory": "0xdDB5C64eAa1c69426ad7bed8b98aE9F79B652B36"
   },
   "pool": {
     "id": "cUSDC/cETH",
@@ -51,7 +52,8 @@
     "noxSafeModuleV6": "0x88ee1c756daa1f47734448662c47eadc25b0c5a4d28b3246b811b77a517a0103",
     "noxSafeModuleV6Enable": "0x9a714906844ea15d58f14c434977c98dfb70201542dcf5b79f9b67c3d69ca9b4",
     "noxSafeModuleV5Disable": "0x10d04653b8aa39c8a4c77ca11f5cb0b7c51f151fa4eee8582248e7ad0f8df010",
-    "noxSafeModuleV6RuntimeTest": "0xe9c6b7cc5f647397abf9828b6eb4607f54c26e0d489e5b6777780d4605aab28c"
+    "noxSafeModuleV6RuntimeTest": "0xe9c6b7cc5f647397abf9828b6eb4607f54c26e0d489e5b6777780d4605aab28c",
+    "noxSafeFactory": "0x8c98797476c9bd7e2f069baa3bad2d77665830682d1d60bed7b0d533979ee7f9"
   },
   "gatewayUrl": "https://gateway-testnets.noxprotocol.dev",
   "explorerUrl": "https://sepolia.etherscan.io/address/0x6e8df82d708196e75Fb735120B4817f5c2551015",
@@ -96,9 +98,13 @@
     "threshold": 1,
     "moduleEnabled": true,
     "orderBook": "0xd8037cb70163eC52aa774f54590BB266ee0d9908",
-    "moduleVersion": 6
+    "moduleVersion": 6,
+    "factory": "0xdDB5C64eAa1c69426ad7bed8b98aE9F79B652B36",
+    "accountModel": "one-safe-per-owner"
   },
   "safeExplorerUrl": "https://sepolia.etherscan.io/address/0x549585Be4d75b388B4f825E0bCbBaA85B4FbfffF",
   "noxSafeModuleExplorerUrl": "https://sepolia.etherscan.io/address/0x8c17547b05835b77FeBC5Eb796d4be1a8e73e8f5",
-  "safeOrderBookExplorerUrl": "https://sepolia.etherscan.io/address/0xd8037cb70163eC52aa774f54590BB266ee0d9908"
+  "safeOrderBookExplorerUrl": "https://sepolia.etherscan.io/address/0xd8037cb70163eC52aa774f54590BB266ee0d9908",
+  "noxSafeFactoryExplorerUrl": "https://sepolia.etherscan.io/address/0xdDB5C64eAa1c69426ad7bed8b98aE9F79B652B36",
+  "multiSafeDeployedAt": "2026-07-28T21:44:05.999Z"
 }
