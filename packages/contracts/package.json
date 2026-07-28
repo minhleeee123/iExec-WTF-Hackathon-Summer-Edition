@@ -15,6 +15,7 @@
     "test:nox": "NOX_RUNTIME_TESTS=true npx --yes node@24 node_modules/hardhat/dist/src/cli.js test test/nox-runtime.test.js --network noxLocal",
     "test:safe:sepolia": "npx --yes node@24 scripts/test-safe-treasury-sepolia.js",
     "test:safe:factory:sepolia": "npx --yes node@24 scripts/test-safe-factory-sepolia.js",
+    "test:safe:factory:full:sepolia": "FULL_SAFE_FACTORY_E2E=true npx --yes node@24 scripts/test-safe-factory-full-sepolia.js",
     "test:safe:prompt:sepolia": "SAFE_PROMPT_E2E=true npx --yes node@24 scripts/test-safe-treasury-sepolia.js",
     "test:safe:swap:sepolia": "SAFE_SWAP_E2E=true npx --yes node@24 scripts/test-safe-treasury-sepolia.js",
     "test:safe:unwrap:sepolia": "SAFE_UNWRAP_E2E=true npx --yes node@24 scripts/test-safe-treasury-sepolia.js",
