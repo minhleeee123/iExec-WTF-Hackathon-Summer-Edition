@@ -55,6 +55,13 @@ session state and clears order terms when the account or network changes. A
 compromised browser, wallet extension, or injected script can observe values after
 the user authorizes decryption.
 
+The recipient viewer pages follow the same boundary: the Wallet `Shared with me`
+page requires the source holder address, while Safe Treasury shows a fixed Safe
+owner source. Each row rereads the current ERC-7984 handle and checks `isViewer`
+before requesting an EIP-712 session reveal. Viewer plaintext is stored separately
+from owner balances, so it cannot authorize Safe spending or order validation;
+changing the handle clears the row and requires a new grant.
+
 ### Nox off-chain services
 
 The Handle Gateway, KMS, runner, ingestor, subgraph, and underlying confidential

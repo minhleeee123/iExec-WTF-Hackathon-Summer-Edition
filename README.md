@@ -190,6 +190,9 @@ signer plus `MCP_ALLOW_WRITES=true` before transaction tools are enabled.
 - Run permissionless execute/expiry actions manually or through the stateless keeper; only the owner can cancel or reveal private order terms.
 - Decrypt only handles authorized for the connected wallet.
 - Grant an auditor access to a current balance handle and verify the indexed ACL.
+- Open the Wallet `Shared with me` page to check a holder's current balance
+  handles and reveal only handles that granted the connected viewer wallet. A
+  shareable viewer link is shown after granting personal-wallet access.
 - Unwrap through `UnwrapRequested`, Nox public decryption, and `finalizeUnwrap` proof verification.
 - Mint an on-chain ERC-721 SVG receipt for every completed router settlement,
   including an encrypted minOut rejection that returns zero output and a full
@@ -209,6 +212,9 @@ signer plus `MCP_ALLOW_WRITES=true` before transaction tools are enabled.
   Safe execution, and use Safe's prevalidated owner path so that execution needs
   a transaction confirmation without a separate personal-sign prompt.
 - Reveal Safe balance handles to a selected owner/auditor, inspect and revoke live router or OrderBook operators, and revoke the Nox module without changing Safe owners or balances.
+- Use the separate `Shared with me` card under `Grant a viewer` in Safe
+  Treasury to check and reveal current Safe handles as a read-only recipient;
+  viewer plaintext is session-only and never feeds Safe spending validation.
 - Create minute-precision Safe-owned confidential limit orders, browse their full public lifecycle, batch-grant the Safe owner viewer ACL for amount/minOut reveal, execute or expire eligible orders permissionlessly, and cancel open orders through the owner-authorized module while minting non-fungible settlement receipts to a verified Safe owner.
 - Configure the Safe swap oracle tolerance and deadline, review confirmed Safe events without exposing confidential values, and apply a non-custodial Strategy Agent draft to the Safe order form.
 - Unwrap a Safe-owned confidential asset to the Safe or one of its owners through a recoverable request, Nox public-decryption proof, and permissionless finalization.
@@ -277,14 +283,18 @@ npm run dev
 
 Open `http://localhost:5173`. The root URL is a standalone landing page; **Launch
 app** opens the four-workspace application shell. Trade combines personal swaps and
-limit orders, Wallet combines personal asset operations and auditor access, Safe
-Treasury provides smart-account-owned balances and allowlisted operations, and
+limit orders, Wallet combines personal asset operations, auditor access, and the
+separate `Shared with me` viewer page, Safe Treasury provides smart-account-owned balances and allowlisted operations, and
 Activity contains personal history plus verification evidence. Private balances
 and session controls stay in the desktop sidebar or the mobile wallet drawer.
 
 Safe Treasury is available at `/app/safe` with a compact custody header for Safe
 identity, module state, balances, reveal, and funding, followed by URL-addressable
 `Swap & unwrap`, `Orders & Agent`, `Activity`, and `Access & security` sections.
+The Access & security section keeps owner-only `Grant a viewer` controls separate
+from the read-only `Shared with me` recipient card. The Wallet viewer page
+accepts a source holder address (or the personal grant link) because ERC-7984 ACL
+permissions are handle-specific and are not globally enumerable.
 Its Orders section reuses the personal Trade orderbook interaction model: complete
 public lifecycle rows, status/owner filters, shareable detail URLs, readiness
 checks, permissionless execute/expiry, and owner-authorized cancellation.

@@ -2,26 +2,33 @@ import { Navigate, useSearchParams } from 'react-router-dom';
 import AclSection from '../components/AclSection';
 import AssetOperations from '../components/AssetOperations';
 import PageHeading from '../components/PageHeading';
+import SharedAccessPanel from '../components/SharedAccessPanel';
 
-export default function WalletPage({ aclProps, assetProps }) {
+export default function WalletPage({ aclProps, assetProps, sharedProps }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get('tab');
-  const tab = requestedTab === 'access' ? 'access' : 'assets';
+  const tab = ['access', 'shared'].includes(requestedTab) ? requestedTab : 'assets';
+  const sharedHolder = searchParams.get('holder') ?? '';
 
   const selectTab = (nextTab) => {
-    setSearchParams(nextTab === 'assets' ? {} : { tab: nextTab }, { replace: true });
+    const nextParams = nextTab === 'assets'
+      ? {}
+      : nextTab === 'shared'
+        ? { tab: nextTab, ...(sharedHolder ? { holder: sharedHolder } : {}) }
+        : { tab: nextTab };
+    setSearchParams(nextParams, { replace: true });
     window.requestAnimationFrame(() => document.getElementById(`wallet-tab-${nextTab}`)?.focus());
   };
   const handleTabKey = (event) => {
     if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
-    const tabs = ['assets', 'access'];
+    const tabs = ['assets', 'access', 'shared'];
     const current = tabs.indexOf(tab);
     const nextIndex = event.key === 'Home'
       ? 0
       : event.key === 'End'
         ? tabs.length - 1
-        : (current + 1) % tabs.length;
+        : (current + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
     selectTab(tabs[nextIndex]);
   };
 
@@ -34,9 +41,10 @@ export default function WalletPage({ aclProps, assetProps }) {
         <div className="workflow-tabs" role="tablist" aria-label="Wallet mode">
           <button id="wallet-tab-assets" role="tab" aria-selected={tab === 'assets'} aria-controls="wallet-panel-assets" tabIndex={tab === 'assets' ? 0 : -1} className={tab === 'assets' ? 'active' : ''} onKeyDown={handleTabKey} onClick={() => selectTab('assets')}>Assets</button>
           <button id="wallet-tab-access" role="tab" aria-selected={tab === 'access'} aria-controls="wallet-panel-access" tabIndex={tab === 'access' ? 0 : -1} className={tab === 'access' ? 'active' : ''} onKeyDown={handleTabKey} onClick={() => selectTab('access')}>Auditor access</button>
+          <button id="wallet-tab-shared" role="tab" aria-selected={tab === 'shared'} aria-controls="wallet-panel-shared" tabIndex={tab === 'shared' ? 0 : -1} className={tab === 'shared' ? 'active' : ''} onKeyDown={handleTabKey} onClick={() => selectTab('shared')}>Shared with me</button>
         </div>
         <div className="workflow-content" role="tabpanel" id={`wallet-panel-${tab}`} aria-labelledby={`wallet-tab-${tab}`} tabIndex="0">
-          {tab === 'assets' ? <AssetOperations {...assetProps} embedded /> : <AclSection {...aclProps} embedded />}
+          {tab === 'assets' ? <AssetOperations {...assetProps} embedded /> : tab === 'access' ? <AclSection {...aclProps} embedded /> : <SharedAccessPanel {...sharedProps} initialHolder={sharedHolder} onHolderCommitted={(holder) => setSearchParams({ tab: 'shared', holder }, { replace: true })} variant="wallet" />}
         </div>
       </div>
     </main>

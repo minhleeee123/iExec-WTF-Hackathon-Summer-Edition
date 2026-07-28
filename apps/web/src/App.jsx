@@ -40,6 +40,7 @@ import { executeSafeModule, executeSafeTransaction, parseSafeModuleEvent, SAFE_S
 import { querySafeActivity } from './lib/safe-activity';
 import { applySwapBalanceDelta, decryptChangedBalances } from './lib/private-balances';
 import { cachedImmutableRead, getHistoryProvider, getPublicProvider } from './lib/providers';
+import { inspectSharedHandles, markChangedSharedHandle, storeSharedPlaintext } from './lib/shared-access';
 import {
   loadPendingNoxJobs,
   removePendingNoxJob,
@@ -134,6 +135,8 @@ export default function App() {
   const [safeBalancesVisible, setSafeBalancesVisible] = useState(false);
   const [safeBalanceRefreshFailed, setSafeBalanceRefreshFailed] = useState(false);
   const [safeRevealedOrderTerms, setSafeRevealedOrderTerms] = useState({});
+  const [personalSharedEntries, setPersonalSharedEntries] = useState([]);
+  const [safeSharedEntries, setSafeSharedEntries] = useState([]);
   const [operationProgress, setOperationProgress] = useState(null);
   const safeRevealSession = useRef(false);
   const activeOperation = useRef('');
@@ -284,6 +287,8 @@ export default function App() {
       setSafeBalancesVisible(false);
       setSafeBalanceRefreshFailed(false);
       setSafeRevealedOrderTerms({});
+      setPersonalSharedEntries([]);
+      setSafeSharedEntries([]);
       setAccount(wallet.address);
       setChainId(Number((await wallet.provider.getNetwork()).chainId));
       setShowWalletModal(false);
@@ -582,6 +587,8 @@ export default function App() {
       setSafeBalancesVisible(false);
       setSafeBalanceRefreshFailed(false);
       setSafeRevealedOrderTerms({});
+      setPersonalSharedEntries([]);
+      setSafeSharedEntries([]);
       setBalances(createInitialBalances());
       setFaucets(createInitialFaucets());
       setEthBalance(0n);
@@ -603,6 +610,8 @@ export default function App() {
       setSafeBalancesVisible(false);
       setSafeBalanceRefreshFailed(false);
       setSafeRevealedOrderTerms({});
+      setPersonalSharedEntries([]);
+      setSafeSharedEntries([]);
       if (nextChainId !== deployment.chainId) {
         setBalances(createInitialBalances());
         setFaucets(createInitialFaucets());
@@ -612,6 +621,8 @@ export default function App() {
         setSafeBalances(createInitialBalances());
         setSafeActivity([]);
         setSafePendingUnwraps([]);
+        setPersonalSharedEntries([]);
+        setSafeSharedEntries([]);
       }
     };
     sync().catch(fail);
@@ -1675,6 +1686,78 @@ export default function App() {
     }
   };
 
+  const checkSharedAccess = async ({ holder, scope }) => {
+    try {
+      if (!account || !correctNetwork) throw new Error('Connect a wallet on Ethereum Sepolia before checking shared access.');
+      if (!ethers.isAddress(holder)) throw new Error('Enter a valid balance holder address.');
+      setBusy(`shared-check-${scope}`);
+      const provider = getPublicProvider();
+      const compute = new ethers.Contract(deployment.contracts.noxCompute, NOX_COMPUTE_ABI, provider);
+      const entries = await inspectSharedHandles({
+        holder,
+        viewer: account,
+        tokenSymbols: Object.keys(TOKENS),
+        isEncryptedHandle: isHandle,
+        isViewer: (handle, viewer) => compute.isViewer(handle, viewer),
+        readHandle: async (symbol, address) => {
+          const wrapper = new ethers.Contract(TOKENS[symbol].wrapper, CONFIDENTIAL_TOKEN_ABI, provider);
+          return wrapper.confidentialBalanceOf(address);
+        },
+      });
+      if (scope === 'safe') setSafeSharedEntries(entries);
+      else setPersonalSharedEntries(entries);
+      const sharedCount = entries.filter((entry) => entry.status === 'shared').length;
+      setNotice({
+        type: sharedCount ? 'success' : 'info',
+        text: sharedCount
+          ? `${sharedCount} current shared balance handle${sharedCount === 1 ? '' : 's'} found.`
+          : 'No current balance handle is shared with this wallet.',
+      });
+    } catch (error) {
+      fail(error);
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const revealSharedAccess = async ({ entry, holder, scope }) => {
+    try {
+      if (!entry?.symbol || entry.status !== 'shared') return;
+      if (!ethers.isAddress(holder)) throw new Error('The balance holder address is invalid.');
+      setBusy(`shared-reveal-${scope}-${entry.symbol}`);
+      const wallet = await getWallet();
+      const provider = getPublicProvider();
+      const wrapper = new ethers.Contract(TOKENS[entry.symbol].wrapper, CONFIDENTIAL_TOKEN_ABI, provider);
+      const currentHandle = await wrapper.confidentialBalanceOf(holder);
+      const updateEntries = scope === 'safe' ? setSafeSharedEntries : setPersonalSharedEntries;
+      if (currentHandle !== entry.handle) {
+        updateEntries((current) => markChangedSharedHandle(current, { symbol: entry.symbol, currentHandle }));
+        throw new Error('The balance changed. Check current shared access and ask the holder to grant the new handle.');
+      }
+      const compute = new ethers.Contract(deployment.contracts.noxCompute, NOX_COMPUTE_ABI, provider);
+      if (!(await compute.isViewer(currentHandle, wallet.address))) {
+        throw new Error('This wallet no longer has viewer access to the current handle.');
+      }
+      const client = await createHandleClient(wallet.signer);
+      const result = await decryptWithRetry(client, currentHandle, {
+        attempts: 12,
+        baseDelayMs: 1_000,
+        maxDelayMs: 8_000,
+      });
+      updateEntries((current) => storeSharedPlaintext(current, {
+        symbol: entry.symbol,
+        handle: currentHandle,
+        value: result.value,
+      }));
+      setGatewayEvidence({ verifiedAt: Date.now(), handles: 1 });
+      setNotice({ type: 'success', text: `${entry.symbol} shared balance revealed for this browser session.` });
+    } catch (error) {
+      fail(error);
+    } finally {
+      setBusy('');
+    }
+  };
+
   const grantAuditor = async () => {
     try {
       if (!ethers.isAddress(auditor)) throw new Error('Enter a valid Ethereum address.');
@@ -1850,6 +1933,16 @@ export default function App() {
     connected,
     onAuditorChange: setAuditor,
     onGrant: grantAuditor,
+    shareLink: account ? `${window.location.origin}/app/wallet?tab=shared&holder=${account}` : '',
+  };
+  const sharedProps = {
+    busy,
+    connected,
+    entries: personalSharedEntries,
+    onCheck: (holder) => checkSharedAccess({ holder, scope: 'wallet' }),
+    onConnect: openWalletModal,
+    onReveal: ({ entry, holder }) => revealSharedAccess({ entry, holder, scope: 'wallet' }),
+    tokens: TOKENS,
   };
   const safeProps = {
     account,
@@ -1863,6 +1956,8 @@ export default function App() {
     onCreateOrder: safeCreateOrder,
     onFund: safeFund,
     onGrantViewer: safeGrantViewer,
+    onCheckShared: () => checkSharedAccess({ holder: safeState.address, scope: 'safe' }),
+    onRevealShared: ({ entry, holder }) => revealSharedAccess({ entry, holder, scope: 'safe' }),
     onEnable: safeEnable,
     onFinalizeUnwrap: safeFinalizeUnwrap,
     onNotice: setNotice,
@@ -1881,6 +1976,7 @@ export default function App() {
     safeBalanceRefreshFailed,
     safePendingUnwraps,
     safeRevealedOrderTerms,
+    safeSharedEntries,
     agentMarket: orderContext.agentMarket,
     ethPrice,
     tokens: TOKENS,
@@ -1922,7 +2018,7 @@ export default function App() {
             <Suspense fallback={<div className="route-loading"><LoaderCircle className="spin" size={24} /><span>Loading NoxSwap</span></div>}>
               <Routes>
                 <Route path="/app/trade" element={<TradePage orderContext={orderContext} swapProps={swapProps} />} />
-                <Route path="/app/wallet" element={<WalletPage aclProps={aclProps} assetProps={assetProps} />} />
+                <Route path="/app/wallet" element={<WalletPage aclProps={aclProps} assetProps={assetProps} sharedProps={sharedProps} />} />
                 <Route path="/app/safe" element={<SafePage safeProps={safeProps} />} />
                 <Route path="/app/activity" element={<ActivityPage activityProps={activityProps} evidenceProps={evidenceProps} />} />
                 <Route path="/swap" element={<Navigate replace to="/app/trade" />} />

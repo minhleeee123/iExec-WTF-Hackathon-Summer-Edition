@@ -59,6 +59,7 @@ Allowed phase statuses: `Todo`, `In progress`, `Waiting for approval`, `Blocked`
 | Production MetaMask rehearsal | Completed | User | 2026-07-25T14:23:06+07:00 | The user confirmed that the production MetaMask happy path works reliably on the public URL. |
 | Comprehensive performance pass | Completed | Codex verification | 2026-07-27T14:58:00+07:00 | Safe Module V6 reduced the reviewed flow from two transactions to one and reduced total gas by 2.37%; targeted parallel reveal, adaptive retry, pending-result recovery, singleton block-consistent reads, incremental history, and event wakeups passed regression. The constant-handle router candidate increased per-swap gas by 0.84% and was intentionally not promoted. Production deployment `dpl_CpRhxkjMkxmXHyybyTzum7ksBfeo` passed the final archive-history and Safe Activity smoke test. |
 | Safe V6 manual production validation | Completed | User | 2026-07-27T16:43:01+07:00 | The user confirmed that every check in the manual Safe V6 production suite passed and that the flow felt clearly faster than V5. This qualitative result supports the measured one-transaction and 2.37% gas improvements without claiming a controlled Gateway timing benchmark. |
+| Viewer recipient surfaces | Completed | Codex implementation | 2026-07-29 | Added separate `Shared with me` recipient surfaces in Wallet and Safe Treasury below the owner grant control; both recheck the current handle/ACL before session-only reveal and preserve owner-spend boundaries. |
 | Final submission | Pending |  |  |  |
 
 ## 5. Blockers and Open Questions

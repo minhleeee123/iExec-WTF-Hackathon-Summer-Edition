@@ -15,6 +15,7 @@ import deployment from '../deployment.json';
 import AgentStrategy from './AgentStrategy';
 import OrderReadiness from './OrderReadiness';
 import SafeOrderBook from './SafeOrderBook';
+import SharedAccessPanel from './SharedAccessPanel';
 import { formatToken, isHandle, shorten } from '../lib/format';
 import { DEFAULT_LIMIT_ORDER_PROTECTION_BPS, DEFAULT_SWAP_PROTECTION_BPS, deriveLimitOrderMinOut, deriveSwapMinOut } from '../lib/min-out';
 import { validateMinimumOutput, validateTokenAmount } from '../lib/validation';
@@ -37,6 +38,8 @@ export default function SafeTreasury({
   onEnable,
   onFinalizeUnwrap,
   onGrantViewer,
+  onCheckShared,
+  onRevealShared,
   onNotice,
   onReveal,
   onRevealOrderTerms,
@@ -50,6 +53,7 @@ export default function SafeTreasury({
   safeBalances,
   safePendingUnwraps = [],
   safeRevealedOrderTerms = {},
+  safeSharedEntries = [],
   ethPrice,
   tokens,
   view = 'swap',
@@ -67,7 +71,7 @@ export default function SafeTreasury({
   const [orderTokenOut, setOrderTokenOut] = useState('cETH');
   const [triggerPrice, setTriggerPrice] = useState('3000');
   const [expiryMinutes, setExpiryMinutes] = useState('1440');
-  const [viewer, setViewer] = useState(account ?? '');
+  const [viewer, setViewer] = useState('');
   const [viewerHandle, setViewerHandle] = useState('cUSDC');
   const [unwrapToken, setUnwrapToken] = useState('cUSDC');
   const [unwrapAmount, setUnwrapAmount] = useState('100');
@@ -298,6 +302,7 @@ export default function SafeTreasury({
           {view === 'security' && <div className="safe-access-workflow">
             <div className="embedded-intro"><div><p className="eyebrow">SELECTIVE DISCLOSURE</p><h2>Access & emergency controls</h2></div><p>Viewer access is handle-specific; module and operator authority remain explicit Safe owner actions.</p></div>
             <div className="safe-security-workspace">
+            <div className="safe-access-column">
             <section className="order-form safe-access-card">
               <div className="section-heading compact-heading"><div><p className="eyebrow">AUDITOR ACCESS</p><h2>Grant a viewer</h2></div><UserRoundPlus size={19} /></div>
               <p className="safe-helper">Read-only access applies only to the selected encrypted handle and never grants spending authority.</p>
@@ -305,6 +310,8 @@ export default function SafeTreasury({
               <label className="safe-field"><span>Viewer address</span><input value={viewer} onChange={(event) => setViewer(event.target.value)} placeholder="0x auditor address" aria-label="Safe auditor address" /></label>
               <button className="primary-action compact" onClick={() => onGrantViewer({ handle: viewerHandleValue, viewer })} disabled={!enabled || !safe.isOwner || !isEthereumAddress(viewer) || Boolean(busy) || !canGrantViewer}>{busy === 'safe-viewer' ? <LoaderCircle className="spin" size={17} /> : <KeyRound size={17} />} Grant viewer via Safe</button>
             </section>
+            <SharedAccessPanel busy={busy} connected={connected} entries={safeSharedEntries} fixedHolder={safe?.address ?? ''} onCheck={onCheckShared} onConnect={onConnect} onReveal={onRevealShared} tokens={tokens} variant="safe" />
+            </div>
             <section className="orders-list safe-security-panel">
               <div className="safe-security-copy"><p className="eyebrow">MODULE SECURITY</p><h2>Operator access & emergency controls</h2><p>Operator authorization is token-specific. Revoking the module pauses every Nox operation but never changes Safe owners, threshold, or balances.</p></div>
               <div className="safe-operator-group"><span>Router operators</span><div>{Object.values(tokens).map((token) => {

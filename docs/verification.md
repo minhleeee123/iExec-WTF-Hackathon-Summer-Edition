@@ -51,6 +51,7 @@ decrypted test value are intentionally excluded from this evidence.
 | Faucet and wrap | Faucet mints public test assets; wrapper escrows them and creates encrypted balances | PASS |
 | Unwrap | Encrypted request, public decryption proof, contract finalization, and underlying release | PASS, `0.01 nWETH` verified |
 | Selective ACL | Wrapper grants a viewer on the current balance handle; Nox subgraph confirms the account | PASS |
+| Viewer recipient surfaces | Wallet and Safe Treasury `Shared with me` surfaces reread current handles, check the connected wallet's viewer ACL, reveal only authorized rows, and keep plaintext separate from Safe owner balances | PASS, unit coverage validates ACL status isolation, current-handle matching, changed-handle invalidation, and session-only viewer state |
 | Receipt NFT | Router mints ERC-721 receipt and returns on-chain base64 JSON/SVG metadata | PASS, receipt `#2` verified on the current deployment |
 | Swap history | Frontend reads actual `SwapExecuted` logs from the router deployment block | PASS |
 | Proof inspector | Frontend displays actual tx hash, calldata, input/output handles, proof byte length, and block | PASS by build and source test |

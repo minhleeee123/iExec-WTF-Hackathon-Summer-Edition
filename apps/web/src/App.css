@@ -329,6 +329,30 @@ button:disabled { cursor: not-allowed; opacity: .48; box-shadow: none !important
 .acl-results span { padding: 7px 9px; border: 1px solid var(--ink); border-radius: 5px; font-size: 11px; font-weight: 700; }
 .acl-results .pass { background: var(--soft-lime); }
 .acl-results .pending { background: #ffd7df; }
+.acl-share-link { display: inline-flex; margin-top: 14px; color: var(--ink); font: 700 10px 'Space Mono', monospace; text-decoration: underline; text-underline-offset: 3px; }
+.shared-access-panel { min-width: 0; padding: 22px; background: var(--white); border: 2px solid var(--ink); border-radius: 8px; box-shadow: 3px 3px 0 var(--purple); }
+.shared-access-safe { box-shadow: 3px 3px 0 var(--lime); }
+.shared-access-helper { margin: 0 0 16px; color: var(--muted); font: 400 10px/1.55 'Space Mono', monospace; }
+.shared-holder-field { margin-bottom: 12px; }
+.shared-source { min-height: 42px; margin-bottom: 12px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #f5f5fa; border: 1px solid var(--line); border-radius: 6px; }
+.shared-source span { color: var(--muted); font: 700 9px 'Space Mono', monospace; text-transform: uppercase; }
+.shared-source code { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.shared-check-action { width: 100%; margin-bottom: 16px; background: var(--soft-purple); }
+.shared-access-empty { padding: 15px; color: var(--muted); background: #f5f5fa; border: 1px dashed var(--line); border-radius: 6px; font: 400 10px/1.55 'Space Mono', monospace; }
+.shared-access-list { display: grid; gap: 8px; }
+.shared-access-row { min-width: 0; padding: 12px; display: grid; grid-template-columns: 100px minmax(0, 1fr) auto; align-items: center; gap: 12px; background: #f5f5fa; border: 1px solid var(--line); border-radius: 6px; }
+.shared-token-value, .shared-access-status { min-width: 0; display: grid; gap: 4px; }
+.shared-token-value span { color: var(--muted); font: 700 9px 'Space Mono', monospace; }
+.shared-token-value strong { font-size: 15px; }
+.shared-access-status strong { font-size: 10px; }
+.shared-access-status span { color: var(--muted); font: 400 8px/1.4 'Space Mono', monospace; }
+.shared-access-status code { overflow: hidden; color: var(--muted); text-overflow: ellipsis; font-size: 8px; }
+.shared-status-shared { border-color: #6e40c9; }
+.shared-status-shared .shared-access-status strong { color: #5530a3; }
+.shared-status-changed { border-color: #a1264b; background: #fff0f3; }
+.shared-status-changed .shared-access-status strong { color: #7c1836; }
+.shared-status-error .shared-access-status strong { color: #8a5363; }
+.shared-session-note { margin: 15px 0 0; color: var(--muted); font: 400 8px/1.5 'Space Mono', monospace; }
 
 .activity-grid { max-width: 1240px; margin: 44px auto; padding: 0 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
 .history-panel, .log-panel { min-width: 0; padding: 22px; }
@@ -480,6 +504,10 @@ footer a { display: inline-flex; align-items: center; gap: 5px; }
   .section-title h2 { font-size: 23px; }
   .acl-form { grid-template-columns: 1fr; }
   .acl-form > svg { display: none; }
+  .shared-access-panel { padding: 15px; }
+  .shared-access-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .shared-access-status { grid-column: 1 / -1; }
+  .shared-access-row .outline-mini-button { grid-column: 2; grid-row: 1; }
   .faucet-list, .asset-form, .order-form, .orders-list { padding: 15px; }
   .faucet-item { flex-wrap: wrap; padding: 11px 0; }
   .inline-fields { grid-template-columns: minmax(0, 1fr) 105px; }
@@ -1175,6 +1203,7 @@ footer a { display: inline-flex; align-items: center; gap: 5px; }
 .safe-context-list span { color: var(--muted); font: 400 9px/1.55 'Space Mono', monospace; }
 .safe-security-panel { display: grid; grid-template-columns: minmax(260px, 1fr) auto minmax(280px, .9fr); align-items: center; gap: 18px; box-shadow: 3px 3px 0 #ffd7df; }
 .safe-security-workspace { display: grid; grid-template-columns: minmax(280px, .7fr) minmax(0, 1.3fr); align-items: start; gap: 18px; }
+.safe-access-column { min-width: 0; display: grid; gap: 18px; }
 .safe-security-workspace .safe-security-panel { height: 100%; margin-top: 0; grid-template-columns: 1fr; align-content: start; }
 .safe-security-workspace .safe-operator-group { padding: 16px 0 0; border-top: 1px solid var(--line); border-left: 0; }
 .safe-security-copy h2 { margin: 3px 0 6px; font-size: 20px; }
