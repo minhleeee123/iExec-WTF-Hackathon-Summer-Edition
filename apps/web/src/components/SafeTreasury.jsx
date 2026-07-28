@@ -39,6 +39,7 @@ export default function SafeTreasury({
   onFinalizeUnwrap,
   onGrantViewer,
   onCheckShared,
+  onSharedHolderCommitted,
   onRevealShared,
   onNotice,
   onReveal,
@@ -54,6 +55,8 @@ export default function SafeTreasury({
   safePendingUnwraps = [],
   safeRevealedOrderTerms = {},
   safeSharedEntries = [],
+  safeShareLink = '',
+  sharedHolder = '',
   ethPrice,
   tokens,
   view = 'swap',
@@ -309,8 +312,9 @@ export default function SafeTreasury({
               <label className="safe-field"><span>Balance handle</span><select value={viewerHandle} onChange={(event) => setViewerHandle(event.target.value)} aria-label="Safe handle for viewer">{Object.values(tokens).map((token) => <option key={token.symbol} value={token.symbol}>{token.symbol} balance handle</option>)}</select></label>
               <label className="safe-field"><span>Viewer address</span><input value={viewer} onChange={(event) => setViewer(event.target.value)} placeholder="0x auditor address" aria-label="Safe auditor address" /></label>
               <button className="primary-action compact" onClick={() => onGrantViewer({ handle: viewerHandleValue, viewer })} disabled={!enabled || !safe.isOwner || !isEthereumAddress(viewer) || Boolean(busy) || !canGrantViewer}>{busy === 'safe-viewer' ? <LoaderCircle className="spin" size={17} /> : <KeyRound size={17} />} Grant viewer via Safe</button>
+              {safeShareLink && <a className="acl-share-link" href={safeShareLink}>Open the viewer page for this Safe</a>}
             </section>
-            <SharedAccessPanel busy={busy} connected={connected} entries={safeSharedEntries} fixedHolder={safe?.address ?? ''} onCheck={onCheckShared} onConnect={onConnect} onReveal={onRevealShared} tokens={tokens} variant="safe" />
+            <SharedAccessPanel busy={busy} connected={connected} entries={safeSharedEntries} initialHolder={sharedHolder} onCheck={onCheckShared} onConnect={onConnect} onHolderCommitted={onSharedHolderCommitted} onReveal={onRevealShared} tokens={tokens} variant="safe" />
             </div>
             <section className="orders-list safe-security-panel">
               <div className="safe-security-copy"><p className="eyebrow">MODULE SECURITY</p><h2>Operator access & emergency controls</h2><p>Operator authorization is token-specific. Revoking the module pauses every Nox operation but never changes Safe owners, threshold, or balances.</p></div>

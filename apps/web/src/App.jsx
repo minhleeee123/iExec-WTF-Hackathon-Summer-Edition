@@ -11,6 +11,7 @@ import {
   NOX_COMPUTE_ABI,
   NOX_SWAP_ABI,
   SAFE_ABI,
+  SAFE_FACTORY_ABI,
   SAFE_MODULE_ABI,
   TEST_TOKEN_ABI,
 } from './contracts';
@@ -36,7 +37,7 @@ import {
   finishOperationProgress,
 } from './lib/operation-progress';
 import { discoverWalletProvider } from './lib/wallet-providers';
-import { executeSafeModule, executeSafeTransaction, parseSafeModuleEvent, SAFE_SENTINEL_MODULE } from './lib/safe';
+import { executeSafeModule, executeSafeTransaction, parseSafeCreatedEvent, parseSafeModuleEvent, resolveOwnedSafe, SAFE_SENTINEL_MODULE } from './lib/safe';
 import { querySafeActivity } from './lib/safe-activity';
 import { applySwapBalanceDelta, decryptChangedBalances } from './lib/private-balances';
 import { cachedImmutableRead, getHistoryProvider, getPublicProvider } from './lib/providers';
@@ -71,6 +72,20 @@ const TradePage = lazy(() => import('./pages/TradePage'));
 const WalletPage = lazy(() => import('./pages/WalletPage'));
 const WALLET_PREFERENCE_KEY = 'noxswap.wallet-provider';
 const WALLET_LABELS = { metamask: 'MetaMask', coinbase: 'Coinbase', rabby: 'Rabby', injected: 'Injected wallet' };
+
+function createInitialSafeState() {
+  return {
+    address: '',
+    factoryAddress: deployment.contracts.noxSafeFactory ?? '',
+    moduleAddress: '',
+    orderBook: deployment.safe?.orderBook ?? deployment.contracts.limitOrderBook ?? '',
+    moduleEnabled: false,
+    owners: [],
+    threshold: 0,
+    isOwner: false,
+    operators: {},
+  };
+}
 
 function providerLabel(provider, preferredWallet = '') {
   if (preferredWallet && WALLET_LABELS[preferredWallet]) return WALLET_LABELS[preferredWallet];
@@ -128,7 +143,8 @@ export default function App() {
   const [walletProvider, setWalletProvider] = useState(null);
   const [walletAvailable, setWalletAvailable] = useState(() => Boolean(window.ethereum));
   const [walletName, setWalletName] = useState('');
-  const [safeState, setSafeState] = useState({ address: deployment.safe?.address ?? '', moduleAddress: deployment.safe?.module ?? '', orderBook: deployment.safe?.orderBook ?? '', moduleEnabled: false, owners: [], threshold: 0, isOwner: false, operators: {} });
+  const [safeState, setSafeState] = useState(createInitialSafeState);
+  const [safeAccountStatus, setSafeAccountStatus] = useState('idle');
   const [safeBalances, setSafeBalances] = useState(() => createInitialBalances());
   const [safeActivity, setSafeActivity] = useState([]);
   const [safePendingUnwraps, setSafePendingUnwraps] = useState([]);
@@ -289,6 +305,7 @@ export default function App() {
       setSafeRevealedOrderTerms({});
       setPersonalSharedEntries([]);
       setSafeSharedEntries([]);
+      setSafeAccountStatus('loading');
       setAccount(wallet.address);
       setChainId(Number((await wallet.provider.getNetwork()).chainId));
       setShowWalletModal(false);
@@ -391,30 +408,45 @@ export default function App() {
 
   }, [account, walletProvider]);
 
-  const loadSafeAccount = useCallback(async () => {
-    const configuredSafe = deployment.safe;
-    if (!configuredSafe?.address || !configuredSafe.module || !walletProvider) return null;
+  const loadSafeAccount = useCallback(async (ownerAddress = account) => {
+    const factoryAddress = deployment.contracts.noxSafeFactory;
+    if (!ownerAddress || !factoryAddress || !walletProvider) return null;
+    setSafeAccountStatus('loading');
     const provider = getPublicProvider();
     const latestBlock = await provider.getBlock('latest');
     if (!latestBlock) throw new Error('Latest Sepolia block is unavailable.');
     const blockTag = latestBlock.number;
-    const safeContract = new ethers.Contract(configuredSafe.address, SAFE_ABI, provider);
-    const safeOrderBookAddress = configuredSafe.orderBook ?? deployment.contracts.limitOrderBook;
+    const factory = new ethers.Contract(factoryAddress, SAFE_FACTORY_ABI, provider);
+    const registration = await resolveOwnedSafe(factory, ownerAddress, { blockTag });
+    if (!registration) {
+      safeRevealSession.current = false;
+      setSafeBalancesVisible(false);
+      setSafeBalanceRefreshFailed(false);
+      setSafeState(createInitialSafeState());
+      setSafeBalances(createInitialBalances());
+      setSafeActivity([]);
+      setSafePendingUnwraps([]);
+      setSafeAccountStatus('ready');
+      return null;
+    }
+    const { safeAddress, moduleAddress } = registration;
+    const safeContract = new ethers.Contract(safeAddress, SAFE_ABI, provider);
+    const safeOrderBookAddress = deployment.safe?.orderBook ?? deployment.contracts.limitOrderBook;
     const [owners, threshold, moduleEnabled] = await Promise.all([
       safeContract.getOwners({ blockTag }),
       safeContract.getThreshold({ blockTag }),
-      safeContract.isModuleEnabled(configuredSafe.module, { blockTag }),
+      safeContract.isModuleEnabled(moduleAddress, { blockTag }),
     ]);
     const nextBalances = createInitialBalances();
     const nextOperators = {};
     await Promise.all(Object.values(TOKENS).map(async (token) => {
       const wrapper = new ethers.Contract(token.wrapper, CONFIDENTIAL_TOKEN_ABI, provider);
       const [handle, routerResult, orderBookResult] = await Promise.all([
-        wrapper.confidentialBalanceOf(configuredSafe.address, { blockTag }),
-        Promise.resolve(wrapper.isOperator(configuredSafe.address, deployment.contracts.noxSwapRouter, { blockTag }))
+        wrapper.confidentialBalanceOf(safeAddress, { blockTag }),
+        Promise.resolve(wrapper.isOperator(safeAddress, deployment.contracts.noxSwapRouter, { blockTag }))
           .then((value) => ({ value }))
           .catch(() => ({ value: false })),
-        Promise.resolve(wrapper.isOperator(configuredSafe.address, safeOrderBookAddress, { blockTag }))
+        Promise.resolve(wrapper.isOperator(safeAddress, safeOrderBookAddress, { blockTag }))
           .then((value) => ({ value }))
           .catch(() => ({ value: false })),
       ]);
@@ -425,13 +457,15 @@ export default function App() {
       nextOperators[token.symbol] = { router: routerResult.value, orderBook: orderBookResult.value };
     }));
     const nextState = {
-      address: configuredSafe.address,
-      moduleAddress: configuredSafe.module,
+      address: safeAddress,
+      factoryAddress,
+      moduleAddress,
+      moduleVersion: 6,
       orderBook: safeOrderBookAddress,
       moduleEnabled,
       owners: [...owners],
       threshold: Number(threshold),
-      isOwner: Boolean(account) && owners.some((owner) => owner.toLowerCase() === account.toLowerCase()),
+      isOwner: owners.some((owner) => owner.toLowerCase() === ownerAddress.toLowerCase()),
       operators: nextOperators,
     };
     setSafeState(nextState);
@@ -448,15 +482,18 @@ export default function App() {
       return merged;
     });
     try {
-      const moduleDeploymentHashes = Object.entries(deployment.deploymentTransactions ?? {})
-        .filter(([key]) => /^noxSafeModule(?:V\d+)?$/.test(key))
-        .map(([, hash]) => hash);
+      const isLegacySafe = safeAddress.toLowerCase() === deployment.safe?.address?.toLowerCase();
+      const moduleDeploymentHashes = isLegacySafe
+        ? Object.entries(deployment.deploymentTransactions ?? {})
+          .filter(([key]) => /^noxSafeModule(?:V\d+)?$/.test(key))
+          .map(([, hash]) => hash)
+        : [deployment.deploymentTransactions.noxSafeFactory];
       const moduleDeploymentReceipts = await Promise.all(moduleDeploymentHashes.map((hash) => (
         cachedImmutableRead(`deployment-receipt:${hash}`, () => provider.getTransactionReceipt(hash))
       )));
       const moduleAddresses = [...new Set([
-        configuredSafe.module,
-        ...moduleDeploymentReceipts.map((receipt) => receipt?.contractAddress).filter(Boolean),
+        moduleAddress,
+        ...(isLegacySafe ? moduleDeploymentReceipts.map((receipt) => receipt?.contractAddress).filter(Boolean) : []),
       ])];
       const firstModuleBlock = moduleDeploymentReceipts
         .map((receipt) => receipt?.blockNumber)
@@ -464,8 +501,8 @@ export default function App() {
         .reduce((minimum, blockNumber) => Math.min(minimum, blockNumber), Number.POSITIVE_INFINITY);
       const activity = await querySafeActivity({
         provider: getHistoryProvider(),
-        safeAddress: configuredSafe.address,
-        moduleAddress: configuredSafe.module,
+        safeAddress,
+        moduleAddress,
         moduleAddresses,
         tokens: TOKENS,
         chainId: deployment.chainId,
@@ -495,6 +532,7 @@ export default function App() {
       setSafeActivity([]);
       setSafePendingUnwraps([]);
     }
+    setSafeAccountStatus('ready');
     return nextBalances;
   }, [account, walletProvider]);
 
@@ -589,6 +627,7 @@ export default function App() {
       setSafeRevealedOrderTerms({});
       setPersonalSharedEntries([]);
       setSafeSharedEntries([]);
+      setSafeAccountStatus(accounts[0] ? 'loading' : 'idle');
       setBalances(createInitialBalances());
       setFaucets(createInitialFaucets());
       setEthBalance(0n);
@@ -598,7 +637,7 @@ export default function App() {
       setReceipt(null);
       setGatewayEvidence(null);
       setExecutionComparison(null);
-      setSafeState({ address: deployment.safe?.address ?? '', moduleAddress: deployment.safe?.module ?? '', orderBook: deployment.safe?.orderBook ?? '', moduleEnabled: false, owners: [], threshold: 0, isOwner: false, operators: {} });
+      setSafeState(createInitialSafeState());
       setSafeBalances(createInitialBalances());
       setAccount(accounts[0] ?? '');
     };
@@ -612,12 +651,13 @@ export default function App() {
       setSafeRevealedOrderTerms({});
       setPersonalSharedEntries([]);
       setSafeSharedEntries([]);
+      setSafeAccountStatus(nextChainId === deployment.chainId ? 'loading' : 'idle');
       if (nextChainId !== deployment.chainId) {
         setBalances(createInitialBalances());
         setFaucets(createInitialFaucets());
         setEthBalance(0n);
         setHistory([]);
-        setSafeState({ address: deployment.safe?.address ?? '', moduleAddress: deployment.safe?.module ?? '', orderBook: deployment.safe?.orderBook ?? '', moduleEnabled: false, owners: [], threshold: 0, isOwner: false, operators: {} });
+        setSafeState(createInitialSafeState());
         setSafeBalances(createInitialBalances());
         setSafeActivity([]);
         setSafePendingUnwraps([]);
@@ -635,7 +675,10 @@ export default function App() {
   }, [walletProvider]);
 
   useEffect(() => {
-    if (account && correctNetwork) Promise.all([loadAccount(account), loadSafeAccount()]).catch(fail);
+    if (account && correctNetwork) Promise.all([loadAccount(account), loadSafeAccount()]).catch((error) => {
+      setSafeAccountStatus('error');
+      fail(error);
+    });
   }, [account, correctNetwork, loadAccount, loadSafeAccount]);
 
   useEffect(() => {
@@ -1181,7 +1224,7 @@ export default function App() {
       const client = await createHandleClient(wallet.signer);
       const encrypted = await client.encryptInput(amountValue, 'uint256', safeState.moduleAddress);
       const module = new ethers.Contract(safeState.moduleAddress, SAFE_MODULE_ABI, wallet.signer);
-      const moduleV6 = Number(deployment.safe?.moduleVersion ?? 0) >= 6;
+      const moduleV6 = Number(safeState.moduleVersion ?? deployment.safe?.moduleVersion ?? 0) >= 6;
       if (!moduleV6) {
         const preparation = await module.prepareInput(encrypted.handle, encrypted.handleProof, token.wrapper);
         addLog(`Prepare Safe ${tokenSymbol} unwrap input`, preparation.hash);
@@ -1288,7 +1331,7 @@ export default function App() {
         client.encryptInput(minimumValue, 'uint256', safeState.moduleAddress),
       ]);
       const module = new ethers.Contract(safeState.moduleAddress, SAFE_MODULE_ABI, wallet.signer);
-      const moduleV6 = Number(deployment.safe?.moduleVersion ?? 0) >= 6;
+      const moduleV6 = Number(safeState.moduleVersion ?? deployment.safe?.moduleVersion ?? 0) >= 6;
       if (!moduleV6) {
         const preparation = await module.prepareInputs(
           [encrypted.handle, encryptedMinimum.handle],
@@ -1406,7 +1449,7 @@ export default function App() {
         client.encryptInput(minimumValue, 'uint256', safeState.moduleAddress),
       ]);
       const module = new ethers.Contract(safeState.moduleAddress, SAFE_MODULE_ABI, wallet.signer);
-      const moduleV6 = Number(deployment.safe?.moduleVersion ?? 0) >= 6;
+      const moduleV6 = Number(safeState.moduleVersion ?? deployment.safe?.moduleVersion ?? 0) >= 6;
       if (!moduleV6) {
         const preparation = await module.prepareInputs(
           [encrypted.handle, encryptedMinimum.handle],
@@ -1686,6 +1729,39 @@ export default function App() {
     }
   };
 
+  const createSafeTreasury = async () => {
+    try {
+      if (!deployment.contracts.noxSafeFactory) throw new Error('The Safe factory is not configured on this network.');
+      setBusy('safe-create');
+      const wallet = await getWallet();
+      const factory = new ethers.Contract(deployment.contracts.noxSafeFactory, SAFE_FACTORY_ABI, wallet.signer);
+      const existing = await factory.safeOf(wallet.address);
+      if (existing !== ethers.ZeroAddress) {
+        await loadSafeAccount(wallet.address);
+        setNotice({ type: 'info', text: 'Your Safe treasury already exists and has been loaded.' });
+        return;
+      }
+      const transaction = await factory.createSafe();
+      addLog('Create personal Safe treasury and Nox module', transaction.hash);
+      const receipt = await transaction.wait();
+      const created = parseSafeCreatedEvent(receipt, factory);
+      if (!created) throw new Error('Safe creation confirmed, but the factory event was not found. Refresh the page.');
+      safeRevealSession.current = false;
+      setSafeBalancesVisible(false);
+      await loadSafeAccount(wallet.address);
+      setNotice({
+        type: 'success',
+        text: `Safe ${shorten(created.args.safe)} created with its restricted Nox module.`,
+        href: `https://sepolia.etherscan.io/tx/${transaction.hash}`,
+        actionLabel: 'View transaction',
+      });
+    } catch (error) {
+      fail(error);
+    } finally {
+      setBusy('');
+    }
+  };
+
   const checkSharedAccess = async ({ holder, scope }) => {
     try {
       if (!account || !correctNetwork) throw new Error('Connect a wallet on Ethereum Sepolia before checking shared access.');
@@ -1954,9 +2030,10 @@ export default function App() {
     onCancelOrder: safeCancelOrder,
     onConnect: openWalletModal,
     onCreateOrder: safeCreateOrder,
+    onCreateSafe: createSafeTreasury,
     onFund: safeFund,
     onGrantViewer: safeGrantViewer,
-    onCheckShared: () => checkSharedAccess({ holder: safeState.address, scope: 'safe' }),
+    onCheckShared: (holder) => checkSharedAccess({ holder, scope: 'safe' }),
     onRevealShared: ({ entry, holder }) => revealSharedAccess({ entry, holder, scope: 'safe' }),
     onEnable: safeEnable,
     onFinalizeUnwrap: safeFinalizeUnwrap,
@@ -1970,6 +2047,7 @@ export default function App() {
     onSwap: safeSwap,
     onUnwrap: safeUnwrap,
     safe: safeState,
+    safeAccountStatus,
     safeActivity,
     safeBalances,
     safeBalancesVisible,
@@ -1977,6 +2055,7 @@ export default function App() {
     safePendingUnwraps,
     safeRevealedOrderTerms,
     safeSharedEntries,
+    safeShareLink: safeState.address ? `${window.location.origin}/app/safe?section=security&shared=${safeState.address}` : '',
     agentMarket: orderContext.agentMarket,
     ethPrice,
     tokens: TOKENS,

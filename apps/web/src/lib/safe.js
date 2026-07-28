@@ -12,6 +12,21 @@ export function createSafeContracts(provider, safeAddress, moduleAddress) {
   };
 }
 
+export async function resolveOwnedSafe(factory, owner, overrides = {}) {
+  if (!owner) return null;
+  const safeAddress = await factory.safeOf(owner, overrides);
+  if (safeAddress === ethers.ZeroAddress) return null;
+  const moduleAddress = await factory.moduleOf(safeAddress, overrides);
+  if (moduleAddress === ethers.ZeroAddress) throw new Error('The registered Safe has no Nox module.');
+  return { safeAddress, moduleAddress };
+}
+
+export function parseSafeCreatedEvent(receipt, factory) {
+  return receipt.logs
+    .map((log) => { try { return factory.interface.parseLog(log); } catch { return null; } })
+    .find((event) => event?.name === 'NoxSafeCreated') ?? null;
+}
+
 /**
  * Safe v1.4.x accepts an eth_sign/personal_sign signature when v is 31/32.
  * Browser wallets expose signMessage rather than the owner's private key, so

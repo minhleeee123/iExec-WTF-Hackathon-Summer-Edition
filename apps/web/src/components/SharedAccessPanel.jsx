@@ -48,8 +48,8 @@ export default function SharedAccessPanel({
       <p className="shared-access-helper">Check current per-handle ACLs, then reveal only values shared with the connected wallet. Viewer access never grants spending authority.</p>
       {!fixedHolder && (
         <label className="safe-field shared-holder-field">
-          <span>Source wallet</span>
-          <input value={holder} onChange={(event) => setHolder(event.target.value)} placeholder="0x balance holder address" aria-label="Shared balance holder address" />
+          <span>{variant === 'safe' ? 'Source Safe' : 'Source wallet'}</span>
+          <input value={holder} onChange={(event) => setHolder(event.target.value)} placeholder={variant === 'safe' ? '0x Safe address' : '0x balance holder address'} aria-label="Shared balance holder address" />
         </label>
       )}
       {fixedHolder && <div className="shared-source"><span>Safe owner</span><code title={fixedHolder}>{shorten(fixedHolder, 12, 10)}</code></div>}

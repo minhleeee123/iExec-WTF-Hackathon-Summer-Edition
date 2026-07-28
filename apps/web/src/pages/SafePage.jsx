@@ -2,6 +2,7 @@ import { Eye, ExternalLink, LoaderCircle, Plus, RefreshCw, ShieldCheck } from 'l
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import PageHeading from '../components/PageHeading';
+import SharedAccessPanel from '../components/SharedAccessPanel';
 import SafeTreasury from '../components/SafeTreasury';
 import { formatToken, shorten } from '../lib/format';
 import { validateTokenAmount } from '../lib/validation';
@@ -12,7 +13,10 @@ export default function SafePage({ safeProps }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedSection = searchParams.get('section');
   const section = SECTIONS.includes(requestedSection) ? requestedSection : 'swap';
+  const sharedHolder = searchParams.get('shared') ?? '';
   const enabled = Boolean(safeProps.safe?.moduleEnabled);
+  const hasSafe = Boolean(safeProps.safe?.address);
+  const discoveringSafe = safeProps.connected && safeProps.safeAccountStatus === 'loading';
   const [fundAmount, setFundAmount] = useState('1000');
   const [fundToken, setFundToken] = useState('cUSDC');
   const fundAsset = safeProps.tokens[fundToken];
@@ -24,9 +28,16 @@ export default function SafePage({ safeProps }) {
       : 'Reveal';
 
   const selectSection = (nextSection) => {
-    setSearchParams(nextSection === 'swap' ? {} : { section: nextSection }, { replace: true });
+    setSearchParams({
+      ...(nextSection === 'swap' ? {} : { section: nextSection }),
+      ...(sharedHolder ? { shared: sharedHolder } : {}),
+    }, { replace: true });
     window.requestAnimationFrame(() => document.getElementById(`safe-tab-${nextSection}`)?.focus());
   };
+  const commitSharedHolder = (holder) => setSearchParams({
+    ...(hasSafe ? { section: 'security' } : {}),
+    shared: holder,
+  }, { replace: true });
   const handleTabKey = (event) => {
     if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
@@ -51,11 +62,25 @@ export default function SafePage({ safeProps }) {
               <a className="safe-heading-link" href={`https://sepolia.etherscan.io/address/${safeProps.safe.address}`} target="_blank" rel="noreferrer">
                 <strong>Safe {shorten(safeProps.safe.address, 7, 5)}</strong><ExternalLink size={13} />
               </a>
-            ) : <strong>Safe unavailable</strong>}
-            <span>{safeProps.safe?.owners?.length || '—'} / {safeProps.safe?.threshold || '—'} threshold · {enabled ? 'Module enabled' : 'Module paused'}</span>
+            ) : <strong>{discoveringSafe ? 'Finding your Safe…' : safeProps.connected ? 'No Safe yet' : 'Connect wallet'}</strong>}
+            <span>{hasSafe ? `${safeProps.safe.owners?.length || '—'} / ${safeProps.safe.threshold || '—'} threshold · ${enabled ? 'Module enabled' : 'Module paused'}` : 'One Safe treasury per connected owner'}</span>
           </>
         )}
       />
+      {!hasSafe ? (
+        <div className="safe-onboarding-layout">
+          <section className="safe-create-card">
+            <div className="section-heading"><div><p className="eyebrow">PERSONAL SAFE TREASURY</p><h2>{discoveringSafe ? 'Checking the Safe registry' : safeProps.connected ? 'Create your Safe' : 'Connect to find your Safe'}</h2></div>{discoveringSafe ? <LoaderCircle className="spin" size={22} /> : <ShieldCheck size={22} />}</div>
+            <p>{discoveringSafe ? 'Reading the account-to-Safe registry on Ethereum Sepolia. Existing owners are loaded without creating a new account.' : safeProps.connected ? 'No Safe is registered for this account. Create a Safe v1.4.1 proxy, a bound Nox module, and enable the restricted module in one Sepolia transaction.' : 'Connect the owner wallet to load its registered Safe or create one if it does not exist.'}</p>
+            <div className="safe-create-facts"><span>1-of-1 owner</span><span>Official Safe proxy</span><span>Restricted Nox module</span></div>
+            <button className="primary-action" onClick={safeProps.connected ? safeProps.onCreateSafe : safeProps.onConnect} disabled={discoveringSafe || Boolean(safeProps.busy)}>
+              {discoveringSafe || safeProps.busy === 'safe-create' ? <LoaderCircle className="spin" size={18} /> : <Plus size={18} />}
+              {discoveringSafe ? 'Checking registry…' : safeProps.busy === 'safe-create' ? 'Creating Safe…' : safeProps.connected ? 'Create my Safe' : 'Connect wallet'}
+            </button>
+          </section>
+          <SharedAccessPanel busy={safeProps.busy} connected={safeProps.connected} entries={safeProps.safeSharedEntries} initialHolder={sharedHolder} onCheck={safeProps.onCheckShared} onConnect={safeProps.onConnect} onHolderCommitted={commitSharedHolder} onReveal={safeProps.onRevealShared} tokens={safeProps.tokens} variant="safe" />
+        </div>
+      ) : (
       <div className="workflow-shell safe-workflow-shell">
         <section className="safe-custody-panel" aria-label="Safe confidential balances and funding">
           <div className="safe-custody-heading">
@@ -118,9 +143,10 @@ export default function SafePage({ safeProps }) {
           ))}
         </div>
         <div className="workflow-content" role="tabpanel" id={`safe-panel-${section}`} aria-labelledby={`safe-tab-${section}`} tabIndex="0">
-          <SafeTreasury {...safeProps} view={section} />
+          <SafeTreasury {...safeProps} onSharedHolderCommitted={commitSharedHolder} sharedHolder={sharedHolder} view={section} />
         </div>
       </div>
+      )}
     </main>
   );
 }
