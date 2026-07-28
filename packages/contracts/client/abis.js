@@ -86,6 +86,17 @@ export const SAFE_MODULE_ABI = [
   'event SafeModuleRevoked(address indexed safe,address indexed module)',
 ];
 
+export const SAFE_FACTORY_ABI = [
+  'error AlreadyHasSafe(address owner,address safe)',
+  'function safeOf(address owner) view returns (address)',
+  'function moduleOf(address safe) view returns (address)',
+  'function registeredOwner(address safe) view returns (address)',
+  'function allowedTokens() view returns (address[])',
+  'function createSafe() returns (address safe,address module)',
+  'event NoxSafeCreated(address indexed owner,address indexed safe,address indexed module,uint256 saltNonce)',
+  'event LegacySafeRegistered(address indexed owner,address indexed safe,address indexed module)',
+];
+
 export const SAFE_ABI = [
   'event EnabledModule(address indexed module)',
   'event DisabledModule(address indexed module)',

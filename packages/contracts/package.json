@@ -19,6 +19,7 @@
     "test:safe:unwrap:sepolia": "SAFE_UNWRAP_E2E=true npx --yes node@24 scripts/test-safe-treasury-sepolia.js",
     "deploy:sepolia": "npx --yes node@24 scripts/deploy-sepolia.js",
     "deploy:safe:sepolia": "npx --yes node@24 scripts/deploy-safe-sepolia.js",
+    "deploy:safe:factory:sepolia": "npx --yes node@24 scripts/deploy-safe-factory-sepolia.js",
     "upgrade:safe:sepolia": "npx --yes node@24 scripts/upgrade-safe-composability-sepolia.js",
     "deploy:safe:v6:candidate:sepolia": "npx --yes node@24 scripts/deploy-safe-v6-candidate-sepolia.js",
     "test:safe:v6:candidate:sepolia": "npx --yes node@24 scripts/test-safe-v6-candidate-sepolia.js",
