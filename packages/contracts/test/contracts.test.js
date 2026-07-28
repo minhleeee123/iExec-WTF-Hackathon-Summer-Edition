@@ -62,8 +62,20 @@ test('compiled Safe module exposes only allowlisted Nox treasury operations', ()
   assert.doesNotMatch(moduleSource, /execute\(address|delegatecall\(/i);
 });
 
+test('compiled Safe factory creates one registered treasury per account', () => {
+  const factoryArtifact = artifact('NoxSafeFactory');
+  for (const name of ['createSafe', 'safeOf', 'moduleOf', 'registeredOwner', 'allowedTokens']) {
+    assert(factoryArtifact.abi.some((entry) => entry.type === 'function' && entry.name === name), `${name} missing`);
+  }
+  assert(factoryArtifact.abi.some((entry) => entry.type === 'event' && entry.name === 'NoxSafeCreated'));
+  const factorySource = read('contracts/NoxSafeFactory.sol');
+  assert.match(factorySource, /createProxyWithNonce/);
+  assert.match(factorySource, /new NoxSafeModule/);
+  assert.doesNotMatch(factorySource, /\.delegatecall\s*\(/i);
+});
+
 test('compiled contracts stay below the EVM runtime bytecode limit', () => {
-  for (const name of ['NoxTestToken', 'NoxConfidentialToken', 'NoxSwap', 'NoxLimitOrderBook', 'NoxSafeModule']) {
+  for (const name of ['NoxTestToken', 'NoxConfidentialToken', 'NoxSwap', 'NoxLimitOrderBook', 'NoxSafeModule', 'NoxSafeFactory']) {
     const runtimeBytes = (artifact(name).deployedBytecode.length - 2) / 2;
     assert(runtimeBytes > 0, `${name} must have runtime bytecode`);
     assert(runtimeBytes < 24_576, `${name} exceeds EIP-170: ${runtimeBytes} bytes`);
