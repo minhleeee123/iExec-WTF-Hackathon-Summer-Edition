@@ -104,7 +104,7 @@ const faqs = [
   },
   {
     question: 'What is the difference between my Wallet and Safe Treasury?',
-    answer: 'Wallet and Trade use confidential assets owned by your connected EOA. Safe Treasury uses assets owned by the deployed Safe smart account: your connected wallet signs as a Safe owner, while only the allowlisted Nox module can route supported operations. The browser flow is intentionally limited to the 1-of-1 Sepolia demo Safe.',
+    answer: 'Wallet and Trade use confidential assets owned by your connected EOA. Safe Treasury resolves one registered Safe for the connected account, or lets that account create a threshold-1 Safe and bound Nox module in one transaction. The Safe owns its assets; the connected owner signs, and the module can route only supported operations.',
   },
 ];
 
@@ -132,13 +132,13 @@ export default function LandingPage({ ethPrice }) {
         <div className="landing-terminal" aria-label="Live protocol status">
           <div><span>ROUTER V2</span><strong>{shorten(deployment.contracts.noxSwapRouter, 10, 8)}</strong></div>
           <div><span>ENCRYPTED POOLS</span><strong>3 initialized</strong></div>
-          <div><span>SAFE MODULE</span><strong>{shorten(deployment.safe.module, 10, 8)}</strong></div>
+          <div><span>SAFE FACTORY</span><strong>{shorten(deployment.safe.factory, 10, 8)}</strong></div>
           <div><span>ETH / USD</span><strong>{ethPrice ? `$${ethPrice.toLocaleString()}` : 'Loading'}</strong></div>
         </div>
       </section>
 
       <section className="landing-stats" aria-label="Deployment statistics">
-        <div><strong>14</strong><span>Core + Safe contracts</span></div>
+        <div><strong>15</strong><span>Core + Safe contracts</span></div>
         <div><strong>3</strong><span>Encrypted pools</span></div>
         <div><strong>4</strong><span>ERC-7984 assets</span></div>
         <div><strong>9</strong><span>Live MCP tools</span></div>
@@ -204,7 +204,7 @@ export default function LandingPage({ ethPrice }) {
         <div className="landing-safe-copy">
           <p className="eyebrow">SAFE CUSTODY × NOX CONFIDENTIAL EXECUTION</p>
           <h2 id="safe-composability-title">A separate treasury workspace with an explicit trust boundary.</h2>
-          <p>The connected wallet is the signer, the Safe owns the confidential assets, and the immutable allowlist limits the Nox module to supported routers, wrappers, viewers, operators, and recovery controls.</p>
+          <p>The connected wallet loads or creates its own registered Safe. That Safe owns the confidential assets, while its bound module's immutable allowlist limits execution to supported routers, wrappers, viewers, operators, and recovery controls.</p>
           <Link className="launch-button dark" to="/app/safe">Open Safe Treasury <ArrowRight size={18} /></Link>
         </div>
         <div className="landing-safe-flow" aria-label="Safe Treasury execution model">
@@ -215,6 +215,7 @@ export default function LandingPage({ ethPrice }) {
           <span><LockKeyhole size={19} /><strong>Nox module</strong><small>Routes allowlisted calls only</small></span>
         </div>
         <div className="landing-safe-facts">
+          <span><CheckCircle2 size={16} /> One registered Safe and bound module per owner</span>
           <span><CheckCircle2 size={16} /> Protected swaps with tolerance and deadline</span>
           <span><CheckCircle2 size={16} /> Confidential orders and draft-only Agent</span>
           <span><CheckCircle2 size={16} /> Recoverable unwrap proof finalization</span>

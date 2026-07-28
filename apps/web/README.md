@@ -69,8 +69,8 @@ Vercel.
 - Four faucet/wrap/unwrap asset flows with balance-aware validation.
 - Gateway signature evidence after authorized SDK decryption and measured ETH/USDC execution deviation.
 - Groq strict-schema intent planning with public Chainlink context, local private-balance compilation, and explicit MetaMask review.
-- A dedicated Safe Treasury workspace for the deployed 1-of-1 Safe, with
-  owner-prepared ciphertext ACLs, threshold-authorized module calls, protected
+- A dedicated Safe Treasury workspace that loads or creates one 1-of-1 Safe per
+  connected owner through the deployed factory, with owner-prepared ciphertext ACLs, threshold-authorized module calls, protected
   swaps/unwrap, a separate Safe orderbook, viewer/operator controls, and
   recoverable module revoke/re-enable.
 

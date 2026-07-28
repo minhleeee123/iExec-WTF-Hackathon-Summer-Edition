@@ -23,6 +23,7 @@ const contractRows = [
   ['NoxCompute', deployment.contracts.noxCompute],
   ['Safe Treasury', deployment.safe.address],
   ['Nox Safe Module', deployment.safe.module],
+  ['Per-account Safe Factory', deployment.safe.factory],
   ['Safe Confidential OrderBook', deployment.safe.orderBook],
   ['cUSDC', deployment.contracts.cUSDC],
   ['cETH', deployment.contracts.cETH],
@@ -123,7 +124,7 @@ export default function DocsPage() {
               <li><span>02</span><div><strong>Claim public demo assets.</strong><p>Use the Wallet page faucets for nUSDC, nWETH, nWBTC, or nSOL. Each faucet has a one-hour per-wallet cooldown.</p></div></li>
               <li><span>03</span><div><strong>Wrap into confidential assets.</strong><p>Wrap a public n-asset 1:1 into its c-asset. Wrapping is an on-chain transaction and requires Sepolia ETH.</p></div></li>
               <li><span>04</span><div><strong>Reveal only when you need a private amount.</strong><p>The eye control requests an authorization signature for the current account, network, and encrypted balance handle. This signature is not a transaction.</p></div></li>
-              <li><span>05</span><div><strong>Choose the correct custody workspace.</strong><p>Trade and Wallet operate assets owned by your connected EOA. Safe Treasury operates assets owned by the configured Safe while the connected Safe owner reviews and signs.</p></div></li>
+              <li><span>05</span><div><strong>Choose the correct custody workspace.</strong><p>Trade and Wallet operate assets owned by your connected EOA. Safe Treasury resolves the connected account's registered Safe or offers to create one Safe proxy and bound Nox module in a single transaction.</p></div></li>
               <li><span>06</span><div><strong>Review every write in your wallet.</strong><p>NoxSwap encrypts private terms locally, but MetaMask remains the final authority for swaps, orders, access grants, wrapping, and unwrapping. A persistent progress notice tracks submitted transactions, Sepolia confirmation, Nox processing, and balance refresh without requiring you to scroll.</p></div></li>
             </ol>
           </section>
@@ -176,13 +177,14 @@ export default function DocsPage() {
           <section className="docs-section docs-section-soft" id="safe">
             <p className="eyebrow">06 / SAFE TREASURY</p>
             <h2>Safe custody controls settlement; Nox protects the terms.</h2>
-            <p className="docs-lead">The Sepolia demo composes a Safe v1.4.1 smart account with an allowlisted NoxSafeModule. The module cannot execute arbitrary calls or delegatecalls: it can only prepare Nox inputs, route supported swaps and orders, request approved unwraps, manage the router/orderbook operator, grant handle viewers, and revoke itself.</p>
+            <p className="docs-lead">The Sepolia factory maps each connected owner to one Safe v1.4.1 smart account and deploys a bound, allowlisted NoxSafeModule when that owner creates a treasury. The module cannot execute arbitrary calls or delegatecalls: it can only prepare Nox inputs, route supported swaps and orders, request approved unwraps, manage the router/orderbook operator, grant handle viewers, and revoke itself.</p>
             <div className="docs-order-grid">
               <div><span className="docs-index">CUSTODY</span><p>The compact header keeps Safe identity, owner threshold, module status, encrypted balances, reveal, and wrap-to-Safe funding together without a redundant overview screen.</p></div>
               <div><span className="docs-index">OPERATE</span><p>Swap &amp; Unwrap contains protected treasury movement. Orders &amp; Agent combines confidential order creation, reviewable AI drafts, and the complete public Safe orderbook with filters, lifecycle details, and shareable links.</p></div>
               <div><span className="docs-index">CONTROL</span><p>Activity reconstructs confirmed public lifecycle metadata. Access &amp; Security contains viewers, token operators, recovery, and emergency revoke.</p></div>
             </div>
             <div className="docs-rule-list">
+              <div><CheckCircle2 size={18} /><p><strong>Load or create your treasury.</strong> Safe Treasury first resolves the factory mapping for the connected wallet. An existing owner sees only its registered Safe; a wallet without one can create and initialize a threshold-1 Safe plus its bound module atomically.</p></div>
               <div><CheckCircle2 size={18} /><p><strong>Fund the Safe.</strong> The compact Safe Treasury header can wrap public test assets directly to the Safe address. The resulting ERC-7984 balance is owned by the Safe, not by the connected EOA.</p></div>
               <div><CheckCircle2 size={18} /><p><strong>Review fewer, clearer wallet prompts.</strong> The 1-of-1 demo uses Safe prevalidated execution, batches amount/minOut preparation and missing viewer grants, and reuses the session-scoped Nox authorization. Every spending action still requires the Safe transaction confirmation.</p></div>
               <div><CheckCircle2 size={18} /><p><strong>Protect each swap.</strong> The Safe form derives encrypted minOut from the Chainlink reference and a configurable 0.5%–10% tolerance, with 10% recommended for the current test pools. Its public deadline is configurable from 1 minute to 24 hours.</p></div>
@@ -191,14 +193,14 @@ export default function DocsPage() {
               <div><CheckCircle2 size={18} /><p><strong>Coordinate publicly, settle permissionlessly.</strong> Anyone can inspect Safe order status and execute a trigger-ready order or refund an expired one without learning its encrypted amount or minOut. Only a connected Safe owner can cancel an open order through the allowlisted module.</p></div>
               <div><CheckCircle2 size={18} /><p><strong>Reveal Safe order terms on demand.</strong> The Safe owner can batch-grant viewer access for the encrypted amount and minOut in one Safe transaction, then decrypt both values into browser-session state. Existing ACLs are reused, and executors never receive this access.</p></div>
               <div><CheckCircle2 size={18} /><p><strong>Control operators explicitly.</strong> Safe Orders shows the current input-token OrderBook authorization and permits owner revoke or reauthorization. Revocation leaves existing escrow untouched; a later reviewed order transaction can restore the allowlisted operator automatically.</p></div>
-              <div><CheckCircle2 size={18} /><p><strong>Reveal selectively.</strong> The Safe grants the connected owner or an auditor viewer access to a specific Nox handle. Viewer access permits decryption only; it does not grant spend or Safe signing authority.</p></div>
+              <div><CheckCircle2 size={18} /><p><strong>Reveal selectively.</strong> The Safe grants the connected owner or an auditor viewer access to a specific Nox handle. A recipient opens Shared with me using the source Safe address or share link. Viewer access permits decryption only; it does not grant spend or Safe signing authority.</p></div>
               <div><CheckCircle2 size={18} /><p><strong>Exit through a recoverable unwrap.</strong> The Safe can burn a c-asset and release its public n-asset only to itself or an owner. The amount becomes public at finalization. If the Gateway proof is delayed, Safe Activity preserves the request ID for a permissionless retry.</p></div>
               <div><CheckCircle2 size={18} /><p><strong>Audit public lifecycle metadata.</strong> Safe Activity is reconstructed from confirmed Sepolia events. It shows operation type, token/pair, recipient where public, timestamp, and transaction link without decrypting confidential amounts or minOut.</p></div>
               <div><CheckCircle2 size={18} /><p><strong>Receipts remain deliverable.</strong> Confidential assets and refunds return to the Safe, while the non-fungible swap receipt is minted to an approved Safe owner because a standard Safe does not implement the ERC-721 receiver callback.</p></div>
               <div><CheckCircle2 size={18} /><p><strong>Emergency revoke is recoverable.</strong> Revoke removes the module from the Safe linked list without changing owners, threshold, or balances. Safe owners can later review and enable an approved module again.</p></div>
             </div>
             <div className="docs-callout docs-callout-info"><ShieldCheck size={18} /><p><strong>Signer is not custody.</strong> The connected MetaMask account authorizes the Safe transaction, but the Safe address remains the confidential asset and order owner. The module can act only through its immutable operation and token allowlists.</p></div>
-            <div className="docs-callout docs-callout-warning"><ShieldCheck size={18} /><p>The built-in browser transaction flow is intentionally limited to the deployed 1-of-1 demo Safe. A higher-threshold Safe must collect its signatures through the Safe Wallet interface before execution. Direct Safe faucet claims and browser multisig collection are not part of this demo; order execution and expiry are intentionally permissionless.</p></div>
+            <div className="docs-callout docs-callout-warning"><ShieldCheck size={18} /><p>The factory-created browser flow intentionally initializes one owner with threshold 1. The original demo Safe remains registered to its existing owner. A higher-threshold Safe must collect its signatures through the Safe Wallet interface before execution. Direct Safe faucet claims and browser multisig collection are not part of this demo; order execution and expiry are intentionally permissionless.</p></div>
           </section>
 
           <section className="docs-section" id="agent">

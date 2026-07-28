@@ -4,7 +4,7 @@ import { chromium } from 'playwright-core';
 
 const port = 4174;
 const url = `http://127.0.0.1:${port}`;
-const rpcUrl = 'https://eth-sepolia.api.onfinality.io/public';
+const rpcUrl = 'https://ethereum-sepolia-rpc.publicnode.com';
 const testAddress = '0xE412d04DA2A211F7ADC80311CC0FF9F03440B64E';
 let actionableOrderId = null;
 const server = spawn(
@@ -61,6 +61,9 @@ async function installReadOnlyWallet(page, address, { mockRecentClaims = false }
 }
 
 const results = [];
+const capture = (page, options) => process.env.UI_SKIP_SCREENSHOTS === 'true'
+  ? Promise.resolve()
+  : page.screenshot(options);
 const recordConsoleError = (errors) => (message) => {
   if (message.type() !== 'error') return;
   const text = message.text();
@@ -114,7 +117,7 @@ try {
       page.on('console', recordConsoleError(errors));
       await page.goto(url, { waitUntil: 'networkidle' });
       await page.locator('.landing-terminal').waitFor();
-      await page.screenshot({ path: `/tmp/noxswap-${viewport.name}.png`, fullPage: true });
+      await capture(page, { path: `/tmp/noxswap-${viewport.name}.png`, fullPage: true });
       const layout = await page.evaluate(() => ({
         clientWidth: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth,
@@ -158,7 +161,7 @@ try {
         scrollWidth: document.documentElement.scrollWidth,
       }));
       assert(docsLayout.scrollWidth <= docsLayout.clientWidth, `${viewport.name} docs has horizontal overflow`);
-      await page.screenshot({ path: `/tmp/noxswap-docs-${viewport.name}.png`, fullPage: true });
+      await capture(page, { path: `/tmp/noxswap-docs-${viewport.name}.png`, fullPage: true });
 
       await page.goto(url, { waitUntil: 'domcontentloaded' });
       await page.locator('.landing-hero .launch-button').waitFor();
@@ -220,7 +223,7 @@ try {
         scrollWidth: document.documentElement.scrollWidth,
       }));
       assert(agentLayout.scrollWidth <= agentLayout.clientWidth, `${viewport.name} agent view has horizontal overflow`);
-      await page.screenshot({ path: `/tmp/noxswap-agent-${viewport.name}.png`, fullPage: true });
+      await capture(page, { path: `/tmp/noxswap-agent-${viewport.name}.png`, fullPage: true });
 
       await page.getByRole('tab', { name: 'Limit orders' }).click();
       await page.waitForURL(`${url}/app/trade?mode=orders`);
@@ -264,7 +267,7 @@ try {
         scrollWidth: element.scrollWidth,
       }));
       assert(drawerLayout.scrollWidth <= drawerLayout.clientWidth, `${viewport.name} order detail has horizontal overflow`);
-      await page.screenshot({ path: `/tmp/noxswap-order-detail-${viewport.name}.png` });
+      await capture(page, { path: `/tmp/noxswap-order-detail-${viewport.name}.png` });
       await page.keyboard.press('Escape');
       await page.getByRole('dialog', { name: /order \d+ details/i }).waitFor({ state: 'hidden' });
 
@@ -298,7 +301,7 @@ try {
         scrollWidth: document.documentElement.scrollWidth,
       }));
       assert(appLayout.scrollWidth <= appLayout.clientWidth, `${viewport.name} app has horizontal overflow`);
-      await page.screenshot({ path: `/tmp/noxswap-app-${viewport.name}.png`, fullPage: true });
+      await capture(page, { path: `/tmp/noxswap-app-${viewport.name}.png`, fullPage: true });
       results.push({
         viewport: `${viewport.width}x${viewport.height}`,
         ...layout,
@@ -384,8 +387,8 @@ try {
       scrollWidth: document.documentElement.scrollWidth,
     }));
     assert(walletLayout.scrollWidth <= walletLayout.clientWidth, 'connected wallet view has horizontal overflow');
-    await walletPage.screenshot({ path: '/tmp/noxswap-wallet.png', fullPage: true });
-    assert.equal(await walletPage.locator('.workflow-tabs [role="tab"]').count(), 2, 'connected Wallet must preserve only Assets and Auditor access');
+    await capture(walletPage, { path: '/tmp/noxswap-wallet.png', fullPage: true });
+    assert.equal(await walletPage.locator('.workflow-tabs [role="tab"]').count(), 3, 'connected Wallet must expose Assets, Auditor access, and Shared with me');
     await walletPage.getByTestId('desktop-primary-nav').getByRole('link', { name: /Safe Treasury/ }).click();
     await walletPage.waitForURL(`${url}/app/safe`);
     await walletPage.getByRole('heading', { name: 'Safe Treasury', exact: true }).waitFor();
@@ -418,7 +421,7 @@ try {
     assert.equal(await safeSwapTab.getAttribute('aria-selected'), 'true', 'Safe operation tabs must support Home navigation');
     assert.equal(await walletPage.getByLabel('Safe swap oracle tolerance').inputValue(), '1000');
     assert.equal(await walletPage.getByLabel('Safe swap deadline minutes').inputValue(), '20');
-    await walletPage.screenshot({ path: '/tmp/noxswap-safe-swap.png', fullPage: true });
+    await capture(walletPage, { path: '/tmp/noxswap-safe-swap.png', fullPage: true });
     await walletPage.getByRole('tab', { name: 'Unwrap', exact: true }).click();
     await walletPage.getByText('Privacy boundary', { exact: true }).waitFor();
     assert.equal(await walletPage.getByLabel('Safe unwrap token').inputValue(), 'cUSDC');
@@ -456,10 +459,12 @@ try {
     assert.equal(await walletPage.getByLabel('Safe order trigger price').inputValue(), '2500');
     assert.equal(await walletPage.getByLabel('Safe order oracle tolerance').inputValue(), '100');
     assert.equal(await walletPage.getByLabel('Safe order expiry minutes').inputValue(), '360');
-    await walletPage.screenshot({ path: '/tmp/noxswap-safe-orders.png', fullPage: true });
+    await capture(walletPage, { path: '/tmp/noxswap-safe-orders.png', fullPage: true });
     await walletPage.getByRole('tab', { name: 'Access & security' }).click();
     await walletPage.waitForURL(`${url}/app/safe?section=security`);
     await walletPage.getByRole('heading', { name: 'Grant a viewer' }).waitFor();
+    assert.equal(await walletPage.getByRole('heading', { name: 'Shared with me' }).count(), 1, 'Safe security must expose the recipient viewer flow below the grant control');
+    assert.equal(await walletPage.getByLabel('Shared balance holder address').inputValue(), '', 'Safe viewer lookup must not assume another owner Safe');
     assert.equal(await walletPage.locator('.safe-operator-group button').count(), 4, 'Safe security must expose router operator controls for every supported treasury asset');
     await walletPage.getByRole('button', { name: 'Revoke module' }).waitFor();
     const safeLayout = await walletPage.evaluate(() => ({
@@ -467,7 +472,7 @@ try {
       scrollWidth: document.documentElement.scrollWidth,
     }));
     assert(safeLayout.scrollWidth <= safeLayout.clientWidth, 'Safe treasury view has horizontal overflow');
-    await walletPage.screenshot({ path: '/tmp/noxswap-safe-treasury.png', fullPage: true });
+    await capture(walletPage, { path: '/tmp/noxswap-safe-treasury.png', fullPage: true });
     await walletPage.getByRole('tab', { name: 'Swap & unwrap' }).click();
     await walletPage.waitForURL(`${url}/app/safe`);
     await walletPage.setViewportSize({ width: 390, height: 844 });
@@ -476,14 +481,14 @@ try {
       scrollWidth: document.documentElement.scrollWidth,
     }));
     assert(safeMobileLayout.scrollWidth <= safeMobileLayout.clientWidth, 'Mobile Safe treasury view has horizontal overflow');
-    await walletPage.screenshot({ path: '/tmp/noxswap-safe-treasury-mobile.png', fullPage: true });
+    await capture(walletPage, { path: '/tmp/noxswap-safe-treasury-mobile.png', fullPage: true });
     await walletPage.setViewportSize({ width: 1280, height: 900 });
     await walletPage.goto(`${url}/app/trade?mode=orders&order=${actionableOrderId}`, { waitUntil: 'domcontentloaded' });
     await walletPage.getByRole('dialog', { name: `Order ${actionableOrderId} details` }).waitFor({ timeout: 30_000 });
     await walletPage.getByRole('button', { name: /^(Authorize OrderBook|Revoke OrderBook authorization)$/ }).first().waitFor({ timeout: 30_000 });
     await walletPage.getByRole('button', { name: 'Reveal my order terms' }).waitFor({ timeout: 30_000 });
     await walletPage.getByRole('button', { name: 'Cancel order' }).waitFor();
-    await walletPage.screenshot({ path: '/tmp/noxswap-order-owner.png' });
+    await capture(walletPage, { path: '/tmp/noxswap-order-owner.png' });
     assert.equal(walletErrors.length, 0, `wallet runtime errors: ${walletErrors.join('; ')}`);
     results.push({
       viewport: '1280x900-wallet',
@@ -516,8 +521,13 @@ try {
     await executorPage.getByRole('dialog', { name: `Order ${actionableOrderId} details` }).waitFor({ timeout: 30_000 });
     assert.equal(await executorPage.getByRole('button', { name: 'Cancel order' }).count(), 0, 'non-owner must not see cancel');
     assert.equal(await executorPage.getByRole('button', { name: 'Reveal my order terms' }).count(), 0, 'non-owner must not see reveal');
-    await executorPage.screenshot({ path: '/tmp/noxswap-order-executor.png' });
-    results.push({ viewport: '1280x900-non-owner', ownerControlsHidden: true, screenshot: '/tmp/noxswap-order-executor.png' });
+    await capture(executorPage, { path: '/tmp/noxswap-order-executor.png' });
+    await executorPage.goto(`${url}/app/safe`, { waitUntil: 'domcontentloaded' });
+    await executorPage.getByRole('heading', { name: 'Create your Safe' }).waitFor({ timeout: 30_000 });
+    assert.equal(await executorPage.getByRole('button', { name: 'Create my Safe' }).count(), 1, 'an account without a Safe must receive an explicit creation action');
+    assert.equal(await executorPage.getByRole('heading', { name: 'Shared with me' }).count(), 1, 'an account without its own Safe must retain shared-Safe lookup');
+    assert.equal(await executorPage.locator('.safe-custody-panel').count(), 0, 'an account without a Safe must not inherit the legacy demo treasury');
+    results.push({ viewport: '1280x900-non-owner', ownerControlsHidden: true, safeCreationAvailable: true, sharedSafeLookupAvailable: true, screenshot: '/tmp/noxswap-order-executor.png' });
     await executorPage.close();
   } finally {
     await browser.close();
