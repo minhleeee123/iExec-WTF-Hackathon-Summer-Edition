@@ -105,6 +105,30 @@ const targets = [
     ],
     requireExactMetadata: false,
   },
+  {
+    label: 'Per-account Safe factory',
+    contractName: 'NoxSafeFactory',
+    address: deployment.contracts.noxSafeFactory,
+    transactionHash: deployment.deploymentTransactions.noxSafeFactory,
+    constructorTypes: ['address', 'address', 'address', 'address', 'address', 'address[]', 'address', 'address', 'address'],
+    constructorArgs: [
+      deployment.safe.singleton,
+      deployment.safe.proxyFactory,
+      deployment.contracts.noxSwapRouter,
+      deployment.safe.orderBook,
+      deployment.contracts.noxCompute,
+      [
+        deployment.contracts.cUSDC,
+        deployment.contracts.cETH,
+        deployment.contracts.cWBTC,
+        deployment.contracts.cSOL,
+      ],
+      deployment.safe.owner,
+      deployment.safe.address,
+      deployment.safe.module,
+    ],
+    requireExactMetadata: true,
+  },
 ];
 
 const network = await provider.getNetwork();

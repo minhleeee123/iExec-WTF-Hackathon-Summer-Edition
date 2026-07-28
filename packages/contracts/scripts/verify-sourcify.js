@@ -25,6 +25,7 @@ const targets = [
     deployment.safe.module,
     deployment.deploymentTransactions[`noxSafeModuleV${deployment.safe.moduleVersion}`],
   ],
+  ['NoxSafeFactory', deployment.contracts.noxSafeFactory, deployment.deploymentTransactions.noxSafeFactory],
 ];
 
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
