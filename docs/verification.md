@@ -4,13 +4,17 @@ Date: 2026-07-29
 
 Production frontend: [https://noxswap-iexec.vercel.app](https://noxswap-iexec.vercel.app)
 
-Current public frontend deployment: `dpl_CpRhxkjMkxmXHyybyTzum7ksBfeo`.
-The canonical Sepolia backend and frontend use Safe Module V6. A production
-browser smoke test loaded 50 real Safe Activity rows with the module enabled,
-reported no runtime errors, and made no rejected archive-history request to the
-PublicNode read RPC. On 2026-07-27, the project owner also completed the manual
-Safe V6 test suite against the production flow, confirmed that every exercised
-check passed, and reported a clearly faster experience than V5.
+Current public frontend deployment: `dpl_6CigmnouWQWVcnPWLe6gSYfmrwBr`.
+The canonical Sepolia backend and frontend use Safe Module V6. On 2026-07-29,
+the per-account Safe frontend was assigned to the canonical production alias.
+Direct production smoke checks confirmed the root, Docs, Safe route, factory
+address, legacy-owner custody state, missing-owner create state, and separate
+Grant/Shared viewer controls without runtime errors. The earlier production
+browser smoke loaded 50 real Safe Activity rows with the module enabled and made
+no rejected archive-history request to the PublicNode read RPC. On 2026-07-27,
+the project owner also completed the manual Safe V6 test suite against the
+production flow, confirmed that every exercised check passed, and reported a
+clearly faster experience than V5.
 
 ## Hello World onboarding verification
 
