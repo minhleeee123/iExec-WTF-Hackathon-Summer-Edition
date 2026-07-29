@@ -79,7 +79,7 @@ try {
   const browser = await chromium.launch({
     executablePath: '/usr/bin/google-chrome',
     headless: true,
-    args: ['--no-sandbox'],
+    args: ['--no-sandbox', '--disable-gpu'],
   });
   try {
     for (const viewport of [
@@ -138,6 +138,8 @@ try {
       assert.equal(await page.locator('.capability-row').count(), 5, 'landing must expose all five product workflows');
       assert.equal(await page.locator('.landing-safe-flow > span').count(), 3, 'landing must explain the Safe signer, custody, and module boundary');
       assert.equal(await page.getByRole('link', { name: /Open Safe Treasury/i }).count() >= 1, true, 'landing must link directly to Safe Treasury');
+      assert.match(await page.locator('#safe-treasury').textContent(), /no shared global treasury address/i, 'landing must explain that Safe custody is per owner');
+      assert.match(await page.getByRole('link', { name: /Safe factory/i }).getAttribute('href'), /0xdDB5C64eAa1c69426ad7bed8b98aE9F79B652B36/i, 'landing footer must link to the per-account Safe factory');
       const launchTargets = await page.getByRole('link', { name: /^Launch app/i }).evaluateAll((links) => links.map((link) => new URL(link.href).pathname));
       assert(launchTargets.length >= 2 && launchTargets.every((target) => target === '/app/wallet'), 'all generic landing launch actions must start in Wallet');
       assert.equal(await page.locator('.privacy-matrix > div').count(), 2, 'landing must explain public and encrypted data');
@@ -151,11 +153,14 @@ try {
       assert.equal(await page.locator('.docs-toc a').count(), 9, 'docs must expose all canonical sections');
       assert.equal(await page.locator('#safe .docs-order-grid > div').count(), 3, 'docs must map all Safe workspace responsibilities');
       assert.match(await page.locator('#safe').textContent(), /Signer is not custody/i);
+      assert.match(await page.locator('#safe').textContent(), /These are verification instances, not addresses shared by other owners/i);
+      assert.match(await page.locator('#contracts').textContent(), /Registered legacy demo Safe/i, 'docs must not present the legacy Safe as a global treasury');
+      assert.match(await page.locator('#contracts').textContent(), /Per-account Safe Factory/i);
       assert.equal(await page.getByRole('link', { name: /Open Safe Treasury/i }).count(), 1, 'docs must link directly to Safe Treasury');
       assert.equal(await page.getByRole('link', { name: 'Open the app' }).getAttribute('href'), '/app/wallet', 'docs entry action must start in Wallet');
       assert.equal(await page.getByRole('link', { name: /Launch NoxSwap/i }).getAttribute('href'), '/app/wallet', 'docs final launch action must start in Wallet');
       await page.locator('.docs-toc a[href="#safe"]').click();
-      await page.waitForFunction(() => document.querySelector('.docs-toc a[href="#safe"]')?.classList.contains('active'));
+      assert(await page.locator('.docs-toc a[href="#safe"]').evaluate((link) => link.classList.contains('active')), 'docs TOC must update immediately after anchor selection');
       const docsLayout = await page.evaluate(() => ({
         clientWidth: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth,
@@ -163,10 +168,7 @@ try {
       assert(docsLayout.scrollWidth <= docsLayout.clientWidth, `${viewport.name} docs has horizontal overflow`);
       await capture(page, { path: `/tmp/noxswap-docs-${viewport.name}.png`, fullPage: true });
 
-      await page.goto(url, { waitUntil: 'domcontentloaded' });
-      await page.locator('.landing-hero .launch-button').waitFor();
-      await page.locator('.landing-hero .launch-button').click();
-      await page.waitForURL(`${url}/app/wallet`);
+      await page.goto(`${url}/app/wallet`, { waitUntil: 'domcontentloaded' });
       await page.locator('.page-heading h1').filter({ hasText: 'Wallet' }).waitFor();
       assert.equal(await page.title(), 'Wallet | NoxSwap');
       const getNav = () => page.getByTestId(viewport.width <= 900 ? 'mobile-primary-nav' : 'desktop-primary-nav');

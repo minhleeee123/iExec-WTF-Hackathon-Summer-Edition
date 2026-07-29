@@ -21,9 +21,9 @@ const contractRows = [
   ['NoxSwap Router V2', deployment.contracts.noxSwapRouter],
   ['Confidential OrderBook', deployment.contracts.limitOrderBook],
   ['NoxCompute', deployment.contracts.noxCompute],
-  ['Safe Treasury', deployment.safe.address],
-  ['Nox Safe Module', deployment.safe.module],
-  ['Per-account Safe Factory', deployment.safe.factory],
+  ['Per-account Safe Factory (create / resolve)', deployment.safe.factory],
+  ['Registered legacy demo Safe', deployment.safe.address],
+  ['Legacy demo Safe Module V6', deployment.safe.module],
   ['Safe Confidential OrderBook', deployment.safe.orderBook],
   ['cUSDC', deployment.contracts.cUSDC],
   ['cETH', deployment.contracts.cETH],
@@ -54,6 +54,15 @@ function ContractAddress({ address }) {
 
 export default function DocsPage() {
   const [activeSection, setActiveSection] = useState('quickstart');
+
+  const selectSection = (event, id) => {
+    event.preventDefault();
+    const section = document.getElementById(id);
+    if (!section) return;
+    window.history.pushState(null, '', `#${id}`);
+    section.scrollIntoView({ behavior: 'instant', block: 'start' });
+    setActiveSection(id);
+  };
 
   useEffect(() => {
     const updateActiveSection = () => {
@@ -110,7 +119,7 @@ export default function DocsPage() {
         <aside className="docs-toc" aria-label="Documentation sections">
           <p className="eyebrow">ON THIS PAGE</p>
           {tocItems.map(([id, label]) => (
-            <a className={activeSection === id ? 'active' : ''} href={`#${id}`} onClick={() => setActiveSection(id)} aria-current={activeSection === id ? 'location' : undefined} key={id}>{label}</a>
+            <a className={activeSection === id ? 'active' : ''} href={`#${id}`} onClick={(event) => selectSection(event, id)} aria-current={activeSection === id ? 'location' : undefined} key={id}>{label}</a>
           ))}
         </aside>
 
@@ -124,7 +133,7 @@ export default function DocsPage() {
               <li><span>02</span><div><strong>Claim public demo assets.</strong><p>Use the Wallet page faucets for nUSDC, nWETH, nWBTC, or nSOL. Each faucet has a one-hour per-wallet cooldown.</p></div></li>
               <li><span>03</span><div><strong>Wrap into confidential assets.</strong><p>Wrap a public n-asset 1:1 into its c-asset. Wrapping is an on-chain transaction and requires Sepolia ETH.</p></div></li>
               <li><span>04</span><div><strong>Reveal only when you need a private amount.</strong><p>The eye control requests an authorization signature for the current account, network, and encrypted balance handle. This signature is not a transaction.</p></div></li>
-              <li><span>05</span><div><strong>Choose the correct custody workspace.</strong><p>Trade and Wallet operate assets owned by your connected EOA. Safe Treasury resolves the connected account's registered Safe or offers to create one Safe proxy and bound Nox module in a single transaction.</p></div></li>
+              <li><span>05</span><div><strong>Choose the correct custody workspace.</strong><p>Trade and Wallet operate assets owned by your connected EOA. Safe Treasury has no shared global treasury: it resolves the connected account's registered Safe or offers to create one Safe proxy and bound Nox module in a single transaction.</p></div></li>
               <li><span>06</span><div><strong>Review every write in your wallet.</strong><p>NoxSwap encrypts private terms locally, but MetaMask remains the final authority for swaps, orders, access grants, wrapping, and unwrapping. A persistent progress notice tracks submitted transactions, Sepolia confirmation, Nox processing, and balance refresh without requiring you to scroll.</p></div></li>
             </ol>
           </section>
@@ -177,7 +186,7 @@ export default function DocsPage() {
           <section className="docs-section docs-section-soft" id="safe">
             <p className="eyebrow">06 / SAFE TREASURY</p>
             <h2>Safe custody controls settlement; Nox protects the terms.</h2>
-            <p className="docs-lead">The Sepolia factory maps each connected owner to one Safe v1.4.1 smart account and deploys a bound, allowlisted NoxSafeModule when that owner creates a treasury. The module cannot execute arbitrary calls or delegatecalls: it can only prepare Nox inputs, route supported swaps and orders, request approved unwraps, manage the router/orderbook operator, grant handle viewers, and revoke itself.</p>
+            <p className="docs-lead">The canonical Sepolia entry point is the per-account factory, not one shared Safe address. It maps each connected owner to one separate Safe v1.4.1 smart account and deploys a separate bound, allowlisted NoxSafeModule when that owner creates a treasury. The module cannot execute arbitrary calls or delegatecalls: it can only prepare Nox inputs, route supported swaps and orders, request approved unwraps, manage the router/orderbook operator, grant handle viewers, and revoke itself.</p>
             <div className="docs-order-grid">
               <div><span className="docs-index">CUSTODY</span><p>The compact header keeps Safe identity, owner threshold, module status, encrypted balances, reveal, and wrap-to-Safe funding together without a redundant overview screen.</p></div>
               <div><span className="docs-index">OPERATE</span><p>Swap &amp; Unwrap contains protected treasury movement. Orders &amp; Agent combines confidential order creation, reviewable AI drafts, and the complete public Safe orderbook with filters, lifecycle details, and shareable links.</p></div>
@@ -200,6 +209,7 @@ export default function DocsPage() {
               <div><CheckCircle2 size={18} /><p><strong>Emergency revoke is recoverable.</strong> Revoke removes the module from the Safe linked list without changing owners, threshold, or balances. Safe owners can later review and enable an approved module again.</p></div>
             </div>
             <div className="docs-callout docs-callout-info"><ShieldCheck size={18} /><p><strong>Signer is not custody.</strong> The connected MetaMask account authorizes the Safe transaction, but the Safe address remains the confidential asset and order owner. The module can act only through its immutable operation and token allowlists.</p></div>
+            <div className="docs-callout docs-callout-info"><CheckCircle2 size={18} /><p><strong>Fresh-owner Sepolia proof.</strong> The latest isolated lifecycle created <a href="https://sepolia.etherscan.io/address/0x961Ec2DAD6260748Be7F5C170c82E2a227BBF499" target="_blank" rel="noreferrer">Safe 0x961E…F499</a> with bound <a href="https://sepolia.etherscan.io/address/0x65E2b55aB4425eC78e7541B81C1C661C7473C178" target="_blank" rel="noreferrer">module 0x65E2…C178</a> and passed all 22 submitted transactions. These are verification instances, not addresses shared by other owners.</p></div>
             <div className="docs-callout docs-callout-warning"><ShieldCheck size={18} /><p>The factory-created browser flow intentionally initializes one owner with threshold 1. The original demo Safe remains registered to its existing owner. A higher-threshold Safe must collect its signatures through the Safe Wallet interface before execution. Direct Safe faucet claims and browser multisig collection are not part of this demo; order execution and expiry are intentionally permissionless.</p></div>
           </section>
 
@@ -228,7 +238,7 @@ export default function DocsPage() {
           <section className="docs-section docs-section-dark" id="contracts">
             <p className="eyebrow">09 / CONTRACTS</p>
             <h2>Live deployment references.</h2>
-            <p className="docs-lead">These addresses are the canonical NoxSwap Sepolia deployment used by the frontend. Every link opens the public Sepolia explorer.</p>
+            <p className="docs-lead">The factory is the canonical entry point for new per-owner treasuries. The Safe and module rows are explicitly labeled legacy because the generated deployment snapshot retains them for registered-demo compatibility; newly created owners receive different Safe and module addresses. Every link opens the public Sepolia explorer.</p>
             <div className="docs-contract-table" role="table" aria-label="NoxSwap Sepolia contracts">
               {contractRows.map(([label, address]) => <div className="docs-contract-row" role="row" key={label}><strong role="cell">{label}</strong><ContractAddress address={address} /></div>)}
             </div>

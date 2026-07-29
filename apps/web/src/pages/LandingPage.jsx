@@ -37,7 +37,7 @@ const capabilities = [
     icon: ShieldCheck,
     number: '05',
     title: 'Safe Treasury',
-    text: 'Keep confidential assets in Safe custody while an allowlisted Nox module routes reviewed operations and a public orderbook enables permissionless settlement without revealing private terms.',
+    text: 'Create or load one Safe per connected owner, then route reviewed confidential operations through that Safe’s bound, allowlisted Nox module.',
     to: '/app/safe',
   },
 ];
@@ -47,7 +47,7 @@ const onboardingSteps = [
   { icon: Coins, title: 'Fund test assets', text: 'Claim public nUSDC, nWETH, nWBTC, or nSOL from the demo faucets. Claims have a one-hour cooldown.' },
   { icon: LockKeyhole, title: 'Wrap into c-assets', text: 'Wrap n-assets 1:1 into ERC-7984 c-assets whose balances are represented by encrypted handles.' },
   { icon: FileKey2, title: 'Open private balances', text: 'Sign the Nox Gateway authorization once per current session and balance handle. No transaction or gas is required.' },
-  { icon: Workflow, title: 'Choose the custody flow', text: 'Trade from your personal wallet or open Safe Treasury for smart-account-owned swaps, orders, permissionless settlement, unwraps, and access controls.' },
+  { icon: Workflow, title: 'Choose the custody flow', text: 'Trade from your personal wallet, or let Safe Treasury resolve your registered Safe and create one with a bound module if none exists.' },
 ];
 
 const publicData = [
@@ -104,7 +104,7 @@ const faqs = [
   },
   {
     question: 'What is the difference between my Wallet and Safe Treasury?',
-    answer: 'Wallet and Trade use confidential assets owned by your connected EOA. Safe Treasury resolves one registered Safe for the connected account, or lets that account create a threshold-1 Safe and bound Nox module in one transaction. The Safe owns its assets; the connected owner signs, and the module can route only supported operations.',
+    answer: 'Wallet and Trade use confidential assets owned by your connected EOA. Safe Treasury does not use one global Safe: the factory resolves one registered Safe for the connected account, or lets that account create a threshold-1 Safe and bound Nox module in one transaction. That Safe owns its assets; the connected owner signs, and its module can route only supported operations.',
   },
 ];
 
@@ -204,7 +204,7 @@ export default function LandingPage({ ethPrice }) {
         <div className="landing-safe-copy">
           <p className="eyebrow">SAFE CUSTODY × NOX CONFIDENTIAL EXECUTION</p>
           <h2 id="safe-composability-title">A separate treasury workspace with an explicit trust boundary.</h2>
-          <p>The connected wallet loads or creates its own registered Safe. That Safe owns the confidential assets, while its bound module's immutable allowlist limits execution to supported routers, wrappers, viewers, operators, and recovery controls.</p>
+          <p>The deployed factory maps each connected owner to a separate Safe and creates a separate bound module when none exists. There is no shared global treasury address: the resolved Safe owns that account’s confidential assets, while its module’s immutable allowlist limits execution to supported routers, wrappers, viewers, operators, and recovery controls.</p>
           <Link className="launch-button dark" to="/app/safe">Open Safe Treasury <ArrowRight size={18} /></Link>
         </div>
         <div className="landing-safe-flow" aria-label="Safe Treasury execution model">
@@ -215,11 +215,11 @@ export default function LandingPage({ ethPrice }) {
           <span><LockKeyhole size={19} /><strong>Nox module</strong><small>Routes allowlisted calls only</small></span>
         </div>
         <div className="landing-safe-facts">
-          <span><CheckCircle2 size={16} /> One registered Safe and bound module per owner</span>
+          <span><CheckCircle2 size={16} /> One separate registered Safe and bound module per owner</span>
           <span><CheckCircle2 size={16} /> Protected swaps with tolerance and deadline</span>
           <span><CheckCircle2 size={16} /> Confidential orders and draft-only Agent</span>
           <span><CheckCircle2 size={16} /> Recoverable unwrap proof finalization</span>
-          <span><CheckCircle2 size={16} /> Event-derived activity and emergency recovery</span>
+          <span><CheckCircle2 size={16} /> Fresh-owner lifecycle verified across 22 Sepolia transactions</span>
         </div>
       </section>
 
