@@ -13,7 +13,7 @@
   checks, the project owner's complete manual production test suite, and a
   fresh-owner full Safe lifecycle.
 - Awaiting approval from: None.
-- Last updated: 2026-07-29T05:49:35+07:00
+- Last updated: 2026-07-29T12:01:14+07:00
 
 Allowed phase statuses: `Todo`, `In progress`, `Waiting for approval`, `Blocked`, `Completed`, `Skipped`.
 
@@ -63,6 +63,7 @@ Allowed phase statuses: `Todo`, `In progress`, `Waiting for approval`, `Blocked`
 | Viewer recipient surfaces | Completed | Codex implementation | 2026-07-29 | Added separate `Shared with me` recipient surfaces in Wallet and Safe Treasury below the owner grant control; both recheck the current handle/ACL before session-only reveal and preserve owner-spend boundaries. |
 | Per-account Safe Treasury | Completed | Codex verification | 2026-07-29 | Factory `0xdDB5...2B36`, frontend discovery/create flow, exact Sourcify verification, live canary creation, full release checks, and production deployment `dpl_EKKN5G5ZvZLGwHBSp7kbTRrWV4uU` are complete. Canonical smoke verified the legacy-owner, missing-owner, and separate Grant/Shared viewer states without runtime errors. |
 | Fresh-owner full Safe lifecycle | Completed | Codex verification | 2026-07-29T05:49:35+07:00 | An isolated in-memory owner created Safe `0x961E...F499` and passed all 22 live transactions covering funding, wrap, owner/external viewer decryption, V6 swap, order create/reveal/cancel, unwrap, operator controls, module revoke/re-enable, and ETH recovery. Production then resolved the Safe and rendered all 23 Activity rows without browser errors. |
+| Per-account Safe content audit | Completed | Codex verification | 2026-07-29T11:51:30+07:00 | Landing, public Docs, README, design system, threat model, verification record, important notes, and workspace READMEs now identify factory `0xdDB5...2B36` as the shared entry point, distinguish the registered legacy Safe from fresh per-owner instances, and record `0x961E...F499` only as E2E evidence. |
 | Final submission | Pending |  |  |  |
 
 ## 5. Blockers and Open Questions
@@ -103,7 +104,9 @@ Allowed phase statuses: `Todo`, `In progress`, `Waiting for approval`, `Blocked`
 - [x] Groq Strategy Agent, the nine-tool MCP v4 adapter, and the fail-open keeper observer have unit, responsive, and live-provider evidence without granting AI transaction authority.
 - [x] The server-side Groq secret is configured on Vercel; public planner/observer endpoints and `/app/trade?mode=agent` pass production smoke tests.
 - [x] The production frontend is deployed and public read-only smoke tests pass at `https://noxswap-iexec.vercel.app`.
-- [x] Safe v1.4.1 treasury, allowlisted Nox module, private swap, selective viewer, module revoke/re-enable, and confidential order create/cancel have live Sepolia evidence.
+- [x] The registered legacy Safe v1.4.1/module and a fresh factory-created
+  Safe/bound-module pair have live Sepolia evidence for private swap, selective
+  viewer, module revoke/re-enable, and confidential order create/cancel.
 - [x] Safe swap tolerance/deadline, on-chain Activity, draft-only Strategy Agent, and recoverable Safe unwrap have unit, responsive, contract, and live Sepolia evidence.
 - [x] Safe Treasury is a first-level desktop/mobile workspace with a compact custody header and four URL-addressable sections; Wallet, Trade, Activity, Landing, and Docs retain their previous content and pass responsive regression.
 - [x] Safe Module V6 validates owner-bound, module-targeted Nox proofs inside one threshold-approved Safe transaction, prevents handle reuse through its combined entry points, preserves the V5 fallback path in the client, passed a live one-transaction Sepolia swap before V5 was disabled, and passed the project owner's complete manual production test suite.

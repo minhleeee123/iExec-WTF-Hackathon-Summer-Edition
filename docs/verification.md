@@ -14,7 +14,10 @@ smoke resolved its newly created Safe, confirmed the owner and enabled module,
 and loaded all 23 indexed Safe Activity rows without browser errors. On
 2026-07-27, the project owner also completed the manual Safe V6 test suite
 against the production flow, confirmed that every exercised check passed, and
-reported a clearly faster experience than V5.
+reported a clearly faster experience than V5. A subsequent content audit
+confirmed that the landing page, footer, public Docs, repository documentation,
+and threat model identify the factory as the shared entry point and label fixed
+Safe/module addresses as legacy or verification instances.
 
 ## Hello World onboarding verification
 
@@ -67,8 +70,8 @@ decrypted test value are intentionally excluded from this evidence.
 | Safe Treasury prompt optimization | Module V6 validates owner-bound, module-targeted amount/minOut proofs and settles inside one threshold-approved Safe transaction; its combined entry points prevent input-handle reuse. The client retains its V5 two-step fallback. | PASS, live V6 tx `0xe9c6b7...5aab28c`; 1 transaction and 1,409,986 gas versus V5's 2 transactions and 1,444,219 total gas |
 | Production Safe V6 manual suite | Project-owner execution of the intended production Safe V6 checks | PASS, confirmed by the user on 2026-07-27; every exercised check passed and the V6 flow felt clearly faster than V5 |
 | Production MetaMask happy path | Manual wallet flow on the canonical public URL | PASS, confirmed by the user on 2026-07-25 |
-| Current Safe module state | Read `Safe.isModuleEnabled(Module V6)` and `getModulesPaginated` on Sepolia | PASS on 2026-07-27: V6 `0x8c1754...73e8f5` is enabled, V5 is disabled after the passing runtime test, and the Safe retains its expected sole owner and threshold 1. |
-| Responsive UI | Production build plus 71 frontend unit tests and browser checks at `1440x1000`, `1280x900`, and `390x844`; validates EIP-6963 wallet selection, per-owner Safe discovery/create state, legacy Safe compatibility, shared-Safe lookup, fresh-Safe activity indexing, Safe prevalidated signatures, keyboard tabs, Strategy Agent, orderbooks, owner/non-owner controls, landing/app separation, desktop sidebar, mobile navigation, and API guards. | PASS for unit/build and targeted live browser smoke; the fresh owner loaded 23 production Activity rows without browser errors |
+| Current legacy demo Safe module state | Read `Safe.isModuleEnabled(Module V6)` and `getModulesPaginated` on Sepolia | PASS on 2026-07-27: V6 `0x8c1754...73e8f5` is enabled, V5 is disabled after the passing runtime test, and the registered legacy Safe retains its expected sole owner and threshold 1. Factory-created Safes use their own bound module addresses. |
+| Responsive UI | Production build plus 71 frontend unit tests and browser checks at `1440x1000`, `1280x900`, and `390x844`; validates EIP-6963 wallet selection, per-owner Safe discovery/create state, legacy Safe compatibility, shared-Safe lookup, fresh-Safe activity indexing, Safe prevalidated signatures, keyboard tabs, Strategy Agent, orderbooks, owner/non-owner controls, landing/app separation, desktop sidebar, mobile navigation, and API guards. | PASS for unit/build and targeted live browser smoke; fresh-owner production loaded 23 Activity rows, and isolated landing/Docs checks at `1440x1000` and `390x844` confirmed the factory wording, legacy labels, active TOC, zero page errors, and no horizontal overflow. The combined local browser matrix remains affected by this workspace's unrelated Chrome renderer resource exhaustion. |
 | Public source verification | Sourcify API v2 Standard JSON verification | PASS with exact creation/runtime matches for all thirteen repository verification targets. Safe factory is public as match `42989366`, Safe Module V6 as `42918403`, and the Safe orderbook as `42858243`. |
 | Read-only deployment consistency | `npm run verify:deployment` compares canonical artifacts with Sepolia deployment transactions, constructor arguments, receipts, deployed runtime code, and Sourcify lookup status | PASS for Router V2, Safe Module V6, Safe confidential orderbook, and per-account Safe factory; it performs no verification submission |
 | Accessibility and discovery | Lighthouse against the final production build | PASS, Performance 92, Accessibility 100, Best Practices 100, SEO 100, CLS 0.014; robots and sitemap included |

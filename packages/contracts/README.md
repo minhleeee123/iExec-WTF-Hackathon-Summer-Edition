@@ -13,6 +13,7 @@ npm run test:contracts
 npm run sync:client
 npm run deploy:sepolia --workspace @noxswap/contracts
 npm run test:sepolia --workspace @noxswap/contracts
+npm run test:safe:factory:full:sepolia --workspace @noxswap/contracts
 npm run test:nox --workspace @noxswap/contracts # requires Docker
 npm run verify:deployment
 npm run test:safe:v6:candidate:sepolia --workspace @noxswap/contracts
@@ -28,6 +29,9 @@ snapshot drifts from its canonical source.
 Addresses and deployment transactions in the JSON are canonical. Mutable fields
 such as `safe.moduleEnabled` describe the state captured when the artifact was
 written; clients and audits must read current module/operator state from Sepolia.
+The fixed `safe.address` and `safe.module` fields identify the registered legacy
+demo instance. `safe.factory` is the canonical shared entry point, and each new
+owner receives distinct Safe and bound-module addresses discovered on-chain.
 
 Deployment and write-enabled E2E commands require `PRIVATE_KEY`; an explicit
 `SEPOLIA_RPC_URL` is recommended instead of the public fallback. Copy only the

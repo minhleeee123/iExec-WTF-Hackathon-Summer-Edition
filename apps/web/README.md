@@ -74,6 +74,10 @@ Vercel.
   swaps/unwrap, a separate Safe orderbook, viewer/operator controls, and
   recoverable module revoke/re-enable.
 
+The factory is the shared Safe entry point. `deployment.safe.address` and
+`deployment.safe.module` retain the registered legacy demo instance for
+compatibility; they are not global custody addresses for newly connected owners.
+
 ## Groq configuration
 
 Copy `.env.example` to the ignored `.env.local` and set `GROQ_API_KEY`. The key is

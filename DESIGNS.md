@@ -1,7 +1,7 @@
 # NoxSwap Design System
 
 > Status: Canonical UI/UX reference for the current production interface.
-> Updated: 2026-07-25.
+> Updated: 2026-07-29.
 
 This document defines the visual language, information architecture, interaction
 rules, responsive behavior, and privacy-aware UX conventions used by NoxSwap.
@@ -48,6 +48,12 @@ The canonical navigation order is:
 
 Personal custody and Safe custody must never be merged into one tab. A connected
 EOA signs Safe owner actions, but the Safe owns its balances.
+
+Safe Treasury must resolve the connected owner's registered Safe through the
+per-account factory and offer atomic Safe + bound-module creation only when no
+registration exists. Public product copy and explorer links must point to the
+factory as the shared entry point; never present the registered legacy demo Safe
+or a fresh verification instance as a global treasury address.
 
 ### Safe Treasury sections
 
@@ -219,7 +225,9 @@ delayed.
 Safe interfaces must continuously reinforce:
 
 - The connected wallet is a signer.
-- The Safe owns the assets.
+- Each connected owner resolves or creates a separate registered Safe; there is
+  no shared global Safe treasury.
+- The resolved Safe owns the assets.
 - The Nox module is allowlisted and restricted.
 - Module revoke pauses supported operations without moving balances or changing
   Safe owners.

@@ -60,8 +60,9 @@
 
 ## 8. Safe Composability Validation
 
-- Canonical Sepolia Safe: `0x549585Be4d75b388B4f825E0bCbBaA85B4FbfffF` (Safe v1.4.1, threshold 1).
-- Canonical allowlisted Nox module V6 `0x8c17547b05835b77FeBC5Eb796d4be1a8e73e8f5` and Safe orderbook `0xd8037cb70163eC52aa774f54590BB266ee0d9908` are recorded in `packages/contracts/deployment-sepolia.json`. V5 remains the rollback address but is disabled.
+- Canonical per-account Safe entry point: factory `0xdDB5C64eAa1c69426ad7bed8b98aE9F79B652B36`. It resolves or creates one separate Safe and one separate bound module per owner; there is no global Safe treasury address for new users.
+- Registered legacy demo Safe `0x549585Be4d75b388B4f825E0bCbBaA85B4FbfffF` (Safe v1.4.1, threshold 1), its allowlisted Nox module V6 `0x8c17547b05835b77FeBC5Eb796d4be1a8e73e8f5`, and Safe orderbook `0xd8037cb70163eC52aa774f54590BB266ee0d9908` remain recorded in `packages/contracts/deployment-sepolia.json` for compatibility and historical evidence. V5 remains the rollback address but is disabled.
+- The fresh-owner verification instance created Safe `0x961Ec2DAD6260748Be7F5C170c82E2a227BBF499` with bound module `0x65E2b55aB4425eC78e7541B81C1C661C7473C178`. Its full 22-transaction lifecycle passed; it is evidence of factory behavior, not a shared application treasury.
 - The personal orderbook at `0xab903F78edEAF96faE78c0BF46810122fC9896fb`
   has an exact Sourcify match to repository revision `407d770`; the current
   `NoxLimitOrderBook.sol` is the later Safe-compatible revision and exactly
@@ -103,10 +104,7 @@
 - Live Safe unwrap prepared its ciphertext ACL in `0x5d2e2f4ce6675a6d07e39bf112f071238d0894e2d6065de1107f881545104a57`, created request `0x0000aa36a7230112e2da3a5cacbbb742b709eda9b615a3524b7ad30046cd0857` through Safe transaction `0x9751ef8c8f998a3796183c8f03a6168fabae1541293a495307a7cccecd9f5cf7`, and finalized the exact one-base-unit public release in `0x146b9e2d482b137297b6a3ccb806afcddb8736387e9a3f76915df0473f8cde2e`.
 - Safe Treasury is exposed at `/app/safe` as a first-level workspace. The Wallet tab was removed without removing Wallet Assets or Auditor Access; `/app/wallet?tab=safe` redirects to the new route for compatibility.
 - The Safe workspace intentionally has no Overview section: Safe identity, owner threshold, module/signer state, four encrypted balances, reveal, and funding are consolidated in its compact custody header above Swap & Unwrap, Orders & Agent, Activity, and Access & Security.
-- Optimized frontend deployment `dpl_CpRhxkjMkxmXHyybyTzum7ksBfeo` is READY
-  and aliased to `https://noxswap-iexec.vercel.app`. The final production smoke
-  loaded 50 real Safe Activity rows with V6 enabled, reported no runtime errors,
-  and confirmed that archive history no longer falls through to the PublicNode
-  RPC that rejects those requests. Earlier responsive regression at 1280×900
-  and 390×844 loaded the real Safe orderbook, preserved owner/public authority
-  boundaries and operator controls, and showed no horizontal overflow.
+- Current frontend deployment `dpl_EKKN5G5ZvZLGwHBSp7kbTRrWV4uU` is READY and
+  aliased to `https://noxswap-iexec.vercel.app`. A fresh-owner production smoke
+  resolved Safe `0x961E...F499`, confirmed its bound module and owner state,
+  rendered all 23 indexed Activity rows, and reported no browser errors.

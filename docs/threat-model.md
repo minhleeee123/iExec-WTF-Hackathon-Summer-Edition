@@ -50,10 +50,13 @@ otherwise encrypted values.
 The selected injected wallet controls personal transaction authorization. The
 Safe factory resolves one registered treasury per owner and creates an official
 Safe v1.4.1 proxy plus a Safe-bound restricted module in one transaction when no
-registration exists. The browser Safe path requires the connected address to be
-the discovered Safe's sole owner and executes threshold-1 transactions with a
-prevalidated Safe signature. The frontend holds revealed plaintext only in React
-session state and clears order terms when the account or network changes. A
+registration exists. There is no shared global Safe or module address for
+factory-created users; the deployment snapshot's fixed Safe/module fields retain
+the registered legacy demo instance for compatibility. The browser Safe path
+requires the connected address to be the discovered Safe's sole owner and
+executes threshold-1 transactions with a prevalidated Safe signature. The
+frontend holds revealed plaintext only in React session state and clears order
+terms when the account or network changes. A
 compromised browser, wallet extension, or injected script can observe values after
 the user authorizes decryption.
 

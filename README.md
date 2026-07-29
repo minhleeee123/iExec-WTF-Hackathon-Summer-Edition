@@ -28,11 +28,13 @@ The canonical UI/UX language and review checklist are documented in
 No core product data is mocked: public order state comes from Sepolia events and
 private values are obtained only through Nox-authorized decryption.
 
-The Safe module status is read from Sepolia rather than trusted from the deployment
-snapshot. Module V6 passed its live one-transaction swap at block `11360178` on
-2026-07-27 and is the sole enabled canonical module. On the same date, the project
-owner completed the manual Safe V6 test suite on the production flow, reported
-that every exercised check passed, and found the flow noticeably faster than V5.
+Safe module status is read from Sepolia rather than trusted from the deployment
+snapshot. The registered legacy demo Safe's Module V6 passed its live
+one-transaction swap at block `11360178` on 2026-07-27 and is that Safe's sole
+enabled module. Factory-created owners receive separate Safe and module
+addresses. On the same date, the project owner completed the manual Safe V6 test
+suite on the production flow, reported that every exercised check passed, and
+found the flow noticeably faster than V5.
 This qualitative result is consistent with the measured reduction from two
 post-encryption transactions to one; no controlled Gateway wall-clock benchmark
 is claimed. Owner-controlled module operations are available; permissionless
@@ -48,9 +50,11 @@ User documentation: [https://noxswap-iexec.vercel.app/docs](https://noxswap-iexe
 |---|---|
 | NoxSwap Router V2 and receipt NFT | [`0x6e8d...1015`](https://sepolia.etherscan.io/address/0x6e8df82d708196e75Fb735120B4817f5c2551015) |
 | Confidential limit order book | [`0xab90...96fb`](https://sepolia.etherscan.io/address/0xab903F78edEAF96faE78c0BF46810122fC9896fb) |
-| Safe v1.4.1 treasury | [`0x5495...fffF`](https://sepolia.etherscan.io/address/0x549585Be4d75b388B4f825E0bCbBaA85B4FbfffF) |
-| Allowlisted Nox Safe module V6 | [`0x8c17...e8f5`](https://sepolia.etherscan.io/address/0x8c17547b05835b77FeBC5Eb796d4be1a8e73e8f5) |
 | Per-account Safe factory | [`0xdDB5...2B36`](https://sepolia.etherscan.io/address/0xdDB5C64eAa1c69426ad7bed8b98aE9F79B652B36) |
+| Registered legacy demo Safe v1.4.1 | [`0x5495...fffF`](https://sepolia.etherscan.io/address/0x549585Be4d75b388B4f825E0bCbBaA85B4FbfffF) |
+| Legacy demo Safe's Nox module V6 | [`0x8c17...e8f5`](https://sepolia.etherscan.io/address/0x8c17547b05835b77FeBC5Eb796d4be1a8e73e8f5) |
+| Fresh-owner E2E Safe (verification instance) | [`0x961E...F499`](https://sepolia.etherscan.io/address/0x961Ec2DAD6260748Be7F5C170c82E2a227BBF499) |
+| Fresh E2E Safe's bound module (verification instance) | [`0x65E2...C178`](https://sepolia.etherscan.io/address/0x65E2b55aB4425eC78e7541B81C1C661C7473C178) |
 | Safe confidential order book | [`0xd803...9908`](https://sepolia.etherscan.io/address/0xd8037cb70163eC52aa774f54590BB266ee0d9908) |
 | cUSDC ERC-7984 wrapper | [`0x6932...28fE`](https://sepolia.etherscan.io/address/0x6932075FBfd847E453992A8A1EEefB6C6cb328fE) |
 | cETH ERC-7984 wrapper | [`0x04Dc...D4a4`](https://sepolia.etherscan.io/address/0x04Dc3bebDc4E1dfcB423bB7C38Ed280144B5D4a4) |
@@ -63,6 +67,11 @@ User documentation: [https://noxswap-iexec.vercel.app/docs](https://noxswap-iexe
 | iExec NoxCompute | [`0x24Ef...77bF`](https://sepolia.etherscan.io/address/0x24Ef36Ec5b626D7DCD09a98F3083c2758F0F77bF) |
 
 The three encrypted pools were initialized in transactions [`0xb509...6ae87`](https://sepolia.etherscan.io/tx/0xb50926c8d71c293e5f13b0f79c46d0f4260b5c4a4301c78fbb34eac96f6ae87b), [`0xdd08...3c72`](https://sepolia.etherscan.io/tx/0xdd08e2eff23401b32b682090162f84dff01e06b3639c37a2bf137d495c3c3c72), and [`0xa650...1f5e`](https://sepolia.etherscan.io/tx/0xa650ae996f1faa9c5d1449154a0c378d6f089f505ec5f53700f0a4f620351f5e). Full addresses and transactions are in [`packages/contracts/deployment-sepolia.json`](./packages/contracts/deployment-sepolia.json).
+
+There is no single global Safe address for new users. The factory is the shared
+entry point; each connected owner resolves or creates a different Safe and bound
+module. The two fresh E2E rows above are public proof of that flow, not reusable
+default custody addresses. Their generated owner key was intentionally discarded.
 
 All thirteen NoxSwap deployment targets submitted by the repository verification
 script have exact creation/runtime source matches on Sourcify. Inspect the
