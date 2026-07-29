@@ -4,7 +4,7 @@ Date: 2026-07-29
 
 Production frontend: [https://noxswap-iexec.vercel.app](https://noxswap-iexec.vercel.app)
 
-Current public frontend deployment: `dpl_EKKN5G5ZvZLGwHBSp7kbTRrWV4uU`.
+Current public frontend deployment: `dpl_4Q4dXZCxAvDrUwc57VKHoJpHEdqh`.
 The canonical Sepolia backend and frontend use Safe Module V6. On 2026-07-29,
 the per-account Safe frontend was assigned to the canonical production alias.
 Direct production smoke checks confirmed the root, Docs, Safe route, factory

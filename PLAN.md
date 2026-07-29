@@ -13,7 +13,7 @@
   checks, the project owner's complete manual production test suite, and a
   fresh-owner full Safe lifecycle.
 - Awaiting approval from: None.
-- Last updated: 2026-07-29T12:01:14+07:00
+- Last updated: 2026-07-29T12:03:06+07:00
 
 Allowed phase statuses: `Todo`, `In progress`, `Waiting for approval`, `Blocked`, `Completed`, `Skipped`.
 
@@ -61,7 +61,7 @@ Allowed phase statuses: `Todo`, `In progress`, `Waiting for approval`, `Blocked`
 | Comprehensive performance pass | Completed | Codex verification | 2026-07-27T14:58:00+07:00 | Safe Module V6 reduced the reviewed flow from two transactions to one and reduced total gas by 2.37%; targeted parallel reveal, adaptive retry, pending-result recovery, singleton block-consistent reads, incremental history, and event wakeups passed regression. The constant-handle router candidate increased per-swap gas by 0.84% and was intentionally not promoted. Production deployment `dpl_CpRhxkjMkxmXHyybyTzum7ksBfeo` passed the final archive-history and Safe Activity smoke test. |
 | Safe V6 manual production validation | Completed | User | 2026-07-27T16:43:01+07:00 | The user confirmed that every check in the manual Safe V6 production suite passed and that the flow felt clearly faster than V5. This qualitative result supports the measured one-transaction and 2.37% gas improvements without claiming a controlled Gateway timing benchmark. |
 | Viewer recipient surfaces | Completed | Codex implementation | 2026-07-29 | Added separate `Shared with me` recipient surfaces in Wallet and Safe Treasury below the owner grant control; both recheck the current handle/ACL before session-only reveal and preserve owner-spend boundaries. |
-| Per-account Safe Treasury | Completed | Codex verification | 2026-07-29 | Factory `0xdDB5...2B36`, frontend discovery/create flow, exact Sourcify verification, live canary creation, full release checks, and production deployment `dpl_EKKN5G5ZvZLGwHBSp7kbTRrWV4uU` are complete. Canonical smoke verified the legacy-owner, missing-owner, and separate Grant/Shared viewer states without runtime errors. |
+| Per-account Safe Treasury | Completed | Codex verification | 2026-07-29 | Factory `0xdDB5...2B36`, frontend discovery/create flow, exact Sourcify verification, live canary creation, full release checks, and current production deployment `dpl_4Q4dXZCxAvDrUwc57VKHoJpHEdqh` are complete. Canonical smoke verified the legacy-owner, missing-owner, and separate Grant/Shared viewer states without runtime errors. |
 | Fresh-owner full Safe lifecycle | Completed | Codex verification | 2026-07-29T05:49:35+07:00 | An isolated in-memory owner created Safe `0x961E...F499` and passed all 22 live transactions covering funding, wrap, owner/external viewer decryption, V6 swap, order create/reveal/cancel, unwrap, operator controls, module revoke/re-enable, and ETH recovery. Production then resolved the Safe and rendered all 23 Activity rows without browser errors. |
 | Per-account Safe content audit | Completed | Codex verification | 2026-07-29T11:51:30+07:00 | Landing, public Docs, README, design system, threat model, verification record, important notes, and workspace READMEs now identify factory `0xdDB5...2B36` as the shared entry point, distinguish the registered legacy Safe from fresh per-owner instances, and record `0x961E...F499` only as E2E evidence. |
 | Final submission | Pending |  |  |  |

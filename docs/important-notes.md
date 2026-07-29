@@ -104,7 +104,7 @@
 - Live Safe unwrap prepared its ciphertext ACL in `0x5d2e2f4ce6675a6d07e39bf112f071238d0894e2d6065de1107f881545104a57`, created request `0x0000aa36a7230112e2da3a5cacbbb742b709eda9b615a3524b7ad30046cd0857` through Safe transaction `0x9751ef8c8f998a3796183c8f03a6168fabae1541293a495307a7cccecd9f5cf7`, and finalized the exact one-base-unit public release in `0x146b9e2d482b137297b6a3ccb806afcddb8736387e9a3f76915df0473f8cde2e`.
 - Safe Treasury is exposed at `/app/safe` as a first-level workspace. The Wallet tab was removed without removing Wallet Assets or Auditor Access; `/app/wallet?tab=safe` redirects to the new route for compatibility.
 - The Safe workspace intentionally has no Overview section: Safe identity, owner threshold, module/signer state, four encrypted balances, reveal, and funding are consolidated in its compact custody header above Swap & Unwrap, Orders & Agent, Activity, and Access & Security.
-- Current frontend deployment `dpl_EKKN5G5ZvZLGwHBSp7kbTRrWV4uU` is READY and
+- Current frontend deployment `dpl_4Q4dXZCxAvDrUwc57VKHoJpHEdqh` is READY and
   aliased to `https://noxswap-iexec.vercel.app`. A fresh-owner production smoke
   resolved Safe `0x961E...F499`, confirmed its bound module and owner state,
   rendered all 23 indexed Activity rows, and reported no browser errors.
