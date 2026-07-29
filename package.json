@@ -18,6 +18,7 @@
     "keeper:once": "npm run once --workspace @noxswap/keeper",
     "lint": "npm run lint --workspace @noxswap/web",
     "mcp": "npm run start --workspace @noxswap/mcp-server",
+    "pretest": "npm run compile",
     "sync:client": "npm run sync:client --workspace @noxswap/contracts",
     "test": "npm run test:contracts && npm run test:keeper && npm run test:mcp && npm run test:web",
     "test:contracts": "npm test --workspace @noxswap/contracts",

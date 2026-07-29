@@ -43,9 +43,16 @@ names you need from `.env.example` into an ignored `.env`; never use a valuable
 mainnet key.
 
 `npm run verify:deployment` is a read-only comparison of the canonical artifacts
-with Sepolia deployment transactions and runtime code. `npm run verify:sourcify`
-submits any unverified target for public source verification, so it is an
-external publication action rather than a read-only check.
+with Sepolia deployment transactions and runtime code. The per-account factory
+embeds `NoxSafeModule` creation code, so a clean Hardhat build can change nested
+Solidity metadata when compilation jobs are merged. In that specific case the
+verifier requires Sourcify exact creation/runtime matches plus byte-for-byte
+agreement between the verified compiler input and the current target sources;
+source or compiler-setting drift still fails the command.
+
+`npm run verify:sourcify` submits any unverified target for public source
+verification, so it is an external publication action rather than a read-only
+check.
 
 The Docker-backed Nox runtime suite starts the official local Nox service stack.
 It remains separate from push CI because Docker is not available in every

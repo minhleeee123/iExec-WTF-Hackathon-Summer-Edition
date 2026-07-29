@@ -3,6 +3,11 @@ import path from 'node:path';
 
 import { AbiCoder, JsonRpcProvider, getAddress, keccak256 } from 'ethers';
 
+import {
+  assessSourcifyReproducibility,
+  evaluateTargetVerification,
+} from './lib/deployment-verification.js';
+
 const contractsRoot = path.resolve(import.meta.dirname, '..');
 const deployment = JSON.parse(
   fs.readFileSync(path.join(contractsRoot, 'deployment-sepolia.json'), 'utf8'),
@@ -26,6 +31,15 @@ function loadArtifact(contractName) {
         `${contractName}.sol`,
         `${contractName}.json`,
       ),
+      'utf8',
+    ),
+  );
+}
+
+function loadBuildInfo(artifact) {
+  return JSON.parse(
+    fs.readFileSync(
+      path.join(contractsRoot, 'artifacts', 'build-info', `${artifact.buildInfoId}.json`),
       'utf8',
     ),
   );
@@ -56,6 +70,16 @@ async function sourcifyStatus(address) {
   } catch {
     return 'lookup unavailable';
   }
+}
+
+async function sourcifyDetails(address) {
+  const response = await fetch(
+    `https://sourcify.dev/server/v2/contract/${deployment.chainId}/${address}?fields=all`,
+  );
+  if (!response.ok) {
+    throw new Error(`Sourcify detail lookup returned HTTP ${response.status}.`);
+  }
+  return response.json();
 }
 
 const targets = [
@@ -128,6 +152,7 @@ const targets = [
       deployment.safe.module,
     ],
     requireExactMetadata: true,
+    allowVerifiedSourceFallback: true,
   },
 ];
 
@@ -170,12 +195,39 @@ for (const target of targets) {
     receipt.contractAddress !== null &&
     getAddress(receipt.contractAddress) === getAddress(target.address);
   const runtimePresent = runtimeCode !== '0x';
-  const pass =
-    constructorArgsMatch &&
-    executableCreationMatch &&
-    receiptAddressMatch &&
-    runtimePresent &&
-    (!target.requireExactMetadata || exactCreationMatch);
+  let sourceEvidence;
+  const localRequirementsPass = (
+    constructorArgsMatch
+    && executableCreationMatch
+    && receiptAddressMatch
+    && runtimePresent
+    && (!target.requireExactMetadata || exactCreationMatch)
+  );
+  if (
+    !localRequirementsPass
+    && target.allowVerifiedSourceFallback
+    && verification === 'exact_match'
+  ) {
+    const record = await sourcifyDetails(target.address);
+    sourceEvidence = assessSourcifyReproducibility({
+      record,
+      buildInfo: loadBuildInfo(artifact),
+      artifact,
+      transactionData: transaction.data,
+      runtimeCode,
+    });
+  }
+  const evaluation = evaluateTargetVerification({
+    constructorArgsMatch,
+    executableCreationMatch,
+    exactCreationMatch,
+    receiptAddressMatch,
+    runtimePresent,
+    requireExactMetadata: target.requireExactMetadata,
+    allowVerifiedSourceFallback: target.allowVerifiedSourceFallback,
+    sourceEvidence,
+  });
+  const { pass } = evaluation;
 
   failed ||= !pass;
   console.log(
@@ -192,6 +244,8 @@ for (const target of targets) {
         receiptAddressMatch,
         runtimeCodeHash: runtimePresent ? keccak256(runtimeCode) : null,
         sourcify: verification,
+        verificationBasis: evaluation.verificationBasis,
+        ...(sourceEvidence ?? {}),
       },
       null,
       2,

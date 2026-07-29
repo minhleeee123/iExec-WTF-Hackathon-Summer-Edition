@@ -65,7 +65,7 @@ validation, not a documentation-only review.
 
 ### Validation performed
 
-- 32 contract/protocol tests passed; one Docker-backed Nox runtime suite is
+- 34 contract/protocol tests passed; one Docker-backed Nox runtime suite is
   environment-gated in the local release command and passes in its dedicated
   GitHub Actions workflow.
 - 16 stateless keeper tests passed.

@@ -387,6 +387,11 @@ npm run keeper:dry
 npm run verify:deployment # read-only Sepolia/source consistency check
 ```
 
+The root `npm test` command runs contract compilation through its `pretest`
+lifecycle, so it is safe to invoke directly after `npm ci` in a clean checkout.
+The explicit compile command remains useful when inspecting artifacts or running
+individual workspace tests.
+
 Live tests require a funded Sepolia test wallet. Never commit its private key.
 
 ```bash
