@@ -7,6 +7,9 @@ and can call only `executeOrder` or `expireOrder`. It never decrypts
 confidential terms or cancels owner orders. The configured action cap is shared
 across both books in each polling cycle.
 
+See the repository [deployment guide](../../docs/deployment.md) for the shared
+environment and release workflow.
+
 ## Commands
 
 Run from the repository root:

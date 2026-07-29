@@ -33,7 +33,7 @@
     "verify:sourcify": "npm run verify:sourcify --workspace @noxswap/contracts"
   },
   "engines": {
-    "node": ">=20.19"
+    "node": ">=22.12"
   },
   "license": "MIT"
 }

@@ -19,14 +19,15 @@
     "test:write": "MCP_ALLOW_WRITES=true npx --yes node@24 scripts/test-mcp.js --write"
   },
   "dependencies": {
+    "@hono/node-server": "2.0.12",
     "@iexec-nox/handle": "^0.1.0-beta.13",
-    "@modelcontextprotocol/sdk": "1.29.0",
+    "@modelcontextprotocol/sdk": "1.30.0",
     "@noxswap/contracts": "1.0.0",
     "dotenv": "^17.4.2",
     "ethers": "^6.17.0"
   },
   "engines": {
-    "node": ">=20.19"
+    "node": ">=22.12"
   },
   "license": "MIT"
 }

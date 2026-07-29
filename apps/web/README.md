@@ -5,12 +5,14 @@ workflows on Ethereum Sepolia.
 
 ## Commands
 
+Run from the repository root:
+
 ```bash
-npm install
+npm ci
 npm run dev
 npm run lint
-npm run test:unit
-npm run test:agent:live
+npm run test:web
+npm run test:agent:live --workspace @noxswap/web
 npm run test:ui
 npm run build
 ```
@@ -58,6 +60,10 @@ Safe use bottom navigation. Legacy URLs redirect to the consolidated routes.
 
 `vercel.json` provides the SPA fallback required when a route is opened directly on
 Vercel.
+
+See the repository [deployment guide](../../docs/deployment.md) for the complete
+environment-variable matrix, local production preview, Vercel configuration,
+post-deployment checks, and rollback guidance.
 
 ## Live workflows
 

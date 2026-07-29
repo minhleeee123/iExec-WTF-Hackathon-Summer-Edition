@@ -1,5 +1,9 @@
 # NoxSwap
 
+[![CI](https://github.com/minhleeee123/iExec-WTF-Hackathon-Summer-Edition/actions/workflows/ci.yml/badge.svg)](https://github.com/minhleeee123/iExec-WTF-Hackathon-Summer-Edition/actions/workflows/ci.yml)
+[![Live on Sepolia](https://img.shields.io/badge/live-Ethereum%20Sepolia-8050e8)](https://noxswap-iexec.vercel.app)
+[![License: MIT](https://img.shields.io/badge/license-MIT-111827)](./LICENSE)
+
 NoxSwap is a confidential constant-product swap prototype built with the official iExec Nox Solidity packages and Handle SDK. Inputs, balances, pool reserves, and outputs are represented by Nox `bytes32` handles rather than plaintext token amounts.
 
 The working deployment is on Ethereum Sepolia. It supports four faucet/wrapper
@@ -12,6 +16,24 @@ The current confidentiality boundaries, privileged roles, public metadata, and
 compromise impact are documented in [`docs/threat-model.md`](docs/threat-model.md).
 The canonical UI/UX language and review checklist are documented in
 [`DESIGNS.md`](DESIGNS.md).
+
+![NoxSwap confidential DeFi interface](./apps/web/src/assets/hero.png)
+
+## Quick Local Start
+
+Prerequisites: Git, npm, and Node.js 22.12 or newer. Node.js 24 is recommended
+and used by CI and repository tooling.
+
+```bash
+git clone https://github.com/minhleeee123/iExec-WTF-Hackathon-Summer-Edition.git
+cd iExec-WTF-Hackathon-Summer-Edition
+npm ci
+npm run dev
+```
+
+Open `http://localhost:5173`. Public Sepolia reads work without a wallet or
+secret. Write operations require a supported wallet on Ethereum Sepolia and a
+small amount of test ETH.
 
 ## Judge Quick Start
 
@@ -258,6 +280,18 @@ See [`docs/threat-model.md`](./docs/threat-model.md) for detailed trust
 assumptions and [`docs/verification.md`](./docs/verification.md) for the
 remediation and test record.
 
+## Documentation
+
+| Document | Contents |
+|---|---|
+| [Documentation index](./docs/README.md) | All public project guides |
+| [User guide](./docs/user-guide.md) | Personal swaps, orders, Safe Treasury, viewer access, unwrap, and troubleshooting |
+| [Deployment guide](./docs/deployment.md) | Setup, environment variables, Sepolia workflows, Vercel, keeper/MCP, verification, and rollback |
+| [Threat model](./docs/threat-model.md) | Privacy boundary, public metadata, privileged roles, and compromise impact |
+| [Verification record](./docs/verification.md) | Repeatable tests, live Sepolia evidence, and exact-source checks |
+| [iExec tooling feedback](./feedback.md) | Required implementation-based Nox developer feedback |
+| [Contributing](./CONTRIBUTING.md) | Development checks, change rules, and security reporting |
+
 ## Repository Layout
 
 ```text
@@ -295,10 +329,8 @@ packages/
 
 ## Run the Web Client
 
-Prerequisites: Node.js 20.19 or newer and npm.
-
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
@@ -347,7 +379,7 @@ gas simulation immediately before submission.
 Hardhat 3 and its native EDR dependency require a newer Node runtime than the machine default, so workspace scripts invoke Node 24 through `npx`.
 
 ```bash
-npm install
+npm ci
 npm run compile
 npm test
 npm run test:nox # requires Docker
@@ -428,12 +460,14 @@ Write tools are disabled by default; enabling them requires both `PRIVATE_KEY` a
 
 ## Redeploy
 
-```bash
-npm run compile
-PRIVATE_KEY="YOUR_TEST_WALLET_PRIVATE_KEY" npm run deploy:sepolia
-```
+The current contract script is an extension deployment that requires the
+existing deployment owner. It reuses the original nUSDC/nWETH wrappers, deploys
+the four-token Router V2 graph, initializes all three encrypted pools, and
+synchronizes the canonical web snapshots.
 
-The current script is an extension deployment: it reuses the original nUSDC/nWETH wrappers, deploys nWBTC/nSOL, four-token Router V2 and the limit-order book, initializes all three encrypted pools, and synchronizes the canonical contracts artifact with the committed web snapshot. It requires the existing deployment owner.
+Read the [deployment guide](./docs/deployment.md) before any external write. It
+covers environment variables, Sepolia owner checks, client artifact
+synchronization, Vercel deployment, post-deployment verification, and rollback.
 
 ## License
 

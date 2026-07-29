@@ -10,7 +10,8 @@ const immutableReads = new Map();
 function createProvider(url) {
   return new ethers.JsonRpcProvider(url, deployment.chainId, {
     staticNetwork: true,
-    batchMaxCount: 20,
+    // Keep batches within the free-tier limit of the documented dRPC fallback.
+    batchMaxCount: 3,
     batchStallTime: 10,
   });
 }

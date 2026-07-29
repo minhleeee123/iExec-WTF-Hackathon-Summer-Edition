@@ -4,6 +4,9 @@ MCP v4 stdio server for public NoxSwap reads, Groq-assisted strategy planning,
 authorized balance decryption, protected swaps, and confidential limit-order
 management.
 
+See the repository [deployment guide](../../docs/deployment.md) for the shared
+environment and release workflow.
+
 ## Commands
 
 Run from the repository root:

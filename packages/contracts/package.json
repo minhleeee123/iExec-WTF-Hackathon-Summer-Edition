@@ -4,6 +4,9 @@
   "description": "NoxSwap Nox/ERC-7984 contracts, canonical deployment data and verification scripts",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
   "exports": {
     "./client-abis": "./client/abis.js",
     "./deployment-sepolia.json": "./deployment-sepolia.json",
@@ -50,6 +53,7 @@
     "@iexec-nox/nox-confidential-contracts": "^0.2.2",
     "@iexec-nox/nox-protocol-contracts": "^0.2.4",
     "@openzeppelin/contracts": "^5.4.0",
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "graphql": "16.14.2"
   }
 }

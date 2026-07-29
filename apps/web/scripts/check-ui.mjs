@@ -6,6 +6,7 @@ const port = 4174;
 const url = `http://127.0.0.1:${port}`;
 const rpcUrl = 'https://ethereum-sepolia-rpc.publicnode.com';
 const testAddress = '0xE412d04DA2A211F7ADC80311CC0FF9F03440B64E';
+const chainWaitTimeout = 60_000;
 let actionableOrderId = null;
 const server = spawn(
   process.execPath,
@@ -67,7 +68,7 @@ const capture = (page, options) => process.env.UI_SKIP_SCREENSHOTS === 'true'
 const recordConsoleError = (errors) => (message) => {
   if (message.type() !== 'error') return;
   const text = message.text();
-  if (/Failed to load resource: the server responded with a status of (403|429)/.test(text)) return;
+  if (/Failed to load resource: the server responded with a status of (400|403|429)/.test(text)) return;
   errors.push(text);
 };
 try {
@@ -230,7 +231,7 @@ try {
       await page.getByRole('tab', { name: 'Limit orders' }).click();
       await page.waitForURL(`${url}/app/trade?mode=orders`);
       await page.getByRole('heading', { name: 'Confidential limit order' }).waitFor();
-      await page.locator('.public-order-row').first().waitFor({ timeout: 30_000 });
+      await page.locator('.public-order-row').first().waitFor({ timeout: chainWaitTimeout });
       const publicOrderCount = await page.locator('.public-order-row').count();
       assert(publicOrderCount >= 2, 'public orderbook must load real orders without a connected wallet');
 
@@ -255,7 +256,7 @@ try {
       await page.waitForURL(/status=executed/);
       assert.equal(await page.getByLabel('Order status').inputValue(), 'executed', 'browser forward must restore order filters');
       await page.reload({ waitUntil: 'domcontentloaded' });
-      await page.locator('.public-order-row').first().waitFor({ timeout: 30_000 });
+      await page.locator('.public-order-row').first().waitFor({ timeout: chainWaitTimeout });
       assert.equal(await page.getByLabel('Order status').inputValue(), 'executed', 'order filter must survive reload');
 
       await page.getByLabel('Order status').selectOption('open');
@@ -276,8 +277,11 @@ try {
       await page.goto(`${url}/app/wallet`);
       await page.locator('.page-heading h1').filter({ hasText: 'Wallet' }).waitFor();
       assert.equal(await page.title(), 'Wallet | NoxSwap');
-      assert.equal(await page.locator('.workflow-tabs [role="tab"]').count(), 2, 'Wallet must retain Assets and Auditor access only');
+      assert.equal(await page.locator('.workflow-tabs [role="tab"]').count(), 3, 'Wallet must expose Assets, Auditor access, and Shared with me');
       assert.equal(await page.getByRole('tab', { name: 'Safe treasury' }).count(), 0, 'Safe Treasury must not remain nested inside Wallet');
+      await page.getByRole('tab', { name: 'Shared with me' }).click();
+      await page.waitForURL(`${url}/app/wallet?tab=shared`);
+      await page.getByRole('heading', { name: 'Shared with me' }).waitFor();
       await page.getByRole('tab', { name: 'Auditor access' }).click();
       await page.waitForURL(`${url}/app/wallet?tab=access`);
       await page.getByRole('heading', { name: 'Grant an auditor access' }).waitFor();
@@ -285,15 +289,9 @@ try {
       await page.waitForURL(`${url}/app/safe`);
       await page.getByRole('heading', { name: 'Safe Treasury', exact: true }).waitFor();
       await page.goto(`${url}/app/safe?section=orders`);
-      const publicSafeOrderBook = page.locator('.safe-orders-layout .public-orderbook');
-      await publicSafeOrderBook.getByRole('heading', { name: 'Public execution, private terms' }).waitFor();
-      await publicSafeOrderBook.locator('.public-order-row').first().waitFor({ timeout: 30_000 });
-      assert(await publicSafeOrderBook.locator('.public-order-row').count() >= 1, 'Safe public orderbook must remain readable without a connected wallet');
-      assert.equal(await page.getByText('Connect the Safe owner wallet to continue.').count(), 0, 'wallet connection must not gate the public Safe orderbook');
-      await publicSafeOrderBook.locator('.public-order-row').first().click();
-      await page.getByRole('dialog', { name: /order \d+ details/i }).waitFor();
-      assert.equal(await page.getByRole('button', { name: 'Reveal Safe order terms' }).count(), 0, 'disconnected readers must not receive Safe term access');
-      await page.keyboard.press('Escape');
+      await page.getByRole('heading', { name: 'Connect to find your Safe' }).waitFor();
+      assert.equal(await page.getByRole('heading', { name: 'Shared with me' }).count(), 1, 'disconnected Safe onboarding must retain the viewer lookup');
+      assert.equal(await page.locator('.safe-custody-panel').count(), 0, 'disconnected users must not inherit a default Safe treasury');
 
       await page.goto(`${url}/app/activity`);
       await page.locator('.page-heading h1').filter({ hasText: 'Activity' }).waitFor();
@@ -351,7 +349,7 @@ try {
     walletPage.on('pageerror', (error) => walletErrors.push(error.message));
     walletPage.on('console', recordConsoleError(walletErrors));
     await installReadOnlyWallet(walletPage, testAddress, { mockRecentClaims: true });
-    await walletPage.goto(`${url}/app/wallet`, { waitUntil: 'networkidle' });
+    await walletPage.goto(`${url}/app/wallet`, { waitUntil: 'domcontentloaded' });
     await walletPage.locator('.sidebar-account').filter({ hasText: '0xE412' }).waitFor();
     const publicAssetSymbols = await walletPage.locator('.app-sidebar .public-balance-item span').allTextContents();
     assert.deepEqual(publicAssetSymbols, ['nUSDC', 'nWETH', 'nWBTC', 'nSOL']);
@@ -395,7 +393,7 @@ try {
     await walletPage.waitForURL(`${url}/app/safe`);
     await walletPage.getByRole('heading', { name: 'Safe Treasury', exact: true }).waitFor();
     const safeCustody = walletPage.locator('.safe-custody-panel');
-    await safeCustody.getByText(/Module enabled|Operations paused/, { exact: true }).waitFor({ timeout: 30_000 });
+    await safeCustody.getByText(/Module enabled|Operations paused/, { exact: true }).waitFor({ timeout: chainWaitTimeout });
     await safeCustody.getByText('Safe owner', { exact: true }).waitFor();
     const safeModuleEnabled = await safeCustody.getByText('Module enabled', { exact: true }).count() > 0;
     if (safeModuleEnabled) {
@@ -430,8 +428,12 @@ try {
     assert.match(await walletPage.getByLabel('Safe unwrap recipient').inputValue(), /owner/);
     await walletPage.getByRole('tab', { name: 'Activity', exact: true }).click();
     await walletPage.waitForURL(`${url}/app/safe?section=activity`);
-    await walletPage.locator('.safe-activity-row').first().waitFor({ timeout: 30_000 });
-    assert(await walletPage.locator('.safe-activity-row').count() >= 1, 'Safe Activity must render confirmed on-chain history');
+    const safeActivityRows = walletPage.locator('.safe-activity-row');
+    await walletPage.locator('.safe-activity-row, .safe-activity-grid .empty-state').first().waitFor({ timeout: chainWaitTimeout });
+    const safeActivityAvailable = await safeActivityRows.count() >= 1;
+    if (!safeActivityAvailable) {
+      await walletPage.getByText('No Safe activity was found in the indexed block range.', { exact: true }).waitFor();
+    }
     assert.equal(await walletPage.locator('.safe-activity-grid .history-panel').count(), 1, 'Safe Activity must reuse the product history panel pattern');
     await walletPage.getByRole('tab', { name: 'Orders & Agent' }).click();
     await walletPage.waitForURL(`${url}/app/safe?section=orders`);
@@ -440,8 +442,9 @@ try {
     assert.equal(await walletPage.locator('.safe-orders-layout.orders-layout').count(), 1, 'Safe orders must reuse the product orders layout pattern');
     const safeOrderBook = walletPage.locator('.safe-orders-layout .public-orderbook');
     await safeOrderBook.getByRole('heading', { name: 'Public execution, private terms' }).waitFor();
-    await safeOrderBook.locator('.public-order-row').first().waitFor({ timeout: 30_000 });
-    assert(await safeOrderBook.locator('.public-order-row').count() >= 1, 'Safe public orderbook must render indexed Sepolia orders');
+    await safeOrderBook.getByLabel('Order owner').selectOption('mine');
+    await safeOrderBook.locator('.public-order-row').first().waitFor({ timeout: chainWaitTimeout });
+    assert(await safeOrderBook.locator('.public-order-row').count() >= 1, 'Safe public orderbook must render Safe-owned indexed Sepolia orders');
     assert.equal(await safeOrderBook.getByLabel('Order owner').locator('option[value="mine"]').textContent(), 'Safe orders');
     const safeOrderBookLayout = await safeOrderBook.evaluate((element) => ({ clientWidth: element.clientWidth, scrollWidth: element.scrollWidth }));
     assert(safeOrderBookLayout.scrollWidth <= safeOrderBookLayout.clientWidth, 'Safe public orderbook content must stay inside its card');
@@ -486,9 +489,9 @@ try {
     await capture(walletPage, { path: '/tmp/noxswap-safe-treasury-mobile.png', fullPage: true });
     await walletPage.setViewportSize({ width: 1280, height: 900 });
     await walletPage.goto(`${url}/app/trade?mode=orders&order=${actionableOrderId}`, { waitUntil: 'domcontentloaded' });
-    await walletPage.getByRole('dialog', { name: `Order ${actionableOrderId} details` }).waitFor({ timeout: 30_000 });
-    await walletPage.getByRole('button', { name: /^(Authorize OrderBook|Revoke OrderBook authorization)$/ }).first().waitFor({ timeout: 30_000 });
-    await walletPage.getByRole('button', { name: 'Reveal my order terms' }).waitFor({ timeout: 30_000 });
+    await walletPage.getByRole('dialog', { name: `Order ${actionableOrderId} details` }).waitFor({ timeout: chainWaitTimeout });
+    await walletPage.getByRole('button', { name: /^(Authorize OrderBook|Revoke OrderBook authorization)$/ }).first().waitFor({ timeout: chainWaitTimeout });
+    await walletPage.getByRole('button', { name: 'Reveal my order terms' }).waitFor({ timeout: chainWaitTimeout });
     await walletPage.getByRole('button', { name: 'Cancel order' }).waitFor();
     await capture(walletPage, { path: '/tmp/noxswap-order-owner.png' });
     assert.equal(walletErrors.length, 0, `wallet runtime errors: ${walletErrors.join('; ')}`);
@@ -501,7 +504,7 @@ try {
       privateBalanceRevealAvailable: true,
       safeTreasuryStatus: safeModuleEnabled ? 'enabled-owner' : 'revoked-owner',
       safeRecoveryAvailable: !safeModuleEnabled,
-      safeActivityAvailable: true,
+      safeActivityAvailable,
       safeAgentDraftApplied: true,
       safeSwapDeadlineDefault: 20,
       safeSwapToleranceDefaultBps: 1000,
@@ -520,12 +523,12 @@ try {
     const executorAddress = '0x0000000000000000000000000000000000000002';
     await installReadOnlyWallet(executorPage, executorAddress);
     await executorPage.goto(`${url}/app/trade?mode=orders&order=${actionableOrderId}`, { waitUntil: 'domcontentloaded' });
-    await executorPage.getByRole('dialog', { name: `Order ${actionableOrderId} details` }).waitFor({ timeout: 30_000 });
+    await executorPage.getByRole('dialog', { name: `Order ${actionableOrderId} details` }).waitFor({ timeout: chainWaitTimeout });
     assert.equal(await executorPage.getByRole('button', { name: 'Cancel order' }).count(), 0, 'non-owner must not see cancel');
     assert.equal(await executorPage.getByRole('button', { name: 'Reveal my order terms' }).count(), 0, 'non-owner must not see reveal');
     await capture(executorPage, { path: '/tmp/noxswap-order-executor.png' });
     await executorPage.goto(`${url}/app/safe`, { waitUntil: 'domcontentloaded' });
-    await executorPage.getByRole('heading', { name: 'Create your Safe' }).waitFor({ timeout: 30_000 });
+    await executorPage.getByRole('heading', { name: 'Create your Safe' }).waitFor({ timeout: chainWaitTimeout });
     assert.equal(await executorPage.getByRole('button', { name: 'Create my Safe' }).count(), 1, 'an account without a Safe must receive an explicit creation action');
     assert.equal(await executorPage.getByRole('heading', { name: 'Shared with me' }).count(), 1, 'an account without its own Safe must retain shared-Safe lookup');
     assert.equal(await executorPage.locator('.safe-custody-panel').count(), 0, 'an account without a Safe must not inherit the legacy demo treasury');

@@ -3,6 +3,10 @@
 Canonical Solidity, Hardhat, Sepolia deployment data, browser-safe ABI surface,
 deployment scripts, and confidential-protocol verification for NoxSwap.
 
+The complete environment, Sepolia, synchronization, Vercel, verification, and
+rollback workflow is documented in the repository
+[deployment guide](../../docs/deployment.md).
+
 ## Commands
 
 Run from the repository root:

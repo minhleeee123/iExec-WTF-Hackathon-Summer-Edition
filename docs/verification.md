@@ -71,7 +71,7 @@ decrypted test value are intentionally excluded from this evidence.
 | Production Safe V6 manual suite | Project-owner execution of the intended production Safe V6 checks | PASS, confirmed by the user on 2026-07-27; every exercised check passed and the V6 flow felt clearly faster than V5 |
 | Production MetaMask happy path | Manual wallet flow on the canonical public URL | PASS, confirmed by the user on 2026-07-25 |
 | Current legacy demo Safe module state | Read `Safe.isModuleEnabled(Module V6)` and `getModulesPaginated` on Sepolia | PASS on 2026-07-27: V6 `0x8c1754...73e8f5` is enabled, V5 is disabled after the passing runtime test, and the registered legacy Safe retains its expected sole owner and threshold 1. Factory-created Safes use their own bound module addresses. |
-| Responsive UI | Production build plus 71 frontend unit tests and browser checks at `1440x1000`, `1280x900`, and `390x844`; validates EIP-6963 wallet selection, per-owner Safe discovery/create state, legacy Safe compatibility, shared-Safe lookup, fresh-Safe activity indexing, Safe prevalidated signatures, keyboard tabs, Strategy Agent, orderbooks, owner/non-owner controls, landing/app separation, desktop sidebar, mobile navigation, and API guards. | PASS for unit/build and targeted live browser smoke; fresh-owner production loaded 23 Activity rows, and isolated landing/Docs checks at `1440x1000` and `390x844` confirmed the factory wording, legacy labels, active TOC, zero page errors, and no horizontal overflow. The combined local browser matrix remains affected by this workspace's unrelated Chrome renderer resource exhaustion. |
+| Responsive UI | Production build plus 71 frontend unit tests and browser checks at `1440x1000`, `1280x900`, and `390x844`; validates EIP-6963 wallet selection, per-owner Safe discovery/create state, legacy Safe compatibility, shared-Safe lookup, fresh-Safe activity indexing, Safe prevalidated signatures, keyboard tabs, Strategy Agent, orderbooks, owner/non-owner controls, landing/app separation, desktop sidebar, mobile navigation, and API guards. | PASS. The 2026-07-29 combined live browser matrix passed against Sepolia with the documented dRPC archive override: 10 public orders loaded, owner and non-owner Safe boundaries held, every checked layout had zero horizontal overflow, and handled archive limitations produced the explicit Activity empty state rather than a runtime failure. A separate fresh-owner production run loaded 23 Activity rows. |
 | Public source verification | Sourcify API v2 Standard JSON verification | PASS with exact creation/runtime matches for all thirteen repository verification targets. Safe factory is public as match `42989366`, Safe Module V6 as `42918403`, and the Safe orderbook as `42858243`. |
 | Read-only deployment consistency | `npm run verify:deployment` compares canonical artifacts with Sepolia deployment transactions, constructor arguments, receipts, deployed runtime code, and Sourcify lookup status | PASS for Router V2, Safe Module V6, Safe confidential orderbook, and per-account Safe factory; it performs no verification submission |
 | Accessibility and discovery | Lighthouse against the final production build | PASS, Performance 92, Accessibility 100, Best Practices 100, SEO 100, CLS 0.014; robots and sitemap included |
@@ -148,25 +148,6 @@ coverage, and live Sepolia/production outcomes.
 | Permissionless LP lifecycle | Not implemented | Initial liquidity is real but deployer-funded; there are no LP shares or remove-liquidity operations. |
 | Nox integration validation | Docker-backed local suite plus live Sepolia E2E | The local suite is available as a manual/nightly workflow; deployed-path validation uses live Sepolia E2E. |
 
-## Phase 6 Rubric Assessment
-
-This is an internal evidence-based assessment, not an organizer score. The
-official rubric awards whole stars and totals 14.
-
-| Criterion | Self-assessment | Evidence and remaining work |
-|---|---:|---|
-| Creativity | 3/3 | Confidential AMM, encrypted slippage protection/refunds, confidential limit-order escrow, selective disclosure, Safe module composability, and non-custodial Agent/MCP workflows form a differentiated, coherent system. |
-| Accessible and end-to-end without mock data | 3/3 | Core reads and writes use live Sepolia contracts, Chainlink, Nox SDK/Gateway, and real wallet signatures. Automated flows plus user-confirmed local/preview and production MetaMask paths cover connect, reveal, swap, refreshed reveal, revoke/authorize, and order create/cancel. |
-| ETH Sepolia deployment | 2/2 | The canonical NoxSwap contracts, three encrypted pools, personal and Safe orderbooks, legacy Safe treasury/module, and per-account Safe factory are live. The final frontend is published at the canonical production URL. |
-| `feedback.md` | 2/2 | Root feedback records concrete SDK, ACL, indexing, Docker, version, and protected-minOut experience with actionable recommendations. |
-| Demo video, no longer than four minutes | 0/2 | A 3:54.552 final candidate exists locally; publication with the X submission post remains pending. |
-| Technical implementation | 1/1 | Official Nox encrypted types, arithmetic, ERC-7984 wrappers, Handle SDK encryption/decryption, proofs, and ACLs are in the settlement path rather than attached as a label. |
-| UX | 1/1 | Personal and Safe custody are clearly separated but visually consistent, all workflows are responsive and keyboard-operable, and the final build scored Lighthouse Accessibility 100 with no horizontal overflow in tested viewports. |
-
-**Phase 6-addressable score: 12/12. Current total submission score: 12/14.**
-The missing two points are exclusively the Phase 7 publication of the prepared
-demo video with the required X submission post.
-
 ## Repeatable Commands
 
 ```bash
@@ -201,16 +182,16 @@ npm run verify:deployment
   approvals would reduce impact if a wrapper were compromised.
 - Designed for hackathon testnet demonstration on Sepolia; formal third-party audits are planned prior to mainnet deployment.
 - Test faucet assets have no monetary value.
-- The 2026-07-25 web production audit reports two high-severity package findings
-  in `react-router`/`react-router-dom` for CSRF in Framework/RSC server-action
-  request processing. NoxSwap is a client-rendered Vite SPA using declarative
-  `BrowserRouter`; it defines no React Router loaders, actions, framework server,
-  or RSC endpoints, so the reported execution path is not present in this
-  deployment. The dependency should still be updated when a compatible patched
-  release is available.
-- The repository-wide production audit additionally retains two moderate findings
-  in `@hono/node-server` through the MCP SDK. NoxSwap uses MCP over stdio on Linux
-  and does not start the affected Windows static-file HTTP path; npm's suggested
-  remediation is a breaking SDK downgrade, so the dependency is pinned pending an
-  upstream compatible release.
+- The 2026-07-29 production audit reports two high-severity package findings in
+  `react-router`/`react-router-dom` `7.18.2` for CSRF in Framework/RSC
+  server-action request processing. NoxSwap is a client-rendered Vite SPA using
+  declarative `BrowserRouter`; it defines no React Router loaders, actions,
+  framework server, or RSC endpoints, so the reported execution path is not
+  present in this deployment. No React Router 7.x release currently resolves
+  that advisory without reintroducing older redirect/SSR findings; monitor for
+  a compatible patched release.
+- The MCP SDK is updated to `1.30.0` and its Hono adapter is pinned to patched
+  `@hono/node-server` `2.0.12`. The previous two moderate production findings
+  are resolved; MCP continues to run over stdio rather than an HTTP static-file
+  server.
 - The development-only Hardhat/Nox plugin chain retains upstream advisories with no compatible fix. These packages do not ship in the web or MCP production runtimes.
